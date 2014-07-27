@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div id="facetview"></div>
+
+{% endblock %}
+
+{% block extra_js_bottom %}
+<script type="text/javascript">
+    // var query_endpoint = current_scheme + "//" + current_domain + "/user_query/reactor/_search"
+    var query_endpoint = "{{config.get("QUERY_ENDPOINT")}}"
+</script>
+<script type="text/javascript" src="/static/app/js/app.facetview.theme.js"></script>
+{% endblock %}

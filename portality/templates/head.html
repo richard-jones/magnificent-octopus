@@ -1,0 +1,37 @@
+<head>
+    <meta charset="utf-8">
+    <title>{{config.get("SERVICE_NAME")}}</title>
+    <meta name="description" content="{{config.get('SERVICE_NAME')}}">
+    <meta name="author" content="Cottage Labs">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <link href="{{ url_for('static', filename='images/favicon.ico') }}" rel="icon" type="image/x-icon" />
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- this is where we can incorporate any css files -->
+
+    <link rel="stylesheet" href="{{url_for('static', filename='portality/vendor/bootstrap/css/bootstrap.min.css')}}">
+
+    <link rel="stylesheet" href="{{url_for('static', filename='app/css/app.css')}}">
+
+    <!-- get jquery-ui css -->
+    <link rel="stylesheet" href="{{url_for('static', filename='portality/vendor/jquery-ui-1.8.18.custom/jquery-ui-1.8.18.custom.css')}}">
+
+    <!-- get facetview css -->
+    <link rel="stylesheet" href="/static/portality/vendor/facetview2/css/facetview.css">
+
+    <!-- get portality css -->
+    <link rel="stylesheet" type="text/css" href="/static/portality/css/portality.css">
+
+    <!-- get the table sorter css -->
+    <link rel="stylesheet" type="text/css" href="/static/portality/vendor/tablesorter/css/blue/style.css">
+
+    <!-- get the select2 css -->
+    <link rel="stylesheet" type="text/css" href="/static/portality/vendor/select2-release-3.2/select2.css">
+
+</head>
