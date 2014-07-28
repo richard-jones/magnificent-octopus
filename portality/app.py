@@ -11,11 +11,11 @@ app.register_blueprint(query, url_prefix='/user_query')
 
 @app.route("/")
 def root():
-    return render_template("search.html")
+    return render_template("app/search.html")
 
 @app.errorhandler(404)
 def page_not_found(e):
-    return render_template('404.html'), 404
+    return render_template('errors/404.html'), 404
 
 
 if __name__ == "__main__":

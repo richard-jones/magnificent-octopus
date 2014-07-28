@@ -10,7 +10,7 @@ from flask.ext.login import current_user
 
 import portality.models as models
 from portality.core import app
-import portality.util as util
+from portality.lib import webapp
 
 
 blueprint = Blueprint('query', __name__)
@@ -18,7 +18,7 @@ blueprint = Blueprint('query', __name__)
 # pass queries direct to index. POST only for receipt of complex query objects
 @blueprint.route('/<path:path>', methods=['GET','POST'])
 @blueprint.route('/', methods=['GET','POST'])
-@util.jsonp
+@webapp.jsonp
 def query(path='Pages'):
     pathparts = path.strip('/').split('/')
     subpath = pathparts[0]
