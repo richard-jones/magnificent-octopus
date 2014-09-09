@@ -1,8 +1,25 @@
 import re
 from unicodedata import normalize
 from functools import wraps
-from flask import request, current_app, flash
+from flask import request, current_app, flash, redirect
 from urlparse import urlparse, urljoin
+
+from portality.core import app
+
+# a decorator to be used elsewhere (or in this file) in the app,
+# anywhere where a view f() should be served only over SSL
+def ssl_required(fn):
+    @wraps(fn)
+    def decorated_view(*args, **kwargs):
+        if app.config.get("SSL"):
+            if request.is_secure:
+                return fn(*args, **kwargs)
+            else:
+                return redirect(request.url.replace("http://", "https://"))
+
+        return fn(*args, **kwargs)
+
+    return decorated_view
 
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
