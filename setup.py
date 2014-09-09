@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name = 'monitorui',
-    version = '0.0.1',
+    name = 'portality',
+    version = '2.0.0',
     packages = find_packages(),
     install_requires = [
         "requests",
@@ -13,7 +13,7 @@ setup(
     url = 'http://cottagelabs.com/',
     author = 'Cottage Labs',
     author_email = 'us@cottagelabs.com',
-    description = 'monitorui - a basic search/browse interface for the jisc monitor data',
+    description = 'Portality 2 - Flask application helper library',
     classifiers = [
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
