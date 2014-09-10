@@ -14,6 +14,7 @@ def create_app():
     return app
 
 def configure_app(app):
+    # read in the root config
     root_config = os.getenv('APP_CONFIG')
     if not root_config:
         raise Exception("Set APP_CONFIG to your root config file")
@@ -24,12 +25,22 @@ def configure_app(app):
     else:
         raise Exception("Root config did not exist at " + root_config)
 
+    # for each config file specified in the root, find and load
     config_files = app.config.get("CONFIG_FILES", [])
     for cf in config_files:
         cf = os.path.abspath(cf)
         if os.path.exists(cf):
             print "Loading config from", cf
             app.config.from_pyfile(cf)
+
+    # expand the path names for the static files (so we only have to do it the once)
+    statics = app.config.get("STATIC_PATHS", [])
+    nps = []
+    for sp in statics:
+        np = os.path.abspath(sp)
+        print "Specifying static directory", np
+        nps.append(np)
+    app.config["STATIC_PATHS"] = nps
 
 def setup_jinja(app):
     template_paths = app.config.get("TEMPLATE_PATHS", [])

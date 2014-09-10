@@ -1,10 +1,18 @@
-import re
+import re, os
 from unicodedata import normalize
 from functools import wraps
-from flask import request, current_app, flash, redirect
+from flask import request, current_app, flash, redirect, send_from_directory, abort
 from urlparse import urlparse, urljoin
 
 from portality.core import app
+
+# serve static files from multiple potential locations
+def custom_static(path):
+    for dir in app.config.get("STATIC_PATHS", []):
+        target = os.path.join(dir, path)
+        if os.path.isfile(target):
+            return send_from_directory(os.path.dirname(target), os.path.basename(target))
+    abort(404)
 
 # a decorator to be used elsewhere (or in this file) in the app,
 # anywhere where a view f() should be served only over SSL
