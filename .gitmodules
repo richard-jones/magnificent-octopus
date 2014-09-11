@@ -1,0 +1,3 @@
+[submodule "portality/static/vendor/facetview2"]
+	path = portality/static/vendor/facetview2
+	url = https://github.com/CottageLabs/facetview2.git
