@@ -1,24 +1,31 @@
 <!-- get jquery js -->
-<script type="text/javascript" src="{{url_for('static', filename='vendor/jquery-1.7.1.min.js')}}"></script>
+<!-- <script type="text/javascript" src="{{url_for('static', filename='vendor/jquery-1.7.1/jquery-1.7.1.min.js')}}"></script> -->
+<script type="text/javascript" src="{{url_for('static', filename='vendor/jquery-1.11.1/jquery-1.11.1.min.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static', filename='vendor/jquery-migrate-1.2.1/jquery-migrate-1.2.1.min.js')}}"></script>
 
 <!-- get jquery-ui js -->
-<script type="text/javascript" src="{{url_for('static', filename='vendor/jquery-ui-1.8.18.custom/jquery-ui-1.8.18.custom.min.js')}}"></script>
+<!-- <script type="text/javascript" src="{{url_for('static', filename='vendor/jquery-ui-1.8.18.custom/jquery-ui-1.8.18.custom.min.js')}}"></script> -->
+<script type="text/javascript" src="{{url_for('static', filename='vendor/jquery-ui-1.11.1.custom/jquery-ui.min.js')}}"></script>
 
 <!-- get bootstrap js -->
-<script type="text/javascript" src="{{url_for('static', filename='vendor/bootstrap/js/bootstrap.min.js')}}"></script>
-
-<!-- get our js -->
-<script type="text/javascript" src="{{url_for('static', filename='js/portality.js')}}"></script>
+<!-- <script type="text/javascript" src="{{url_for('static', filename='vendor/bootstrap-2.0.0/js/bootstrap.min.js')}}"></script> -->
+<script type="text/javascript" src="{{url_for('static', filename='vendor/bootstrap-3.2.0/js/bootstrap.min.js')}}"></script>
 
 <!-- get tablesorter -->
-<script type="text/javascript" src="{{url_for('static', filename='vendor/tablesorter/js/jquery.tablesorter.js')}}"></script>
+<!-- <script type="text/javascript" src="{{url_for('static', filename='vendor/tablesorter-2.3.10/js/jquery.tablesorter.js')}}"></script> -->
+<script type="text/javascript" src="{{url_for('static', filename='vendor/tablesorter-2.17.7/js/jquery.tablesorter.min.js')}}"></script>
 
 <!-- get select2 -->
-<script type="text/javascript" src="{{url_for('static', filename='vendor/select2-release-3.2/select2.min.js')}}"></script>
+<!-- <script type="text/javascript" src="{{url_for('static', filename='vendor/select2-3.2/select2.min.js')}}"></script> -->
+<script type="text/javascript" src="{{url_for('static', filename='vendor/select2-3.5.1/select2.min.js')}}"></script>
 
-<!-- get facetview -->
+<!-- get facetview2 -->
 <script type="text/javascript" src="{{url_for('static', filename='vendor/facetview2/jquery.facetview2.js')}}"></script>
 
+<!-- get the portality js -->
+<script type="text/javascript" src="{{url_for('static', filename='js/portality.js')}}"></script>
+
+<!-- for convenience in other places, set the current_domain and the current_scheme -->
 <script type="text/javascript">var current_domain = document.location.host;</script>
 <script type="text/javascript">var current_scheme = window.location.protocol;</script>
 

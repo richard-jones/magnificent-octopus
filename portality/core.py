@@ -32,6 +32,8 @@ def configure_app(app):
         if os.path.exists(cf):
             print "Loading config from", cf
             app.config.from_pyfile(cf)
+        else:
+            print "WARNING: no config file at", cf
 
     # expand the path names for the static files (so we only have to do it the once)
     statics = app.config.get("STATIC_PATHS", [])

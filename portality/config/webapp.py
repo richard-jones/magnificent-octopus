@@ -1,4 +1,5 @@
 HOST = "0.0.0.0"
-DEBUG = True
+DEBUG = False
 PORT = 5000
-SSL = False
+SSL = True
+THREADED = False
