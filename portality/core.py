@@ -47,7 +47,7 @@ def configure_app(app):
 def setup_jinja(app):
     template_paths = app.config.get("TEMPLATE_PATHS", [])
     if len(template_paths) > 0:
-        choices = [app.jinja_loader]
+        choices = []
         for tp in template_paths:
             tp = os.path.abspath(tp)
             print "Registering Template Path", tp

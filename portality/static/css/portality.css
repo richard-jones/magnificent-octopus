@@ -86,4 +86,43 @@ div.alert-messages {
   margin-top: 15px;
 }
 
+/************************************
+  * Navigation elements
+  ***********************************/
 
+#navigation {
+  /*background: -webkit-linear-gradient(180deg, blue, black);*/ /* For Safari 5.1 to 6.0 */
+  /*background: -o-linear-gradient(180deg, blue, black);*/ /* For Opera 11.1 to 12.0 */
+  /*background: -moz-linear-gradient(180deg, blue, black);*/ /* For Firefox 3.6 to 15 */
+  /*background: linear-gradient(180deg, #003399, #011135);*/ /* Standard syntax */
+  background: #00325b;
+  color: white;
+  height: 40px;
+}
+
+#navigation a {
+    padding-top: 10px;
+    color: white;
+    font-weight: bold;
+}
+
+#navigation a:hover {
+
+    border: 0;
+    border-bottom: 5px solid #ffffff;
+    color: #fff;
+    padding-top: 10px;
+    padding-right: 10px;
+    padding-bottom: 6px;
+}
+
+#navigation .logo_link:hover {
+    border: none;
+}
+
+#navigation .active>a{
+    border-bottom: 5px solid #9ab2e1;
+    background-color: transparent;
+    padding-top: 10px;
+    padding-bottom: 6px;
+}
