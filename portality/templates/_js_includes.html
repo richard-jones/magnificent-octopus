@@ -31,6 +31,11 @@
 <!-- get the portality js -->
 <script type="text/javascript" src="{{url_for('static', filename='js/portality.js')}}"></script>
 
+<!-- google map integration -->
+{% if map_key %}
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key={{map_key}}"></script>
+{% endif %}
+
 <!-- for convenience in other places, set the current_domain and the current_scheme -->
 <script type="text/javascript">var current_domain = document.location.host;</script>
 <script type="text/javascript">var current_scheme = window.location.protocol;</script>

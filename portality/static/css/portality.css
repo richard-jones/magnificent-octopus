@@ -126,3 +126,22 @@ div.alert-messages {
     padding-top: 10px;
     padding-bottom: 6px;
 }
+
+/************************************
+  * Straighten out google maps navigation
+  ***********************************/
+
+#map-canvas {
+    height: 100%
+}
+#mappins-map img {
+    max-width: none !important;
+    height: auto !important;
+    background: none !important;
+    border: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.gm-style img { max-width: none; }
+.gm-style label { width: auto; display: inline; }
