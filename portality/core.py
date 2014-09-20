@@ -6,9 +6,7 @@ from urllib import unquote
 def create_app():
     app = Flask(__name__)
     configure_app(app)
-
-    #if app.config.get('INITIALISE_INDEX',False): initialise_index(app)
-
+    initialise_index(app)
     setup_jinja(app)
     #setup_error_email(app)
     return app
@@ -67,11 +65,12 @@ def setup_jinja(app):
     app.jinja_env.filters['debug']=jinja_debug
 
 
-
-
 def initialise_index(app):
-    mappings = app.config["MAPPINGS"]
-    conn = esprit.raw.Connection(app.config['ELASTIC_SEARCH_HOST'], app.config['ELASTIC_SEARCH_DB'])
+    if not app.config.get("INITIALISE_INDEX", False):
+        return
+
+    mappings = app.config.get("ELASTIC_SEARCH_MAPPINGS", {})
+    conn = esprit.raw.Connection(app.config['ELASTIC_SEARCH_HOST'], app.config['ELASTIC_SEARCH_INDEX'])
     if not esprit.raw.index_exists(conn):
         print "Creating Index; host:" + str(conn.host) + " port:" + str(conn.port) + " db:" + str(conn.index)
         esprit.raw.create_index(conn)
