@@ -100,8 +100,8 @@ def query(path=None):
             f(q)
 
         # finally send the query and return the response
-        resp = dao_klass.query(q=q.as_dict())
-        resp = make_response(json.dumps(resp))
+        res = dao_klass.query(q=q.as_dict())
+        resp = make_response(json.dumps(res))
     else:
         abort(400)
 
