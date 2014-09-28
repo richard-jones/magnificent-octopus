@@ -6,8 +6,10 @@ This provides read-only access to configured query endpoints.
 
 Can be mounted into your app as a blueprint with:
 
+```python
     from portality.modules.es.query import blueprint as query
     app.register_blueprint(query, urlprefix="/query")
+```
 
 See **settings.py** for details of configuration.
 
@@ -30,8 +32,10 @@ This can be useful for building more complex result-selection options in the fro
 
 Can be mounted into your app as a blueprint with:
 
+```python
     from portality.modules.es.autocomplete import blueprint as autocomplete
     app.register_blueprint(autocomplete, urlprefix="/autocomplete")
+```
 
 See **settings.py** for details of configuration.
 
@@ -42,6 +46,7 @@ You can make requests as follows:
 
 The result will be a list (ordered by relevance) containing the desired fields, e.g:
 
+```python
     [
         {
             issn: ["0123-3475",1909-8758"],
@@ -52,3 +57,4 @@ The result will be a list (ordered by relevance) containing the desired fields, 
             title: ["Orientación y Sociedad : Revista Internacional e Interdisciplinaria de Orientación Vocacional Ocupacional "]
         }
     ]
+```

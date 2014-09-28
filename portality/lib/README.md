@@ -24,19 +24,24 @@ Contains functions for building useful Flask webapplications:
 
 * custom_static - used by Portality to serve static files from a set of directories.  Can be incorporated into your web application with:
 
+```python
     @app.route("/static/<path:filename>")
     def static(filename):
         return custom_static(filename)
+```
 
 * ssl_required - decorator which ensures that applications use SSL on certain requests when required:
 
+```python
     @app.route("/account/<username>")
     @ssl_required
     def acc(username): pass
+```
 
 * jsonp - decorator which enables support for JSON-P on API requests:
 
+```python
     @app.route("/api/call")
     @jsonp
     def api(): pass
-
+```

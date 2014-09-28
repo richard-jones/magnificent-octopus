@@ -20,6 +20,6 @@ Used for providing direct access to the Elasticsearch back-end.  Implements a re
 
 ### Sherpa Fact
 
-**module**[portality.modules.sherpafact](https://github.com/richard-jones/portentious/tree/master/portality/modules/sherpafact/README.md)
+**module**: [portality.modules.sherpafact](https://github.com/richard-jones/portentious/tree/master/portality/modules/sherpafact/README.md)
 
 Provides a client library for accessing the Sherpa FACT API.
