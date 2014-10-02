@@ -12,16 +12,19 @@ def create_app():
     return app
 
 def configure_app(app):
-    # read in the root config
+    # read in the root config and resolve it to an actual file
     root_config = os.getenv('APP_CONFIG')
     if not root_config:
-        raise Exception("Set APP_CONFIG to your root config file")
-    root_config = os.path.abspath(root_config)
+        print "Using built-in rootcfg.py"
+        root_config = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "rootcfg.py")
+    else:
+        root_config = os.path.abspath(root_config)
+
     if os.path.exists(root_config):
         print "Loading root config from", root_config
         app.config.from_pyfile(root_config)
     else:
-        raise Exception("Root config did not exist at " + root_config)
+        raise Exception("Root config did not exist at " + root_config + ".  You may set one with the APP_CONFIG environment variable")
 
     # for each config file specified in the root, find and load
     config_files = app.config.get("CONFIG_FILES", [])
