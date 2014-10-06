@@ -19,3 +19,4 @@ class TestClientIntegration(TestCase):
         fc = client.FactClient()
         f = fc.query([698, 709], issn="0309-1325")
         assert isinstance(f, client.FactJson)
+

@@ -1,4 +1,6 @@
-# SHERPA FACT Client Library
+# SHERPA FACT Integration
+
+## Client Library
 
 This is a basic client library for using the Sherpa FACT API
 
@@ -6,7 +8,7 @@ This is a basic client library for using the Sherpa FACT API
     from portality.modules.sherpafact import client
 ```
 
-Construct an instance of the client (which will use the default configuration in settings.py unless otherwise told):
+Construct an instance of the client (which will use the default configuration in **settings.py** unless otherwise told):
 
 ```python
     fc = client.FactClient()
@@ -24,3 +26,17 @@ data out if it with
 ```python
     fact.raw
 ```
+
+## Proxy
+
+You can integrate a proxied call to the FACT API in your application by including the blueprint as follows:
+
+```python
+    from portality.modules.sherpafact.proxy import blueprint as fact
+    app.register_blueprint(fact, urlprefix="/fact")
+```
+
+Calls must provide the following URL query arguments:
+
+* journal_or_issn - a journal name or an ISSN (the proxy will figure out which)
+* funders - a comma delimited list of funder ids from the Juliet service
