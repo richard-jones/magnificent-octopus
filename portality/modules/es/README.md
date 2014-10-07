@@ -58,3 +58,44 @@ The result will be a list (ordered by relevance) containing the desired fields, 
         }
     ]
 ```
+
+#### Javascript
+
+The compound query endpoint can be called via the module's javascript library.  Ensure that the route to the autocomplete endpoint 
+is in the javascript configuration.  For example
+
+```javascript
+    var portality = {
+        "es" : {
+            "compound_endpoint" : "/autocomplete/compound"
+        }
+    }
+```
+
+Set up an input field as an compound autocomplete field with:
+
+```javascript
+    es.bindCompoundAutocomplete({
+        selector : "#my_field",
+        minimumInputLength : 3,
+        placeholder :"Enter some text";
+        type : "configured_endpoint";
+        format : function(result) { return {id : result.term, text: result.term} };
+        allow_clear : true
+    })
+```
+
+Note that the "configured_endpoint" is one of the autocomplete endpoints specified in **settings.py**.
+
+If you want to call the autocomplete without binding to an input form, as above, you can go directly to the query method:
+
+```javascript
+    es.compoundAutocomplete({
+        q : "query string";
+        size : 10;
+        type : "configured_endpoint";
+        success : function(data) {};
+        complete : function(data) {};
+        error : function(data) {};
+    })
+```

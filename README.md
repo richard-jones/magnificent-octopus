@@ -45,7 +45,8 @@ The following modules are available (follow the links to their README files for 
 
 **module**: [portality.modules.es](https://github.com/richard-jones/portentious/tree/master/portality/modules/es/README.md)
 
-Used for providing direct access to the Elasticsearch back-end.  Implements a read-only query endpoint, and autocomplete features.
+Used for providing direct access to the Elasticsearch back-end.  Implements a read-only query endpoint, and autocomplete features.  
+Also provides front-end javascript functions for querying the back-end features.
 
 ### Sherpa Fact
 
