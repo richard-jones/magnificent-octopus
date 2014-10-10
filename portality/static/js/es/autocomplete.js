@@ -1,4 +1,4 @@
-var es = {
+var esac = {
 
     compoundAutocomplete : function(params) {
         var q = params.q;
@@ -48,7 +48,7 @@ var es = {
         }
 
         function queryFunction(query) {
-            es.compoundAutocomplete({
+            esac.compoundAutocomplete({
                 q : query.term,
                 type: type,
                 success : successFunctionClosure(query)

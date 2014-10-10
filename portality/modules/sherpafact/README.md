@@ -33,7 +33,7 @@ You can integrate a proxied call to the FACT API in your application by includin
 
 ```python
     from portality.modules.sherpafact.proxy import blueprint as fact
-    app.register_blueprint(fact, urlprefix="/fact")
+    app.register_blueprint(fact, url_prefix="/fact")
 ```
 
 Calls must provide the following URL query arguments:

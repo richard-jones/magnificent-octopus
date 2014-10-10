@@ -34,7 +34,7 @@ Can be mounted into your app as a blueprint with:
 
 ```python
     from portality.modules.es.autocomplete import blueprint as autocomplete
-    app.register_blueprint(autocomplete, urlprefix="/autocomplete")
+    app.register_blueprint(autocomplete, url_prefix="/autocomplete")
 ```
 
 See **settings.py** for details of configuration.
@@ -75,7 +75,7 @@ is in the javascript configuration.  For example
 Set up an input field as an compound autocomplete field with:
 
 ```javascript
-    es.bindCompoundAutocomplete({
+    esac.bindCompoundAutocomplete({
         selector : "#my_field",
         minimumInputLength : 3,
         placeholder :"Enter some text";
@@ -90,7 +90,7 @@ Note that the "configured_endpoint" is one of the autocomplete endpoints specifi
 If you want to call the autocomplete without binding to an input form, as above, you can go directly to the query method:
 
 ```javascript
-    es.compoundAutocomplete({
+    esac.compoundAutocomplete({
         q : "query string";
         size : 10;
         type : "configured_endpoint";

@@ -2,5 +2,7 @@ var portality = {
     "es" : {
         "compound_endpoint" : "/autocomplete/compound"
     },
-    "sherpafact" : {}
+    "sherpafact" : {
+        "proxy_endpoint" : "/fact"
+    }
 }
