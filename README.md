@@ -33,6 +33,14 @@ It provides ONLY the following configuration options:
     ]
 ```
 
+## JavaScript configuration
+
+In order that the standard JavaScript modules work correctly, they need their configuration to be set in the javascript config file.  This can be found at:
+
+    portality/templates/js/config.js
+    
+It is a jinja2 template, so when adding new things to it, you can use template semantics.  If you plan to override this config, you should copy it into the service/templates directory in the same location, and it will override the standard one.
+
 ## Library code
 
 The portality.lib directory contains helper libraries for building your applications.  See the [README](https://github.com/richard-jones/portentious/tree/master/portality/lib/README.md) for details
