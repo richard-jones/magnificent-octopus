@@ -11,18 +11,11 @@ ELASTIC_SEARCH_INDEX = "db"
 
 INITIALISE_INDEX = True
 
-from esprit import mappings
-ELASTIC_SEARCH_MAPPINGS = {
-    "example" : mappings.for_type(
-        "example",
-            mappings.properties(mappings.type_mapping("location", "geo_point")),
-            mappings.dynamic_templates(
-            [
-                mappings.EXACT,
-            ]
-        )
-    )
-}
+# an array of DAO classes from which to retrieve the ES mappings to be
+# loaded into the index during initialisation
+ELASTIC_SEARCH_MAPPINGS = [
+    # service.dao.MyDAO
+]
 
 ##############################################################
 # Query Endpoint Configuration
@@ -61,14 +54,12 @@ AUTOCOMPLETE_COMPOUND = {
             "name.exact" : {                    # field on which to filter
                 "start_wildcard" : True,        # apply start wildcard?
                 "end_wildcard": True,           # apply end wildcard?
-                "boost" : 2.0,                   # boost to apply to matches on this field
-                "return_as" : "name"            # name to return the field as in the autocomplete response
+                "boost" : 2.0                   # boost to apply to matches on this field
             },
             "description.exact" : {
                 "start_wildcard" : True,
                 "end_wildcard": True,
-                "boost" : 1.0,
-                "return_as" : "description"
+                "boost" : 1.0
             }
         },
         "default_size" : 10,                    # if no size param is specified, this is how big to make the response

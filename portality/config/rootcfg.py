@@ -19,3 +19,8 @@ STATIC_PATHS = [
     "service/static",
     "portentious/portality/static"
 ]
+
+# module import paths for the startup modules that need to run at application init type (in the order you want them run)
+INITIALISE_MODULES = [
+    "portality.modules.es.initialise"
+]

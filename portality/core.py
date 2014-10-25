@@ -2,11 +2,9 @@ import os, esprit, jinja2
 from flask import Flask
 from urllib import unquote
 
-
 def create_app():
     app = Flask(__name__)
     configure_app(app)
-    initialise_index(app)
     setup_jinja(app)
     #setup_error_email(app)
     return app
@@ -68,19 +66,7 @@ def setup_jinja(app):
     app.jinja_env.filters['debug']=jinja_debug
 
 
-def initialise_index(app):
-    if not app.config.get("INITIALISE_INDEX", False):
-        return
 
-    mappings = app.config.get("ELASTIC_SEARCH_MAPPINGS", {})
-    conn = esprit.raw.Connection(app.config['ELASTIC_SEARCH_HOST'], app.config['ELASTIC_SEARCH_INDEX'])
-    if not esprit.raw.index_exists(conn):
-        print "Creating Index; host:" + str(conn.host) + " port:" + str(conn.port) + " db:" + str(conn.index)
-        esprit.raw.create_index(conn)
-    for key, mapping in mappings.iteritems():
-        if not esprit.raw.has_mapping(conn, key):
-            r = esprit.raw.put_mapping(conn, key, mapping)
-            print key, r.status_code
 
 def setup_error_email(app):
     ADMINS = app.config.get('ADMINS', '')
@@ -97,3 +83,13 @@ def setup_error_email(app):
 
 app = create_app()
 
+# everything beneath here can be run after the app has been officially created
+# though note that all the imports are delayed because of the import circularity-avoidance
+
+def initialise():
+    from portality.lib import plugin
+    mods = app.config.get("INITIALISE_MODULES", [])
+    for modpath in mods:
+        mod = plugin.load_module(modpath)
+        fn = getattr(mod, "initialise")
+        fn(app)
