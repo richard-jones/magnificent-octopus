@@ -1,7 +1,8 @@
 import esprit
 from portality.lib import plugin
+from portality.core import app
 
-def initialise(app):
+def initialise():
     # if we are not to initialise the index, stop here
     if not app.config.get("INITIALISE_INDEX", False):
         return
@@ -9,8 +10,10 @@ def initialise(app):
     # create the index itself if it needs creating
     conn = esprit.raw.Connection(app.config['ELASTIC_SEARCH_HOST'], app.config['ELASTIC_SEARCH_INDEX'])
     if not esprit.raw.index_exists(conn):
-        print "Creating Index; host:" + str(conn.host) + " port:" + str(conn.port) + " db:" + str(conn.index)
+        print "Creating ES Index; host:" + str(conn.host) + " port:" + str(conn.port) + " db:" + str(conn.index)
         esprit.raw.create_index(conn)
+    else:
+        print "ES Index Already Exists; host:" + str(conn.host) + " port:" + str(conn.port) + " db:" + str(conn.index)
 
     # get the list of classes which carry the mappings to be loaded
     mapping_daos = app.config.get("ELASTIC_SEARCH_MAPPINGS", [])
@@ -25,4 +28,6 @@ def initialise(app):
         for key, mapping in mappings.iteritems():
             if not esprit.raw.has_mapping(conn, key):
                 r = esprit.raw.put_mapping(conn, key, mapping)
-                print key, r.status_code
+                print "Creating ES mapping for", key, "; status:", r.status_code
+            else:
+                print "ES Mapping already exists for ", key

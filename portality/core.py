@@ -92,4 +92,4 @@ def initialise():
     for modpath in mods:
         mod = plugin.load_module(modpath)
         fn = getattr(mod, "initialise")
-        fn(app)
+        fn()

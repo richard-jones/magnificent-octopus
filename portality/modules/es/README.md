@@ -1,5 +1,67 @@
 # Elastisearch Integration Library
 
+## DAO
+
+A DAO is a Data Access Object and provides a mechanism to load data from a data source.  This module provides a DAO called *ESDAO* which
+loads data from Elasticsearch.  It, in turn, extends from the *esprit* Domain Object (esprit.dao.DomainObject).
+
+The key things that it provides are automatic configuration of the ES connection, and a default document mapping which
+can be used by the ES initialisation scripts.  Therefore, to implement a DAO which can be used by your model objects, all
+that is required is your own type-specific implementation:
+
+```python
+class MyDAO(portality.modules.es.dao.ESDAO):
+    __type__ = "mytype"
+```
+
+In order for this to work correctly you must have correctly set the configuration parameters:
+
+* ELASTIC_SEARCH_HOST
+* ELASTIC_SEARCH_INDEX
+
+### Initialisation
+
+This module provides a function to initialise the index at application startup.  It needs to be in the rootcfg.py as follows:
+
+```python
+INITIALISE_MODULES = [
+    "portality.modules.es.initialise"
+]
+```
+
+In order to have the types in the index created correctly the following configuration is required:
+
+```python
+INITIALISE_INDEX = True     # this is the default behaviour
+
+ELASTIC_SEARCH_MAPPINGS = [
+    service.dao.MyDAO       # a DAO as defined above
+]
+```
+
+When the initialise function in the module is run (which portentious will do for you), it will load each class specified
+and call its "mappings" function, and then put the mappings it receives into the index.
+
+To change the mapping for a given type, just override the mappings function
+
+```python
+class MyDAO(portality.modules.es.dao.ESDAO):
+    __type__ = "mytype"
+    
+    @classmethod
+    def mappings():
+        return {
+            cls.__type__ : {
+                cls.__type__ : {
+                    # mapping definition here
+                }
+            }
+        }
+```
+
+Note that a single class may return mappings for multiple types - the above example assumes a one-to-one mapping between 
+the class and the type of mapping it creates.
+
 ## Query Endpoint
 
 This provides read-only access to configured query endpoints.

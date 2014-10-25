@@ -6,7 +6,9 @@ Used for building Flask-based applications which may want to talk to an Elastics
 
 ## Root Configuration
 
-The root configuration tells Portentious where to load the module configurations from, and where to server Jinja templates and static files from.
+The root configuration tells Portentious where to load the module configurations from, and where to serve Jinja templates and static files from.
+
+It also details scripts to run during application initialisation (i.e. post-configuration but pre-execution).  See the section **Initialisation** below.
 
 The built-in configuration will load the config for all known modules and libraries.  You can override this by providing your own one in the environment variable APP_CONFIG at startup.
 
@@ -31,6 +33,32 @@ It provides ONLY the following configuration options:
         "service/static",
         "portentious/portality/static"
     ]
+    
+    # module import paths for the startup modules that need to run at application init type (in the order you want them run)
+    INITIALISE_MODULES = [
+        "portality.modules.es.initialise"
+    ]
+```
+
+## Initialisation
+
+After the app has been created and configured, but before it is run, it needs to be initialised.  In all scripts and modules which require the application to be in a known full-operational state, you will need to run the initialise script first.
+
+```python
+    from portality.core import app, initialise
+    initialise()
+```
+
+This will load all the modules specified in the**INITIALISE_MODULES** config in the root configuration (see above).  It will then execute their "initialise" function; each module which requires initialisation must provide its own initialisation routine.
+
+To create an initialise routine just supply a function as follows
+
+```python
+    from portality.core import app
+    def initialise():
+        # do your initialisation operations
+        # this function should be idempotent
+        pass
 ```
 
 ## JavaScript configuration
