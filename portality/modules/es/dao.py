@@ -1,6 +1,7 @@
 import esprit
 from esprit import mappings
 from portality.core import app
+import json as jsonlib
 
 class ESDAO(esprit.dao.DomainObject):
     __type__ = 'index'
@@ -19,3 +20,7 @@ class ESDAO(esprit.dao.DomainObject):
                 )
             )
         }
+
+    def json(self):
+        return jsonlib.dumps(self.data)
+
