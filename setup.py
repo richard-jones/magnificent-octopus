@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name = 'portality',
-    version = '2.0.0',
+    name = 'octopus',
+    version = '1.0.0',
     packages = find_packages(),
     install_requires = [
         "requests",
@@ -14,7 +14,7 @@ setup(
     url = 'http://cottagelabs.com/',
     author = 'Cottage Labs',
     author_email = 'us@cottagelabs.com',
-    description = 'Portality 2 - Flask application helper library',
+    description = 'Magnificent Octopus - Flask application helper library',
     classifiers = [
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
