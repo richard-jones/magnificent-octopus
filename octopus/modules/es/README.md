@@ -158,20 +158,17 @@ The result will be a list (ordered by relevance) containing the desired fields, 
 #### Javascript
 
 The compound query endpoint can be called via the module's javascript library.  Ensure that the route to the autocomplete endpoint 
-is in the javascript configuration.  For example
+is in the javascript configuration; for example, in octopus/modules/es/settings.py
 
-```javascript
-    var octopus = {
-        "es" : {
-            "compound_endpoint" : "/autocomplete/compound"
-        }
-    }
+```python
+    CLIENTJS_ES_COMPOUND_ENDPOINT = "/autocomplete/compound"
 ```
+
 
 Set up an input field as an compound autocomplete field with:
 
 ```javascript
-    esac.bindCompoundAutocomplete({
+    octopus.esac.bindCompoundAutocomplete({
         selector : "#my_field",
         minimumInputLength : 3,
         placeholder :"Enter some text";
@@ -186,7 +183,7 @@ Note that the "configured_endpoint" is one of the autocomplete endpoints specifi
 If you want to call the autocomplete without binding to an input form, as above, you can go directly to the query method:
 
 ```javascript
-    esac.compoundAutocomplete({
+    octopus.esac.compoundAutocomplete({
         q : "query string";
         size : 10;
         type : "configured_endpoint";

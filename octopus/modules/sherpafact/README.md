@@ -40,3 +40,22 @@ Calls must provide the following URL query arguments:
 
 * journal_or_issn - a journal name or an ISSN (the proxy will figure out which)
 * funders - a comma delimited list of funder ids from the Juliet service
+
+### JavaScript
+
+The Sherpa Fact proxy can be called via the module's JavaScript library.  Ensure that the route to the proxy endpoint 
+is in the javascript configuration; for example, in octopus/modules/sherpafact/settings.py
+
+```python
+    CLIENTJS_FACT_PROXY_ENDPOINT = "/autocomplete/compound"
+```
+
+You can then call the proxy in javascript with:
+
+```javascript
+    octopus.sherpafact.proxy({
+        journal_or_issn: "journal_or_issn",
+        funders: ["funders"],
+        success: success_function
+    });
+```
