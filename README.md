@@ -76,6 +76,12 @@ The octopus.lib directory contains helper libraries for building your applicatio
 
 The following modules are available (follow the links to their README files for more details)
 
+### ClientJS
+
+**module** [octopus.modules.clientjs](https://github.com/richard-jones/magnificent-octopus/tree/master/octopus/modules/clientjs/README.md)
+
+Used for serving javascript configuration to the client for use by other modules.
+
 ### Elasticsearch
 
 **module**: [octopus.modules.es](https://github.com/richard-jones/magnificent-octopus/tree/master/octopus/modules/es/README.md)
