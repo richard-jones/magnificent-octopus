@@ -70,19 +70,53 @@ Can be mounted into your app as a blueprint with:
 
 ```python
     from octopus.modules.es.query import blueprint as query
-    app.register_blueprint(query, urlprefix="/query")
+    app.register_blueprint(query, url_prefix="/query")
 ```
 
-See **settings.py** for details of configuration.
+To configure the endpoint, you need to provide the following configuration options
 
-You can make requests as if this endpoint were an Elasticsearch _search index, so:
+```python
+    QUERY_ROUTE = {
+        "query" : {                                 # the URL route at which it is mounted
+            "index" : {                             # the URL name for the index type being queried
+                "auth" : False,                     # whether the route requires authentication
+                "role" : None,                      # if authenticated, what role is required to access the query endpoint
+                "filters" : ["default"],            # names of the standard filters to apply to the query
+                "dao" : "octopus.dao.MyDAO"         # classpath for DAO which accesses the underlying ES index
+            }
+        }
+    }
+    
+    def default_filter(query):
+        pass
+    
+    QUERY_FILTERS = {
+        "default" : default_filter
+    }
+```
 
-    http://localhost:5000/query/_search?q=mysearch
-    http://localhost:5000/query/_search?source={<es query object>}
+The **QUERY_ROUTE** maps to the url_prefix that you mounted the query endpoint at in your app, so any requests that
+ come into that endpoint will activate the specified configuration.  At each endpoint you can access multiple "index types",
+ which loosely correspond to types in the ES index (see below for how they are not exactly that), and for each index type
+ there is a set of configuration options.
+ 
+You can access an index type, therefore, with URLs like:
 
-You can also pull objects by identifier:
+    http://localhost:5000/query/index/_search?q=mysearch
+    http://localhost:5000/query/index/_search?source={<es query object>}
 
-    http://localhost:5000/query/123456789
+The index type here differs from a standard ES type, because in reality all requests go thorugh the specified **dao**, 
+and while DAOs often map one-to-one with ES types, they are not required to do so.  You could therefore provide a DAO
+which ran its queries across multiple types simultaneously.
+
+Filters allow you to insert additional constraints on the query as it comes through, and these can be specified as a list
+(in the order you want them applied) in the **filters** section.  The name of the filter supplied must appear in the
+**QUERY_FILTERS** configuration, which in turn must map to a function which takes an incoming query and augments it (by
+reference) with any additional constraints.
+
+Note, you can also pull objects by identifier:
+
+    http://localhost:5000/query/index/123456789
 
 ## Autocomplete Endpoint(s)
 
