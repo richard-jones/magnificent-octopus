@@ -5,3 +5,5 @@ ROMEO_API_KEY = ""
 # Base URL for requests against the FACT API
 FACT_BASE_URL = "http://www.sherpa.ac.uk/fact/api-beta"
 
+CLIENTJS_FACT_PROXY_ENDPOINT = "/fact"
+

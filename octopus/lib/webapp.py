@@ -14,12 +14,6 @@ def custom_static(path):
             return send_from_directory(os.path.dirname(target), os.path.basename(target))
     abort(404)
 
-# serve javascript configuration objecet
-def javascript_config():
-    resp = make_response(render_template("js/config.js"))
-    resp.mimetype = "application/javascript"
-    return resp
-
 # a decorator to be used elsewhere (or in this file) in the app,
 # anywhere where a view f() should be served only over SSL
 def ssl_required(fn):

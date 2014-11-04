@@ -11,7 +11,8 @@ CONFIG_FILES = [
 # absolute paths, or relative paths from root directory, to the template directories (in the order you want them looked at)
 TEMPLATE_PATHS = [
     "service/templates",
-    "magnificent-octopus/octopus/templates"
+    "magnificent-octopus/octopus/templates",
+    "magnificent-octopus/octopus/modules/clientjs/templates"
 ]
 
 # absolute paths, or relative paths from the root directory, to the static file directories (in the order you want them looked at)

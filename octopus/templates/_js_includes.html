@@ -41,11 +41,11 @@
 <!-- APPLICATION JAVASCRIPT LIBRARIES  -------------------------------------------->
 <!--------------------------------------------------------------------------------->
 
-<!-- get the application config -->
-<script type="text/javascript" src="{{url_for('configure_javascript')}}"></script>
-
-<!-- get the octopus js -->
+<!-- get the octopus js (must be done first) -->
 <script type="text/javascript" src="{{url_for('static', filename='js/octopus.js')}}"></script>
+
+<!-- get the application config -->
+<script type="text/javascript" src="{{url_for('configjs.javascript_config')}}"></script>
 
 <!-- get all of the module javascript libraries (implementers will want to enable/disable the relevant parts here, as you won't want to load all of them) -->
 <script type="text/javascript" src="{{url_for('static', filename='js/es/autocomplete.js')}}"></script>

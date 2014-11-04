@@ -67,3 +67,6 @@ AUTOCOMPLETE_COMPOUND = {
         "dao" : "octopus.dao.MyDAO"           # classpath for DAO which accesses the underlying ES index
     }
 }
+
+# configuration option to pass through to the javascript UI
+CLIENTJS_ES_COMPOUND_ENDPOINT = "/autocomplete/compound"

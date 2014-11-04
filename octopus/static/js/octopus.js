@@ -1,6 +1,1 @@
-jQuery(document).ready(function() {
-    
-
-});
-
-
+var octopus = {}
