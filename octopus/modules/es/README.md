@@ -171,9 +171,9 @@ Set up an input field as an compound autocomplete field with:
     octopus.esac.bindCompoundAutocomplete({
         selector : "#my_field",
         minimumInputLength : 3,
-        placeholder :"Enter some text";
-        type : "configured_endpoint";
-        format : function(result) { return {id : result.term, text: result.term} };
+        placeholder :"Enter some text",
+        type : "configured_endpoint",
+        format : function(result) { return {id : result.term, text: result.term} },
         allow_clear : true
     })
 ```
