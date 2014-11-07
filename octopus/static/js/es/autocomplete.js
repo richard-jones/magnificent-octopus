@@ -32,7 +32,8 @@ jQuery(document).ready(function($) {
                 var format = params.format || function (result) {
                     return {id: result.term, text: result.term}
                 };
-                var allow_clear = params.allow_clear || true
+                var allow_clear = params.allow_clear || true;
+                var allow_any = params.allow_any || false;
 
                 function initSel(element, callback) {
                     var data = {id: element.val(), text: element.val()};
@@ -42,6 +43,9 @@ jQuery(document).ready(function($) {
                 function successFunctionClosure(query) {
                     function successFunction(resp) {
                         var data = {results: []};
+                        if (allow_any) {
+                            data.results.push({id: query.term, text: query.term});
+                        }
                         for (var i = 0; i < resp.length; i++) {
                             var r = resp[i];
                             data.results.push(format(r))
