@@ -9,7 +9,8 @@ setup(
         "Flask==0.9",
         "esprit",
         "Flask-Login==0.1.3",
-        "simplejson"
+        "simplejson",
+        "lxml"
     ],
     url = 'http://cottagelabs.com/',
     author = 'Cottage Labs',
