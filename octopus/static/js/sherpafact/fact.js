@@ -36,11 +36,13 @@ jQuery(document).ready(function($) {
 
             Fact : {
                 raw : {},
+
                 result_count : function() {
                     if (this.raw.control) {
                         return this.raw.control.val_num_journals;
                     }
                 },
+
                 journal_name: function() {
                     if (this.raw.journal && this.raw.journal.length > 0) {
                         var j = this.raw.journal[0];
@@ -76,6 +78,19 @@ jQuery(document).ready(function($) {
                     }
                     return "";
                 },
+                juliet_ids : function() {
+                    var jids = [];
+                    if (this.raw.funder && this.raw.funder.length > 0) {
+                        for (var i = 0; i < this.raw.funder.length; i++) {
+                            var f = this.raw.funder[i];
+                            if (f.arg_juliet_id) {
+                                jids.push(f.arg_juliet_id);
+                            }
+                        }
+                    }
+                    return jids;
+                },
+
                 overall_compliance : function() {
                     if (this.raw.overall && this.raw.overall.arg_overallcompliancecode) {
                         return this.raw.overall.arg_overallcompliancecode;
@@ -106,6 +121,7 @@ jQuery(document).ready(function($) {
                     }
                     return oas;
                 },
+
                 gold_compliance : function() {
                     if (this.raw.gold && this.raw.gold.arg_goldcompliancecode) {
                         return this.raw.gold.arg_goldcompliancecode;
@@ -194,6 +210,49 @@ jQuery(document).ready(function($) {
                     }
                     return gps;
                 },
+                gold_decision : function() {
+                    // This method is tricky, so will be carefully explained
+
+                    // this is the parent decision trail object.  All decisions are stored in here, in the order
+                    // that they were considered.  In turn each sub-decision has a set of children in the order that they
+                    // occurred, and so on.
+                    var decision = [];
+
+                    // this is the stack, where we will keep track of the current deepest element in the tree.
+                    // we start off with the parent decision trail object at the bottom of the stack
+                    var stack = [];
+                    stack.push(decision);
+
+                    if (this.raw.gold && this.raw.gold.golddecision && this.raw.gold.golddecision.length > 0) {
+                        for (var i = 0; i < this.raw.gold.golddecision.length; i++) {
+                            // get the details that we care about for this decision, and make the decision
+                            // object with a pre-prepared "children" field
+                            var d = this.raw.gold.golddecision[i];
+                            var al = d.arg_level;
+                            var obj = {"text" : d.val_golddecision, "children" : []};
+
+                            // pop the stack up to the point where the last element in the stack is the parent of
+                            // the object's current level (al).  Because there is the parent decision trail object,
+                            // the first element of the stack is untouchable, hence the + 1
+                            while (al + 1 < stack.length) {
+                                stack.pop()
+                            }
+
+                            // get the last element in the stack, which is the parent of the current element
+                            var context = stack[stack.length - 1];
+
+                            // push this object into the parent
+                            context.push(obj);
+
+                            // add the children array of the current object to the stack.  This means if the next
+                            // element is a child of this one, it can push itself into that children array.  If it is
+                            // not, then the stack will get popped back to the relevant level (see above).
+                            stack.push(obj.children);
+                        }
+                    }
+                    return decision;
+                },
+
                 green_compliance : function() {
                     if (this.raw.green && this.raw.green.arg_greencompliancecode) {
                         return this.raw.green.arg_greencompliancecode;
@@ -252,6 +311,49 @@ jQuery(document).ready(function($) {
                     }
                     return gcs;
                 },
+                green_decision : function() {
+                    // This method is tricky, so will be carefully explained
+
+                    // this is the parent decision trail object.  All decisions are stored in here, in the order
+                    // that they were considered.  In turn each sub-decision has a set of children in the order that they
+                    // occurred, and so on.
+                    var decision = [];
+
+                    // this is the stack, where we will keep track of the current deepest element in the tree.
+                    // we start off with the parent decision trail object at the bottom of the stack
+                    var stack = [];
+                    stack.push(decision);
+
+                    if (this.raw.green && this.raw.green.greendecision && this.raw.green.greendecision.length > 0) {
+                        for (var i = 0; i < this.raw.green.greendecision.length; i++) {
+                            // get the details that we care about for this decision, and make the decision
+                            // object with a pre-prepared "children" field
+                            var d = this.raw.green.greendecision[i];
+                            var al = d.arg_level;
+                            var obj = {"text" : d.val_greendecision, "children" : []};
+
+                            // pop the stack up to the point where the last element in the stack is the parent of
+                            // the object's current level (al).  Because there is the parent decision trail object,
+                            // the first element of the stack is untouchable, hence the + 1
+                            while (al + 1 < stack.length) {
+                                stack.pop()
+                            }
+
+                            // get the last element in the stack, which is the parent of the current element
+                            var context = stack[stack.length - 1];
+
+                            // push this object into the parent
+                            context.push(obj);
+
+                            // add the children array of the current object to the stack.  This means if the next
+                            // element is a child of this one, it can push itself into that children array.  If it is
+                            // not, then the stack will get popped back to the relevant level (see above).
+                            stack.push(obj.children);
+                        }
+                    }
+                    return decision;
+                },
+
                 _linkify : function(params) {
                     var text = params.text;
                     var url = params.url;
