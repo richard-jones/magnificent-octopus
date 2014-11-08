@@ -22,6 +22,23 @@ jQuery(document).ready(function($) {
                     complete: complete_callback,
                     error: error_callback
                });
+            },
+
+            newFact : function(params) {
+                var F = function() {};
+                F.prototype = octopus.sherpafact.Fact;
+                var fact = new F();
+                if (params.raw) {
+                    fact.raw = params.raw;
+                }
+                return fact;
+            },
+
+            Fact : {
+                raw : {},
+                result_count : function() {
+                    return this.raw.control.val_num_journals;
+                }
             }
 
         }
