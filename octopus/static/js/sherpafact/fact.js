@@ -361,15 +361,29 @@ jQuery(document).ready(function($) {
                 },
 
                 _linkify : function(params) {
-                    var text = params.text;
-                    var url = params.url;
+                    var texts = params.text;
+                    var urls = params.url;
                     var source = params.source;
                     var linkclass = params.linkclass;
 
-                    var start = source.indexOf(text);
-                    var end = start + text.length;
-                    return source.substring(0, start) + "<a href='" + url + "' class='" + linkclass + "'>" +
-                                source.substring(start, end) + "</a>" + source.substring(end);
+                    // break the texts and urls into their parts (there may be more than one bit of text
+                    // and more than one url (they correspond one-to-one).  They are as follows
+                    // text = one|two|three
+                    // url = http://one http://two http://three
+                    var textbits = texts.split("|");
+                    var urlbits = urls.split(" ");
+
+                    for (var i = 0; i < textbits.length; i++) {
+                        var text = textbits[i];
+                        var url = urlbits[i];
+
+                        var start = source.indexOf(text);
+                        var end = start + text.length;
+                        source = source.substring(0, start) + "<a href='" + url + "' class='" + linkclass + "'>" +
+                                    source.substring(start, end) + "</a>" + source.substring(end);
+                    }
+
+                    return source;
                 }
             }
 
