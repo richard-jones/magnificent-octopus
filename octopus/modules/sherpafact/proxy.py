@@ -27,9 +27,11 @@ def factapi():
     # create the client, and then issue the relevant query, depending on whether we've been given an issn or not
     client = FactClient()
     if is_issn:
+        # if it's an ISSN, that's nice and easy
         facts = client.query(funders, issn=journal_or_issn, trail=True)
     else:
-        facts = client.query(funders, journal_title=journal_or_issn, query_type=FactClient.QUERY_EXACT, trail=True)
+        # if a journal, we do the fuzziest match possible
+        facts = client.query(funders, journal_title=journal_or_issn, query_type=FactClient.QUERY_CONTAINS, trail=True)
 
     resp = make_response(json.dumps(facts.raw))
     resp.mimetype = "application/json"

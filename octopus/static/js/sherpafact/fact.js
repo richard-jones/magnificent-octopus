@@ -51,6 +51,12 @@ jQuery(document).ready(function($) {
                         return "";
                     }
                 },
+                journals : function() {
+                    if (this.raw.journal && this.raw.journal.length > 0) {
+                        return this.raw.journal;
+                    }
+                    return [];
+                },
                 funder_names: function() {
                     if (this.raw.funder && this.raw.funder.length > 0) {
                         var names = [];
