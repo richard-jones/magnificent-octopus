@@ -19,6 +19,11 @@ In order for this to work correctly you must have correctly set the configuratio
 * ELASTIC_SEARCH_HOST
 * ELASTIC_SEARCH_INDEX
 
+The DAO also provides a built-in standard ES mapping which you can override by overriding the **mapping** function (see below), and
+also provides a placeholder **prep** function which subclasses can implement in order to have work done before a record
+is **save**d.
+
+
 ### Initialisation
 
 This module provides a function to initialise the index at application startup.  It needs to be in the rootcfg.py as follows:

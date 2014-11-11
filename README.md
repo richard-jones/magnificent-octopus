@@ -80,6 +80,12 @@ Used for serving javascript configuration to the client for use by other modules
 
 Used for providing direct access to the Elasticsearch back-end.  Implements a read-only query endpoint, and autocomplete features.  Also provides front-end javascript functions for querying the back-end features.
 
+### EPMC
+
+**module**: [octopus.modules.epmc](https://github.com/richard-jones/magnificent-octopus/tree/master/octopus/modules/epmc/README.md)
+
+Provides a client library for accessing the EuropePMC metadata and fulltexts
+
 ### Examples
 
 **module**: [octopus.modules.examples](https://github.com/richard-jones/magnificent-octopus/tree/master/octopus/modules/examples/README.md)

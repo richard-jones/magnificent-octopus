@@ -59,3 +59,18 @@ You can then call the proxy in javascript with:
         success: success_function
     });
 ```
+
+The success_function will receive the raw data from the proxy endpoint.  Since this data is quite complex, you can
+wrap it in an object which understands its structure and query its API instead:
+
+```javascript
+    function successFunction(data) {
+        // make the object
+        var fact = octopus.sherpafact.newFact({raw : data});
+        // now ask it questions
+        fact.result_count();
+        fact.funder_names();
+        fact.gold_compliance();
+    }
+```
+
