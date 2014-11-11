@@ -91,3 +91,9 @@ Provides working examples of bits of the other modules available here
 **module**: [octopus.modules.sherpafact](https://github.com/richard-jones/magnificent-octopus/tree/master/octopus/modules/sherpafact/README.md)
 
 Provides a client library for accessing the Sherpa FACT API.
+
+### Sherpa Romeo
+
+**module**: [octopus.modules.romeo](https://github.com/richard-jones/magnificent-octopus/tree/master/octopus/modules/romeo/README.md)
+
+Provides a client library for accessing the Sherpa RoMEO API.
