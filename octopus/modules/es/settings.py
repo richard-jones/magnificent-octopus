@@ -62,6 +62,7 @@ AUTOCOMPLETE_COMPOUND = {
                 "boost" : 1.0
             }
         },
+        "input_filter" : lambda x : x ,         # function to apply to an incoming string before being applied to the es query
         "default_size" : 10,                    # if no size param is specified, this is how big to make the response
         "max_size" : 25,                        # if a size param is specified, this is the limit above which it won't go
         "dao" : "octopus.dao.MyDAO"           # classpath for DAO which accesses the underlying ES index

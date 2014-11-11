@@ -24,6 +24,11 @@ def compound(config_name):
         abort(400)
     q = q.strip()
 
+    # apply any input filters to the query value
+    ifs = cfg.get("input_filter")
+    if ifs is not None:
+        q = ifs(q)
+
     # get the filters that will be used to match documents
     filters = cfg.get("filters")
     if filters is None or len(filters.keys()) == 0:

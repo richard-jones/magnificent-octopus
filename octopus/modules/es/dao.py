@@ -24,3 +24,10 @@ class ESDAO(esprit.dao.DomainObject):
     def json(self):
         return jsonlib.dumps(self.data)
 
+    def prep(self):
+        pass
+
+    def save(self, **kwargs):
+        self.prep()
+        super(ESDAO, self).save(**kwargs)
+
