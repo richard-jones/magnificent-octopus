@@ -15,3 +15,17 @@ def autocomplete():
 @blueprint.route("/fact")
 def fact():
     return render_template("examples/sherpafact/proxy.html")
+
+@blueprint.route("/clientjs")
+def clientjs():
+    pass
+
+@blueprint.route("/epmc")
+def epmc():
+    pass
+
+@blueprint.route("/romeo")
+def romeo():
+    # at the moment the romeo endpoint only deals with downloads, which is not very demoable
+    pass
+
