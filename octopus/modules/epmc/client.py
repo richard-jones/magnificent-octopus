@@ -69,4 +69,3 @@ class EPMCFullText(object):
             self.xml = etree.fromstring(self.raw)
         except:
             raise EPMCFullTextException("Unable to parse XML", self.raw)
-    

@@ -74,6 +74,12 @@ The following modules are available (follow the links to their README files for 
 
 Used for serving javascript configuration to the client for use by other modules.
 
+### DOAJ
+
+**module** [octopus.modules.doaj](https://github.com/richard-jones/magnificent-octopus/tree/master/octopus/modules/doaj/README.md)
+
+Used for providing remote access to the DOAJ search service
+
 ### Elasticsearch
 
 **module**: [octopus.modules.es](https://github.com/richard-jones/magnificent-octopus/tree/master/octopus/modules/es/README.md)
