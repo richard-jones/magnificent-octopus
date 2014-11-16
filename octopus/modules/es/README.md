@@ -131,6 +131,8 @@ The compound autocomplete takes a query, and returns you a multi-field object, c
 
 This can be useful for building more complex result-selection options in the front end (e.g. showing both a suggested Journal's title and ISSN)
 
+Note that this is the slowest and most resource intensive way of doing autocomplete, and also because it relies on result sets rather than facets may produce duplication in the returned list.
+
 Can be mounted into your app as a blueprint with:
 
 ```python
@@ -184,6 +186,9 @@ Set up an input field as an compound autocomplete field with:
 ```
 
 Note that the "configured_endpoint" is one of the autocomplete endpoints specified in **settings.py**.
+
+When you are building your **format** function, remember that the values in the results will be keyed as per the AUTOCOMPLETE_COMPOUND server configuration.
+So if you are querying for the field "title", it will be available in "result.title".
 
 If you want to call the autocomplete without binding to an input form, as above, you can go directly to the query method:
 

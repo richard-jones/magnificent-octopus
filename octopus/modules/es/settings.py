@@ -65,9 +65,33 @@ AUTOCOMPLETE_COMPOUND = {
         "input_filter" : lambda x : x ,         # function to apply to an incoming string before being applied to the es query
         "default_size" : 10,                    # if no size param is specified, this is how big to make the response
         "max_size" : 25,                        # if a size param is specified, this is the limit above which it won't go
-        "dao" : "octopus.dao.MyDAO"           # classpath for DAO which accesses the underlying ES index
+        "dao" : "octopus.dao.MyDAO"             # classpath for DAO which accesses the underlying ES index
     }
 }
 
 # configuration option to pass through to the javascript UI
 CLIENTJS_ES_COMPOUND_ENDPOINT = "/autocomplete/compound"
+
+
+##############################################################
+# Term Facet Auto-Complete Configuration
+##############################################################
+
+AUTOCOMPLETE_TERM = {
+    "name" : {                                  # name of the autocomplete, as represented in the URL (have as many of these sections as you need)
+        "filter" : {                            # The filter to apply to the result set
+            "name.exact" : {                    # field on which to apply the filter
+                "start_wildcard" : True,        # apply start wildcard
+                "end_wildcard" : True          # apply end wildcard
+            }
+        },
+        "facet" : "name.exact",                 # facet from which to get our results
+        "input_filter" : lambda x : x,          # function to apply to an incoming string before being applied to the es query
+        "default_size" : 10,                    # if no size param is specified, this is how big to make the response
+        "max_size" : 25,                        # if a size param is specified, this is the limit above which it won't go
+        "dao" : "octopus.dao.MyDAO"             # classpath for DAO which accesses the underlying ES index
+    }
+}
+
+# configuration option to pass through to the javascript UI
+CLIENTJS_ES_TERM_ENDPOINT = "/autocomplete/term"

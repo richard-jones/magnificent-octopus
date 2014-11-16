@@ -34,6 +34,7 @@ jQuery(document).ready(function($) {
                 };
                 var allow_clear = params.allow_clear || true;
                 var allow_any = params.allow_any || false;
+                var multiple = params.multiple || false;
 
                 function initSel(element, callback) {
                     var data = {id: element.val(), text: element.val()};
@@ -64,13 +65,17 @@ jQuery(document).ready(function($) {
                     })
                 }
 
-                $(selector).select2({
+                var options = {
                     minimumInputLength: minimumInputLength,
                     placeholder: placeholder,
                     query: queryFunction,
                     initSelection: initSel,
                     allowClear: allow_clear
-                });
+                };
+                if (multiple) {
+                    options["tags"] = []
+                }
+                $(selector).select2(options);
             }
         }
     });

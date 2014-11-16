@@ -9,6 +9,76 @@ from octopus.lib import webapp, plugin
 
 blueprint = Blueprint('autocomplete', __name__)
 
+@blueprint.route("/term/<config_name>")
+@webapp.jsonp
+def term(config_name):
+    # get the configuration
+    acc = app.config.get("AUTOCOMPLETE_TERM")
+    cfg = acc.get(config_name)
+    if cfg is None:
+        abort(404)
+
+    # get the query value
+    q = request.values.get("q")
+    if q is None or q == "":
+        abort(400)
+    q = q.strip()
+
+    # apply any input filters to the query value
+    ifs = cfg.get("input_filter")
+    if ifs is not None:
+        q = ifs(q)
+
+    # get the filters that will be used to match documents
+    filter = cfg.get("filter")
+    if filter is None:
+        abort(500)
+
+    # now build the query object
+    field = filter.keys()[0]
+    params = filter.get(field, {})
+    wq = _do_wildcard(q, params.get("start_wildcard", True), params.get("end_wildcard", True))
+    query = {"query" : {"bool" : {"must" : [{"wildcard" : {field : {"value" : wq}}}]}}}
+
+    # the size of this query is 0, as we're only interested in the facet
+    query["size"] = 0
+
+    # get the size of the facet
+    size = request.values.get("size")
+    if size is None or size == "":
+        size = cfg.get("default_size")
+    else:
+        try:
+            size = int(size)
+        except:
+            abort(400)
+    if size > cfg.get("max_size", 25):
+        size = cfg.get("max_size", 25)
+
+    # build the facet
+    facet = cfg.get("facet")
+    if facet is None:
+        abort(500)
+    query["facets"] = {facet : {"terms" : {"field" : facet, "size" : size}}}
+
+    # get the name of the model that will handle this query, and then look up
+    # the class that will handle it
+    dao_name = cfg.get("dao")
+    dao_klass = plugin.load_class(dao_name)
+    if dao_klass is None:
+        abort(500)
+
+    # issue the query
+    res = dao_klass.query(q=query)
+    terms = esprit.raw.get_facet_terms(res, facet)
+    records = [t.get("term") for t in terms]
+
+    # make the response
+    resp = make_response(json.dumps(records))
+    resp.mimetype = "application/json"
+    return resp
+
+
 @blueprint.route('/compound/<config_name>')
 @webapp.jsonp
 def compound(config_name):
