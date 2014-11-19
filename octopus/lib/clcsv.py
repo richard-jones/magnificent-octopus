@@ -1,6 +1,7 @@
 import csv, codecs
 import cStringIO
 
+
 class ClCsv():
 
     def __init__(self, file_path):
@@ -41,6 +42,40 @@ class ClCsv():
 
         self._populate_data(rows)
         return rows
+
+    def headers(self):
+        """
+        Return the headers of all of the columns in the csv in the order that they appear
+        :return: just the headers
+        """
+        return [h for h, _ in self.data]
+
+    def columns(self):
+        """
+        Iterate over the columns in the csv in the order that they appear
+        :return: a generator which yields columns
+        """
+        headers = self.headers()
+        for h in headers:
+            col = self.get_column(h)
+            yield col
+
+    def objects(self):
+        """
+        Iterate over the rows in the csv in the order they are provided, returned
+        as objects keyed by the header row
+        :return: a generator which yields objects
+        """
+        _, c = self.get_column(0)
+        size = len(c)
+        headers = self.headers()
+        for i in range(size):
+            obj = {}
+            for h in headers:
+                _, col = self.get_column(h)
+                val = col[i]
+                obj[h] = val
+            yield obj
 
     def get_column(self, col_identifier):
         """
@@ -114,7 +149,6 @@ class ClCsv():
         Write and close the file.
         """
         rows = []
-
         # find out how many rows we're going to need to write
         max_rows = 0
         for _, cont in self.data:
