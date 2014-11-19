@@ -1,5 +1,13 @@
 # Magnificent Octopus Helper Library
 
+## CLCSV: octopus.lib.clcsv
+
+Classes for representing CSV files, including column-wise reading and unicode support
+
+## DataObj: octopus.lib.dataobj
+
+Class which provides services to objects which store their internal state in self.data
+
 ## Email: octopus.lib.email
 
 Contains functions for sending email from your application
