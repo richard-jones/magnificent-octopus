@@ -42,11 +42,11 @@ ul.parsley-error-list li {
   ***********************************/
 
 body {
-  padding-top: 40px;
+  padding-top: 0px;
 }
 
 .content {
-  margin-top: 20px;
+  margin-top: 0px;
 }
 
 form{
