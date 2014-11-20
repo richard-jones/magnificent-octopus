@@ -33,7 +33,7 @@ def factapi():
         # if a journal, we do the fuzziest match possible
         facts = client.query(funders, journal_title=journal_or_issn, query_type=FactClient.QUERY_CONTAINS, trail=True)
 
-    resp = make_response(json.dumps(facts.raw))
+    resp = make_response(json.dumps(facts.data))
     resp.mimetype = "application/json"
     return resp
 
