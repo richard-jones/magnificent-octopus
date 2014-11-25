@@ -110,9 +110,8 @@ div.alert-messages {
 
     border: 0;
     border-bottom: 5px solid #ffffff;
-    color: #fff;
+    background-color: transparent;
     padding-top: 10px;
-    padding-right: 10px;
     padding-bottom: 6px;
 }
 
