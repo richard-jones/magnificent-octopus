@@ -1,12 +1,14 @@
 import os, esprit, jinja2
 from flask import Flask
 from urllib import unquote
+from datetime import datetime
 
 def create_app():
     app = Flask(__name__)
     configure_app(app)
     setup_jinja(app)
     #setup_error_email(app)
+    print "App created at ", datetime.now().strftime("%H:%M:%S %d-%m-%Y")
     return app
 
 def configure_app(app):
@@ -93,3 +95,4 @@ def initialise():
         mod = plugin.load_module(modpath)
         fn = getattr(mod, "initialise")
         fn()
+    print "App initialised at ", datetime.now().strftime("%H:%M:%S %d-%m-%Y")
