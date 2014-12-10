@@ -1,4 +1,5 @@
-# absolute paths, or relative paths from root directory, to the desired config files (in the order you want them loaded)
+# absolute paths, or relative paths from root application directory (ie. above the magnificent-octopus directory),
+# to the desired config files (in the order you want them loaded)
 CONFIG_FILES = [
     "magnificent-octopus/octopus/config/webapp.py",
     "magnificent-octopus/octopus/modules/sherpafact/settings.py",

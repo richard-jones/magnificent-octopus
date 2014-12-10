@@ -2,6 +2,15 @@ import os, esprit, jinja2
 from flask import Flask
 from urllib import unquote
 
+# obtain the base path of the application
+BASE_PATH = os.path.dirname(            # service base directory
+    os.path.dirname(                    # the root magnificent-octopus directory
+        os.path.dirname(                # the directory this file is in (octopus module root)
+            os.path.abspath(__file__)   # this file
+        )
+    )
+)
+
 def create_app():
     app = Flask(__name__)
     configure_app(app)
@@ -27,7 +36,8 @@ def configure_app(app):
     # for each config file specified in the root, find and load
     config_files = app.config.get("CONFIG_FILES", [])
     for cf in config_files:
-        cf = os.path.abspath(cf)
+        if not os.path.isabs(cf):
+            cf = os.path.join(BASE_PATH, cf)
         if os.path.exists(cf):
             print "Loading config from", cf
             app.config.from_pyfile(cf)
@@ -38,9 +48,10 @@ def configure_app(app):
     statics = app.config.get("STATIC_PATHS", [])
     nps = []
     for sp in statics:
-        np = os.path.abspath(sp)
-        print "Specifying static directory", np
-        nps.append(np)
+        if not os.path.isabs(sp):
+            sp = os.path.join(BASE_PATH, sp)
+        print "Specifying static directory", sp
+        nps.append(sp)
     app.config["STATIC_PATHS"] = nps
 
 def setup_jinja(app):
@@ -48,7 +59,8 @@ def setup_jinja(app):
     if len(template_paths) > 0:
         choices = []
         for tp in template_paths:
-            tp = os.path.abspath(tp)
+            if not os.path.isabs(tp):
+                tp = os.path.join(BASE_PATH, tp)
             print "Registering Template Path", tp
             choices.append(jinja2.FileSystemLoader(tp))
         my_loader = jinja2.ChoiceLoader(choices)
