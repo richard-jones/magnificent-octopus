@@ -1,4 +1,5 @@
 from octopus.core import app
+from octopus.lib import dataobj
 import urllib, requests
 from lxml import etree
 
@@ -58,9 +59,33 @@ class EuropePMC(object):
             raise EuropePMCException(resp)
         return EPMCFullText(resp.text)
 
-class EPMCMetadata(object):
+class EPMCMetadata(dataobj.DataObj):
     def __init__(self, raw):
         self.data = raw
+
+    @property
+    def pmcid(self):
+        return self._get_single("pmcid", self._utf8_unicode(), allow_coerce_failure=False)
+
+    @property
+    def pmid(self):
+        return self._get_single("pmid", self._utf8_unicode(), allow_coerce_failure=False)
+
+    @property
+    def doi(self):
+        return self._get_single("doi", self._utf8_unicode(), allow_coerce_failure=False)
+
+    @property
+    def in_epmc(self):
+        return self._get_single("inEPMC", self._utf8_unicode(), allow_coerce_failure=False)
+
+    @property
+    def is_oa(self):
+        return self._get_single("isOpenAccess", self._utf8_unicode(), allow_coerce_failure=False)
+
+    @property
+    def issn(self):
+        return self._get_single("journalInfo.journal.issn", self._utf8_unicode(), allow_coerce_failure=False)
 
 class EPMCFullText(object):
     def __init__(self, raw):
@@ -69,3 +94,24 @@ class EPMCFullText(object):
             self.xml = etree.fromstring(self.raw)
         except:
             raise EPMCFullTextException("Unable to parse XML", self.raw)
+
+    @property
+    def is_aam(self):
+        manuscripts = self.xml.xpath("//article-id[@pub-id-type='manuscript']")
+        return len(manuscripts) > 0
+
+    def get_licence_details(self):
+        # get the licence type
+        l = self.xml.xpath("//license")
+        if len(l) > 0:
+            l = l[0]
+        type = l.get("license-type")
+        url = l.get("{http://www.w3.org/1999/xlink}href")
+
+        # get the paragraph describing the licence
+        para = self.xml.xpath("//license/license-p")
+        if len(para) > 0:
+            para = para[0]
+        p = etree.tostring(para)
+
+        return type, url, p
