@@ -61,7 +61,7 @@ class EuropePMC(object):
 
 class EPMCMetadata(dataobj.DataObj):
     def __init__(self, raw):
-        self.data = raw
+        super(EPMCMetadata, self).__init__(raw)
 
     @property
     def pmcid(self):
@@ -86,6 +86,10 @@ class EPMCMetadata(dataobj.DataObj):
     @property
     def issn(self):
         return self._get_single("journalInfo.journal.issn", self._utf8_unicode(), allow_coerce_failure=False)
+
+    @property
+    def title(self):
+        return self._get_single("title", self._utf8_unicode(), allow_coerce_failure=False)
 
 class EPMCFullText(object):
     def __init__(self, raw):
