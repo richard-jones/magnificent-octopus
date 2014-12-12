@@ -8,6 +8,10 @@ class DataObj(object):
     Class which provides services to other classes which store their internal data
     as a python data structure in the self.data field.
     """
+
+    def __init__(self, raw=None):
+        self.data = {} if raw is None else raw
+
     def _get_path(self, path, default):
         parts = path.split(".")
         context = self.data
@@ -32,6 +36,33 @@ class DataObj(object):
                 context = context[p]
             else:
                 context[p] = val
+
+    def _delete(self, path, prune=True):
+        parts = path.split(".")
+        context = self.data
+
+        stack = []
+        for i in range(len(parts)):
+            p = parts[i]
+            if p in context:
+                if i < len(parts) - 1:
+                    stack.append(context[p])
+                    context = context[p]
+                else:
+                    del context[p]
+                    if prune:
+                        stack.pop() # the last element was just deleted
+                        self._prune_stack(stack)
+
+    def _prune_stack(self, stack):
+        while len(stack) > 0:
+            context = stack.pop()
+            todelete = []
+            for k, v in context.iteritems():
+                if isinstance(v, dict) and len(v.keys()) == 0:
+                    todelete.append(k)
+            for d in todelete:
+                del context[d]
 
     def _coerce(self, val, cast, accept_failure=False):
         try:
