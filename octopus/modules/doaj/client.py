@@ -16,8 +16,8 @@ class DOAJSearchClient(object):
         results = esprit.raw.unpack_result(resp)
         return results
 
-    def journal_by_issn(self, issn):
-        q = IssnQuery("journal", issn)
+    def journals_by_issns(self, issns):
+        q = IssnQuery("journal", issns)
         return self.object_search(q.query())
 
 
@@ -31,7 +31,7 @@ class IssnQuery(object):
             "query" : {
                 "bool" : {
                     "must" : [
-                        {"term" : {"index.issn.exact" : self.issn}},
+                        {"terms" : {"index.issn.exact" : self.issn}},
                         {"term" : {"_type" : self.type}}
                     ]
                 }
