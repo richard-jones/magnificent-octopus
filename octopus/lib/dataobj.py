@@ -140,7 +140,10 @@ class DataObj(object):
         # now set it on the path
         self._set_path(path, val)
 
-    def _add_to_list(self, path, val):
+    def _add_to_list(self, path, val, coerce=None, allow_coerce_failure=False):
+        # first coerce the value
+        if coerce is not None:
+            val = self._coerce(val, coerce, accept_failure=allow_coerce_failure)
         current = self._get_list(path, by_reference=True)
         current.append(val)
 
