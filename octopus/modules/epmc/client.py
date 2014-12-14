@@ -88,6 +88,10 @@ class EPMCMetadata(dataobj.DataObj):
         return self._get_single("journalInfo.journal.issn", self._utf8_unicode(), allow_coerce_failure=False)
 
     @property
+    def essn(self):
+        return self._get_single("journalInfo.journal.essn", self._utf8_unicode(), allow_coerce_failure=False)
+
+    @property
     def title(self):
         return self._get_single("title", self._utf8_unicode(), allow_coerce_failure=False)
 
@@ -98,6 +102,13 @@ class EPMCFullText(object):
             self.xml = etree.fromstring(self.raw)
         except:
             raise EPMCFullTextException("Unable to parse XML", self.raw)
+
+    @property
+    def title(self):
+        title_elements = self.xml.xpath("//title-group/article-title")
+        if len(title_elements) > 0:
+            return title_elements[0].text
+        return None
 
     @property
     def is_aam(self):
