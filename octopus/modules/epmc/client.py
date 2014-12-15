@@ -120,6 +120,8 @@ class EPMCFullText(object):
         l = self.xml.xpath("//license")
         if len(l) > 0:
             l = l[0]
+        else:
+            return None, None, None
         type = l.get("license-type")
         url = l.get("{http://www.w3.org/1999/xlink}href")
 
