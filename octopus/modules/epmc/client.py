@@ -39,8 +39,7 @@ class EuropePMC(object):
         wrap = "\"" if not fuzzy else ""
         url = app.config.get("EPMC_REST_API") + "search/query=" + field + ":" + wrap + urllib.quote_plus(value, safe="/") + wrap
         url += "&resultType=core&format=json&page=" + urllib.quote_plus(str(page))
-
-        print url
+        app.logger.debug("Requesting EPMC metadata from " + url)
 
         resp = requests.get(url)
         if resp.status_code != 200:
@@ -53,7 +52,7 @@ class EuropePMC(object):
     @classmethod
     def fulltext(cls, pmcid):
         url = app.config.get("EPMC_REST_API") + pmcid + "/fullTextXML"
-        print url
+        app.logger.debug("Searching for Fulltext at " + url)
         resp = requests.get(url)
         if resp.status_code != 200:
             raise EuropePMCException(resp)
