@@ -113,9 +113,12 @@ class DataObj(object):
             else:
                 return deepcopy(val)
 
-    def _set_single(self, path, val, coerce=None, allow_coerce_failure=False, allowed_values=None, allowed_range=None):
-        # first see if we need to coerce the value
-        if coerce is not None:
+    def _set_single(self, path, val, coerce=None, allow_coerce_failure=False, allowed_values=None, allowed_range=None, allow_none=True):
+        if val is None and not allow_none:
+            raise DataSchemaException("NoneType is not allowed at " + path)
+
+        # first see if we need to coerce the value (and don't coerce None)
+        if coerce is not None and val is not None:
             val = self._coerce(val, coerce, accept_failure=allow_coerce_failure)
 
         if allowed_values is not None and val not in allowed_values:
