@@ -8,6 +8,10 @@ class DataObj(object):
     Class which provides services to other classes which store their internal data
     as a python data structure in the self.data field.
     """
+
+    def __init__(self, raw=None):
+        self.data = {} if raw is None else raw
+
     def _get_path(self, path, default):
         parts = path.split(".")
         context = self.data
@@ -32,6 +36,33 @@ class DataObj(object):
                 context = context[p]
             else:
                 context[p] = val
+
+    def _delete(self, path, prune=True):
+        parts = path.split(".")
+        context = self.data
+
+        stack = []
+        for i in range(len(parts)):
+            p = parts[i]
+            if p in context:
+                if i < len(parts) - 1:
+                    stack.append(context[p])
+                    context = context[p]
+                else:
+                    del context[p]
+                    if prune:
+                        stack.pop() # the last element was just deleted
+                        self._prune_stack(stack)
+
+    def _prune_stack(self, stack):
+        while len(stack) > 0:
+            context = stack.pop()
+            todelete = []
+            for k, v in context.iteritems():
+                if isinstance(v, dict) and len(v.keys()) == 0:
+                    todelete.append(k)
+            for d in todelete:
+                del context[d]
 
     def _coerce(self, val, cast, accept_failure=False):
         try:
@@ -82,9 +113,12 @@ class DataObj(object):
             else:
                 return deepcopy(val)
 
-    def _set_single(self, path, val, coerce=None, allow_coerce_failure=False, allowed_values=None, allowed_range=None):
-        # first see if we need to coerce the value
-        if coerce is not None:
+    def _set_single(self, path, val, coerce=None, allow_coerce_failure=False, allowed_values=None, allowed_range=None, allow_none=True):
+        if val is None and not allow_none:
+            raise DataSchemaException("NoneType is not allowed at " + path)
+
+        # first see if we need to coerce the value (and don't coerce None)
+        if coerce is not None and val is not None:
             val = self._coerce(val, coerce, accept_failure=allow_coerce_failure)
 
         if allowed_values is not None and val not in allowed_values:
@@ -109,7 +143,10 @@ class DataObj(object):
         # now set it on the path
         self._set_path(path, val)
 
-    def _add_to_list(self, path, val):
+    def _add_to_list(self, path, val, coerce=None, allow_coerce_failure=False):
+        # first coerce the value
+        if coerce is not None:
+            val = self._coerce(val, coerce, accept_failure=allow_coerce_failure)
         current = self._get_list(path, by_reference=True)
         current.append(val)
 

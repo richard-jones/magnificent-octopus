@@ -1,5 +1,6 @@
 import urllib, requests, simplejson
 from octopus.core import app
+from octopus.lib.dataobj import DataObj
 
 class FactClientException(Exception):
     pass
@@ -13,7 +14,10 @@ class FactClient(object):
         self.base_url = base_url if base_url is not None else app.config.get("FACT_BASE_URL")
         self.access_key = access_key if access_key is not None else app.config.get("ROMEO_API_KEY")
 
-    def get_query_url(self, juliet_ids, journal_title=None, query_type=QUERY_EXACT, issn=None, output="json", trail=False):
+    def get_query_url(self, juliet_ids, journal_title=None, query_type=None, issn=None, output="json", trail=False):
+        if query_type is None:
+            query_type = self.QUERY_EXACT
+
         juliet_ids = self._normalise_juliet(juliet_ids)
 
         # check that we have enough information to build the request
@@ -98,7 +102,14 @@ class FactClient(object):
 
 class Fact(object):
     def __init__(self, raw):
-        self.raw = raw
+        self.data = raw
 
-class FactJson(Fact):
-    pass
+class FactJson(Fact, DataObj):
+
+    @property
+    def result_count(self):
+        return self._get_single("control.val_num_journals", int)
+
+    @property
+    def green_compliance(self):
+        return self._get_single("green.arg_greencompliancecode", self._utf8_unicode(), default="no")

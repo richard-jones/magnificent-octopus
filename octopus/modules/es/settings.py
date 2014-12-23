@@ -2,8 +2,12 @@
 # Basic ElasticSearch connectivity settings
 ##############################################################
 
+# index information to use in live
 ELASTIC_SEARCH_HOST = "http://localhost:9200"
 ELASTIC_SEARCH_INDEX = "db"
+
+# index to use for testing (see testindex.py)
+ELASTIC_SEARCH_TEST_INDEX = "test"
 
 ##############################################################
 # Index setup and mappings

@@ -1,9 +1,10 @@
 import csv, codecs
 import cStringIO
 
+
 class ClCsv():
 
-    def __init__(self, file_path):
+    def __init__(self, file_path=None, writer=None):
         """
         Class to wrap the Python CSV library. Allows reading and writing by column.
         :param file_path: A file object or path to a file. Will create one at specified path if it does not exist.
@@ -13,18 +14,22 @@ class ClCsv():
         self.data = []
 
         # Get an open file object from the given file_path or file object
-        if type(file_path) == file:
-            self.file_object = file_path
-            if self.file_object.closed:
-                self.file_object = codecs.open(self.file_object.name, 'r+b', encoding='utf-8')
-            self.read_file()
-        else:
-            try:
-                self.file_object = codecs.open(file_path, 'r+b', encoding='utf-8')
+        if file_path is not None:
+            if type(file_path) == file:
+                self.file_object = file_path
+                if self.file_object.closed:
+                    self.file_object = codecs.open(self.file_object.name, 'r+b', encoding='utf-8')
                 self.read_file()
-            except IOError:
-                # If the file doesn't exist, create it.
-                self.file_object = codecs.open(file_path, 'w+b', encoding='utf-8')
+            else:
+                try:
+                    self.file_object = codecs.open(file_path, 'r+b', encoding='utf-8')
+                    self.read_file()
+                except IOError:
+                    # If the file doesn't exist, create it.
+                    self.file_object = codecs.open(file_path, 'w+b', encoding='utf-8')
+
+        elif writer is not None:
+            self.file_object = writer
 
     def read_file(self):
         """
@@ -41,6 +46,54 @@ class ClCsv():
 
         self._populate_data(rows)
         return rows
+
+    def headers(self):
+        """
+        Return the headers of all of the columns in the csv in the order that they appear
+        :return: just the headers
+        """
+        return [h for h, _ in self.data]
+
+    def set_headers(self, headers):
+        for h in headers:
+            c = self.get_column(h)
+            if c is None:
+                self.set_column(h, [])
+
+    def columns(self):
+        """
+        Iterate over the columns in the csv in the order that they appear
+        :return: a generator which yields columns
+        """
+        headers = self.headers()
+        for h in headers:
+            col = self.get_column(h)
+            yield col
+
+    def objects(self):
+        """
+        Iterate over the rows in the csv in the order they are provided, returned
+        as objects keyed by the header row
+        :return: a generator which yields objects
+        """
+        _, c = self.get_column(0)
+        size = len(c)
+        headers = self.headers()
+        for i in range(size):
+            obj = {}
+            for h in headers:
+                _, col = self.get_column(h)
+                val = col[i]
+                obj[h] = val
+            yield obj
+
+    def add_object(self, obj):
+        for h, c in self.columns():
+            v = obj.get(h)
+            if v is not None:
+                c.append(v)
+            else:
+                c.append("")
 
     def get_column(self, col_identifier):
         """
@@ -109,12 +162,11 @@ class ClCsv():
         except ValueError:
             return None
 
-    def save(self):
+    def save(self, close=True):
         """
         Write and close the file.
         """
         rows = []
-
         # find out how many rows we're going to need to write
         max_rows = 0
         for _, cont in self.data:
@@ -139,7 +191,9 @@ class ClCsv():
         # Write new CSV data
         writer = UnicodeWriter(self.file_object)
         writer.writerows(rows)
-        self.file_object.close()
+
+        if close:
+            self.file_object.close()
 
     def _populate_data(self, csv_rows):
         # Reset the stored data
