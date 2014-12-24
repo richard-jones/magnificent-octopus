@@ -8,6 +8,46 @@ Classes for representing CSV files, including column-wise reading and unicode su
 
 Class which provides services to objects which store their internal state in self.data
 
+Create an object which supports all the data operations:
+
+    class MyObject(octopus.lib.dataobj.DataObj):
+        pass
+
+You can then create new data objects empty or with a seed dictionary:
+
+    myo = MyObject()
+    myo = MyObject({"one" : 1, "two" : "two"})
+
+if you specify a SCHEMA class attribute then the dictionary you pass in will be validated against it.
+
+You may also validate any document at any time by calling .validate().
+
+To specify a schema use the following structure:
+
+```json
+{
+    "fields" : ["<string-like field>"],
+    "bools" : ["<boolean fields>"],
+    
+    "lists" : ["<fields which are lists>"],
+    "list_entries" : {
+        "<list field name>" : {<object definition>}
+    },
+    
+    "objects" : ["<fields which are objects>"],
+    "object_entries" : {
+        "<object entry name>" : {<object definition>}
+    }
+}
+```
+
+For list fields, if no entry is provided in list_entries, the values will be validated as strings.
+
+For object fields, if no entry is provided in object_entries, the sub-structure will not be validated
+
+Schema structure nests, so where you see <object definition> you can use the schema definition structure in its place.
+
+
 ## Email: octopus.lib.email
 
 Contains functions for sending email from your application
