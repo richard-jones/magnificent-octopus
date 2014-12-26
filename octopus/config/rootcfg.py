@@ -2,12 +2,13 @@
 # to the desired config files (in the order you want them loaded)
 CONFIG_FILES = [
     "magnificent-octopus/octopus/config/webapp.py",
+    "magnificent-octopus/octopus/config/googlemap.py",
     "magnificent-octopus/octopus/modules/sherpafact/settings.py",
     "magnificent-octopus/octopus/modules/romeo/settings.py",
     "magnificent-octopus/octopus/modules/es/settings.py",
     "magnificent-octopus/octopus/modules/epmc/settings.py",
     "magnificent-octopus/octopus/modules/doaj/settings.py",
-    "magnificent-octopus/octopus/config/googlemap.py",
+    "magnificent-octopus/octopus/modules/crud/settings.py",
     "config/service.py",
     "local.cfg"
 ]
