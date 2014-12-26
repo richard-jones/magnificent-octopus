@@ -60,6 +60,12 @@ To create an initialise routine just supply a function as follows
         pass
 ```
 
+## Scripts
+
+The /bin directory contains command line scripts that may aid in using/managing an octopus instance.
+
+See the [README](https://github.com/richard-jones/magnificent-octopus/tree/master/bin/README.md) for more details.
+
 ## Library code
 
 The octopus.lib directory contains helper libraries for building your applications.  See the [README](https://github.com/richard-jones/magnificent-octopus/tree/master/octopus/lib/README.md) for details
