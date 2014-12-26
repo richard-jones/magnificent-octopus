@@ -16,7 +16,6 @@ def create_app():
     app = Flask(__name__)
     configure_app(app)
     setup_jinja(app)
-    #setup_error_email(app)
     print "App created at ", datetime.now().strftime("%H:%M:%S %d-%m-%Y")
     return app
 
@@ -38,13 +37,7 @@ def configure_app(app):
     # for each config file specified in the root, find and load
     config_files = app.config.get("CONFIG_FILES", [])
     for cf in config_files:
-        if not os.path.isabs(cf):
-            cf = os.path.join(BASE_PATH, cf)
-        if os.path.exists(cf):
-            print "Loading config from", cf
-            app.config.from_pyfile(cf)
-        else:
-            print "WARNING: no config file at", cf
+        add_configuration(app, cf)
 
     # expand the path names for the static files (so we only have to do it the once)
     statics = app.config.get("STATIC_PATHS", [])
@@ -55,6 +48,15 @@ def configure_app(app):
         print "Specifying static directory", sp
         nps.append(sp)
     app.config["STATIC_PATHS"] = nps
+
+def add_configuration(app, cf):
+    if not os.path.isabs(cf):
+        cf = os.path.join(BASE_PATH, cf)
+    if os.path.exists(cf):
+        print "Loading config from", cf
+        app.config.from_pyfile(cf)
+    else:
+        print "WARNING: no config file at", cf
 
 def setup_jinja(app):
     template_paths = app.config.get("TEMPLATE_PATHS", [])
