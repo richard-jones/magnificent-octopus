@@ -25,6 +25,7 @@ STATIC_PATHS = [
     "service/static",
     "magnificent-octopus/octopus/static",
     "magnificent-octopus/octopus/modules/es/static",
+    "magnificent-octopus/octopus/modules/form/static"
 ]
 
 # module import paths for the startup modules that need to run at application init type (in the order you want them run)
