@@ -12,6 +12,7 @@ setup(
         "simplejson",
         "lxml",
         "Flask-WTF==0.8.3"
+        "nose"
     ],
     url = 'http://cottagelabs.com/',
     author = 'Cottage Labs',
