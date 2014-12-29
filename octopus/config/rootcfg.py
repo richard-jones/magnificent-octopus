@@ -9,6 +9,7 @@ CONFIG_FILES = [
     "magnificent-octopus/octopus/modules/epmc/settings.py",
     "magnificent-octopus/octopus/modules/doaj/settings.py",
     "magnificent-octopus/octopus/modules/crud/settings.py",
+    "magnificent-octopus/octopus/modules/oag/settings.py",
     "config/service.py",
     "local.cfg"
 ]
