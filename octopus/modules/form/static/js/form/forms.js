@@ -8,11 +8,14 @@ jQuery(document).ready(function($) {
                 var entry_prefix = params.entry_prefix;
                 var enable_remove = params.enable_remove || false;
                 var remove_selector = params.remove_selector;
+                var before_callback = params.before_callback;
                 var more_callback = params.more_callback;
                 var remove_callback = params.remove_callback;
 
                 $(button_selector).click(function (event) {
                     event.preventDefault();
+
+                    if (before_callback) { before_callback() }
 
                     var source = "";
                     var first = true;
@@ -72,12 +75,12 @@ jQuery(document).ready(function($) {
                                     $(remove_selector).hide();
                                 }
 
-                                remove_callback();
+                                if (remove_callback) {remove_callback()}
                             }
                         );
                     }
 
-                    more_callback();
+                    if (more_callback) { more_callback() }
                 })
             }
 
