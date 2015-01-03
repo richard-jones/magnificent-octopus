@@ -19,6 +19,7 @@ TEMPLATE_PATHS = [
     "service/templates",
     "magnificent-octopus/octopus/templates",
     "magnificent-octopus/octopus/modules/clientjs/templates",
+    "magnificent-octopus/octopus/modules/oag/templates"
 ]
 
 # absolute paths, or relative paths from the root directory, to the static file directories (in the order you want them looked at)
@@ -26,7 +27,8 @@ STATIC_PATHS = [
     "service/static",
     "magnificent-octopus/octopus/static",
     "magnificent-octopus/octopus/modules/es/static",
-    "magnificent-octopus/octopus/modules/form/static"
+    "magnificent-octopus/octopus/modules/form/static",
+    "magnificent-octopus/octopus/modules/oag/static"
 ]
 
 # module import paths for the startup modules that need to run at application init type (in the order you want them run)
