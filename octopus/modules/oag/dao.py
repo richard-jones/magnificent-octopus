@@ -23,6 +23,14 @@ class JobsDAO(dao.ESDAO):
         for obj in cls.iterate(q.query(), wrap=False):
             yield obj.get("id"), obj.get("status")
 
+    def prep(self):
+        successes = len(self.data.get("success", []))
+        errors = len(self.data.get("error", []))
+        pending = len(self.data.get("pending", []))
+        self.data["success_count"] = successes
+        self.data["error_count"] = errors
+        self.data["pending_count"] = pending
+
 class JobStatusQuery(object):
     def query(self):
         return {
