@@ -112,7 +112,7 @@ class FormContext(object):
 
     def blank_form(self):
         """
-        This will be called during init, and must populate the self.form_data property with an instance of the form in this
+        This will be called during init, and must populate the self.form property with an instance of the form in this
         context, based on no originating source or form data
         """
         pass
