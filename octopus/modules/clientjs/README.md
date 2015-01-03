@@ -23,4 +23,5 @@ In order to mark a setting for being passed through to the UI, in your settings.
 ```
 
 This will mean that a config variable with the name "your_config_option" will be available in **octopus.config** on the client
-side.  Note that the CLIENTJS_ prefix is removed, and the option name is converted to lower case.
+side, so you can access it with **octopus.config.your_config_option**.  Note that the CLIENTJS_ prefix is removed, and the 
+option name is converted to lower case.

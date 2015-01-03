@@ -125,6 +125,15 @@ Note, you can also pull objects by identifier:
 
 ## Autocomplete Endpoint(s)
 
+Can be mounted into your app as a blueprint with:
+
+```python
+    from octopus.modules.es.autocomplete import blueprint as autocomplete
+    app.register_blueprint(autocomplete, url_prefix="/autocomplete")
+```
+
+This enables all the autocomplete endpoints, which ones you use/configure is up to you.  See below for details on the available options.
+
 ### Compound
 
 The compound autocomplete takes a query, and returns you a multi-field object, containing the fields you are interested in.
@@ -133,14 +142,35 @@ This can be useful for building more complex result-selection options in the fro
 
 Note that this is the slowest and most resource intensive way of doing autocomplete, and also because it relies on result sets rather than facets may produce duplication in the returned list.
 
-Can be mounted into your app as a blueprint with:
+The configuration is as follows:
 
 ```python
-    from octopus.modules.es.autocomplete import blueprint as autocomplete
-    app.register_blueprint(autocomplete, url_prefix="/autocomplete")
+AUTOCOMPLETE_COMPOUND = {
+    "name" : {                                  # name of the autocomplete, as represented in the URL (have as many of these sections as you need)
+        "fields" : ["name", "description"],     # fields to return in the compound result
+        "field_name_map" : {                    # map field name to name it will be referred to in the result
+            "name" : "my_name",
+            "description" : "my_description"
+        },
+        "filters" : {                           # filters to apply to the result set
+            "name.exact" : {                    # field on which to filter
+                "start_wildcard" : True,        # apply start wildcard?
+                "end_wildcard": True,           # apply end wildcard?
+                "boost" : 2.0                   # boost to apply to matches on this field
+            },
+            "description.exact" : {
+                "start_wildcard" : True,
+                "end_wildcard": True,
+                "boost" : 1.0
+            }
+        },
+        "input_filter" : lambda x : x ,         # function to apply to an incoming string before being applied to the es query
+        "default_size" : 10,                    # if no size param is specified, this is how big to make the response
+        "max_size" : 25,                        # if a size param is specified, this is the limit above which it won't go
+        "dao" : "octopus.dao.MyDAO"             # classpath for DAO which accesses the underlying ES index
+    }
+}
 ```
-
-See **settings.py** for details of configuration.
 
 You can make requests as follows:
 
@@ -162,7 +192,7 @@ The result will be a list (ordered by relevance) containing the desired fields, 
     ]
 ```
 
-#### Javascript
+#### JavasSript
 
 The compound query endpoint can be called via the module's javascript library.  Ensure that the route to the autocomplete endpoint 
 is in the javascript configuration; for example, in octopus/modules/es/settings.py
@@ -202,3 +232,81 @@ If you want to call the autocomplete without binding to an input form, as above,
         error : function(data) {};
     })
 ```
+
+### Term
+
+The term autocomplete takes a query and returns you a list of unique values which derive from that query, based on their popularity within your dataset on records which match the criteria.
+
+Depending on whether you enable wildcard search (you probably should for best results), this can be quite computationally intensive, but unlike the Compound autocomplete it does not yield duplicate values in the result set.
+
+The configuration is as follows:
+
+```python
+AUTOCOMPLETE_TERM = {
+    "name" : {                                  # name of the autocomplete, as represented in the URL (have as many of these sections as you need)
+        "filter" : {                            # The filter to apply to the result set
+            "name.exact" : {                    # field on which to apply the filter
+                "start_wildcard" : True,        # apply start wildcard
+                "end_wildcard" : True          # apply end wildcard
+            }
+        },
+        "facet" : "name.exact",                 # facet from which to get our results
+        "input_filter" : lambda x : x,          # function to apply to an incoming string before being applied to the es query
+        "default_size" : 10,                    # if no size param is specified, this is how big to make the response
+        "max_size" : 25,                        # if a size param is specified, this is the limit above which it won't go
+        "dao" : "octopus.dao.MyDAO"             # classpath for DAO which accesses the underlying ES index
+    }
+}
+```
+
+You can make requests as follows:
+
+    http://localhost:5000/autocomplete/term/journal?q=1234
+    http://localhost:5000/autocomplete/term/journal?q=Revista&size=20
+
+The result will be a list (ordered by number of occurrances in the result set).
+
+
+#### JavaScript
+
+The term query endpoint can be called via the module's javascript library. Ensure that the route to the autocomplete endpoint 
+is in the javascript configuration; for example, in octopus/modules/es/settings.py
+
+```python
+    CLIENTJS_ES_TERM_ENDPOINT = "/autocomplete/term"
+```
+
+Set up an input field as a term autocomplete field with:
+
+```javascript
+    octopus.esac.bindTermAutocomplete({
+        selector : "#my_field",
+        minimumInputLength : 3,
+        placeholder :"Enter some text",
+        type : "configured_endpoint",
+        format : function(result) { return {id : result.term, text: result.term} },
+        allow_clear : true,
+        allow_any: false,
+        multiple: false
+    })
+```
+
+Note that the "configured_endpoint" is one of the autocomplete endpoints specified in **settings.py**.
+
+**allow_any** allows the user to input any text they want in the field, even if it is not in the returned result.
+
+**multiple** allows the user to add multiple values to the input box, each time using the autocomplete.
+
+If you want to call the autocomplete without binding to an input form, as above, you can go directly to the query method:
+
+```javascript
+    octopus.esac.termAutocomplete({
+        q : "query string";
+        size : 10;
+        type : "configured_endpoint";
+        success : function(data) {};
+        complete : function(data) {};
+        error : function(data) {};
+    })
+```
+

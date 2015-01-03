@@ -13,10 +13,12 @@ ELASTIC_SEARCH_TEST_INDEX = "test"
 # Index setup and mappings
 ##############################################################
 
+# should the initialise routing initialise the index automatically?
 INITIALISE_INDEX = True
 
 # an array of DAO classes from which to retrieve the ES mappings to be
-# loaded into the index during initialisation
+# loaded into the index during initialisation.  You should override this
+# in service.py
 ELASTIC_SEARCH_MAPPINGS = [
     # service.dao.MyDAO
 ]
@@ -25,6 +27,14 @@ ELASTIC_SEARCH_MAPPINGS = [
 # Query Endpoint Configuration
 ##############################################################
 
+# The query url routes and the types that are available via the query endpoint (see below for an example)
+QUERY_ROUTE = {}
+
+# query filters that are used in the above QUERY_ROUTE (see below for an example)
+QUERY_FILTERS = {}
+
+"""
+e.g.
 QUERY_ROUTE = {
     "query" : {                                 # the URL route at which it is mounted
         "index" : {                             # the URL name for the index type being queried
@@ -42,11 +52,16 @@ def default_filter(query):
 QUERY_FILTERS = {
     "default" : default_filter
 }
+"""
 
 ##############################################################
 # Compound Field Auto-Complete Configuration
 ##############################################################
 
+# Configuration for compound autocomplete url mappings and behaviour.  See below for example.
+AUTOCOMPLETE_COMPOUND = {}
+
+"""
 AUTOCOMPLETE_COMPOUND = {
     "name" : {                                  # name of the autocomplete, as represented in the URL (have as many of these sections as you need)
         "fields" : ["name", "description"],     # fields to return in the compound result
@@ -72,6 +87,7 @@ AUTOCOMPLETE_COMPOUND = {
         "dao" : "octopus.dao.MyDAO"             # classpath for DAO which accesses the underlying ES index
     }
 }
+"""
 
 # configuration option to pass through to the javascript UI
 CLIENTJS_ES_COMPOUND_ENDPOINT = "/autocomplete/compound"
@@ -81,6 +97,10 @@ CLIENTJS_ES_COMPOUND_ENDPOINT = "/autocomplete/compound"
 # Term Facet Auto-Complete Configuration
 ##############################################################
 
+# Term autocomplete configuration.  See below for example
+AUTOCOMPLETE_TERM = {}
+
+"""
 AUTOCOMPLETE_TERM = {
     "name" : {                                  # name of the autocomplete, as represented in the URL (have as many of these sections as you need)
         "filter" : {                            # The filter to apply to the result set
@@ -96,6 +116,7 @@ AUTOCOMPLETE_TERM = {
         "dao" : "octopus.dao.MyDAO"             # classpath for DAO which accesses the underlying ES index
     }
 }
+"""
 
 # configuration option to pass through to the javascript UI
 CLIENTJS_ES_TERM_ENDPOINT = "/autocomplete/term"
