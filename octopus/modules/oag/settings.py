@@ -17,3 +17,4 @@ QUERY_ROUTE = {
 """
 
 CLIENTJS_OAGR_QUERY_ENDPOINT = "/query/oagr"
+

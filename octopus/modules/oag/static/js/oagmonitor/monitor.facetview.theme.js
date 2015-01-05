@@ -9,7 +9,7 @@ jQuery(document).ready(function($) {
         var result = options.resultwrap_start;
         result += "<div class='row'>";
         result += "<div class='col-md-12'>";
-        result += "<strong style='font-size: 150%'>" + record["id"] + " - " + record["status"] + "</strong><br>";
+        result += "<strong style='font-size: 150%'><a href='job/" + record['id'] + "'>" + record["id"] + "</a> - " + record["status"] + "</strong><br>";
         result += "Job Start Timestamp: " + record["start"] + "<br>";
         result += "Created: " + record["created_date"] + "; Last Modified: " + record["last_updated"] + "<br>";
         result += "<strong>Pending: " + record["pending_count"] + "; Success: " + record["success_count"] + "; Errors: " + record["error_count"] + "</strong>";
