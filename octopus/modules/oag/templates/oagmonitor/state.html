@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<a href="{{url_for('oagmonitor.index')}}">back</a>
+
+<div class="row">
+    <div class="col-md-10">
+        <h1>{{ state.id }}</h1>
+        Job Start Timestamp: {{ state.start }} <br>
+        Created: {{ job.created_date }}; Last Modified: {{ job.last_updated }}<br>
+
+        <strong>Pending: {{ job.data["pending_count"] }}; Success: {{ job.data["success_count"] }}; Errors: {{job.data["error_count"] }}</strong><br>
+
+    </div>
+    <div class="col-md-2">
+        <div class="alert {% if job.data['status'] == 'active' %}alert-success{% else %}alert-error{% endif %}"><strong>{{ job.data['status'] }}</strong></div>
+
+        <strong>Config:</strong>
+        <ul>
+            <li>Batch Size: {{ state.batch_size }}</li>
+            <li>Back Off Factor: {{ state.back_off_factor }}</li>
+            <li>Max Back Off: {{ state.max_back_off }}</li>
+            <li>Batch Size: {{ state.batch_size }}</li>
+            <li>Max Retries: {{ state.max_retries }}</li>
+            <li>Timeout: {{ state.timeout }}</li>
+        </ul>
+    </div>
+</div>
+
+<h2><a href="#" id="toggle_pending"><span class="glyphicon glyphicon-expand"></span>Pending ({{job.data["pending_count"]}})</a></h2>
+<div style="display:none" id="pending_container">
+<div class="row"><div class="col-md-12">
+    <table id="pending" class="tablesorter-blue">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>init</th>
+                <th>next due</th>
+                <th>requested</th>
+                <th>maxed?</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for id in state.pending.keys() %}
+                {% set p = state.pending[id] %}
+                <tr>
+                    <td>{{id}}</td>
+                    <td>{{p.init}}</td>
+                    <td>{{p.due}}</td>
+                    <td>{{p.requested}}</td>
+                    <td>{{p.maxed}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div></div>
+</div>
+
+<h2><a href="#" id="toggle_errors"><span class="glyphicon glyphicon-expand"></span>Errors ({{job.data["error_count"]}})</a></h2>
+<div style="display:none" id="errors_container">
+<div class="row"><div class="col-md-12">
+    <table id="errors" class="tablesorter-blue">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>init</th>
+                <th>response received</th>
+                <th>requested</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for id in state.error.keys() %}
+                {% set p = state.error[id] %}
+                <tr>
+                    <td>{{id}}</td>
+                    <td>{{p.init}}</td>
+                    <td>{{p.found}}</td>
+                    <td>{{p.requested}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div></div>
+</div>
+
+<h2><a href="#" id="toggle_success"><span class="glyphicon glyphicon-expand"></span>Success ({{job.data["success_count"]}})</a></h2>
+<div style="display:none" id="success_container">
+<div class="row"><div class="col-md-12">
+    <table id="success" class="tablesorter-blue">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>init</th>
+                <th>response received</th>
+                <th>requested</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for id in state.success.keys() %}
+                {% set p = state.success[id] %}
+                <tr>
+                    <td>{{id}}</td>
+                    <td>{{p.init}}</td>
+                    <td>{{p.found}}</td>
+                    <td>{{p.requested}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div></div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_js_bottom %}
+<script type="application/javascript">
+$(document).ready(function() {
+    $("#pending").tablesorter();
+    $("#toggle_pending").click(function(event) {
+        event.preventDefault();
+        $("#pending_container").toggle();
+        $(this).find("span").toggleClass("glyphicon-expand glyphicon-collapse-down");
+    });
+
+    $("#errors").tablesorter();
+    $("#toggle_errors").click(function(event) {
+        event.preventDefault();
+        $("#errors_container").toggle();
+        $(this).find("span").toggleClass("glyphicon-expand glyphicon-collapse-down");
+    });
+
+    $("#success").tablesorter();
+    $("#toggle_success").click(function(event) {
+        event.preventDefault();
+        $("#success_container").toggle();
+        $(this).find("span").toggleClass("glyphicon-expand glyphicon-collapse-down");
+    });
+});
+</script>
+{% endblock%}

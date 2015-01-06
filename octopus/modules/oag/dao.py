@@ -23,6 +23,9 @@ class JobsDAO(dao.ESDAO):
         for obj in cls.iterate(q.query(), wrap=False):
             yield obj.get("id"), obj.get("status")
 
+    def state(self):
+        return oag.RequestState.from_json(self.data)
+
     def prep(self):
         successes = len(self.data.get("success", []))
         errors = len(self.data.get("error", []))
