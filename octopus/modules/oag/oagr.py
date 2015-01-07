@@ -18,7 +18,7 @@ class JobRunner(object):
     @classmethod
     def make_job(cls, state):
         r = JobRunner()
-        r.save_job(state)
+        return r.save_job(state)
 
     def has_due(self):
         return dao.JobsDAO.has_due()
@@ -35,6 +35,7 @@ class JobRunner(object):
         obj = dao.JobsDAO(j)
         obj.save()
         print "Complete"
+        return obj
 
     def cycle_state(self, state):
         if self.verbose:
