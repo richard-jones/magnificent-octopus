@@ -19,26 +19,73 @@ var octopus = {
 
     dataobj : {
         newDataObj : function(params) {
-            var F = function() {};
+            var F = function() {
+                this.data = {};
+                this.schema = {};
+                this.allow_off_schema = false;
+            };
             F.prototype = octopus.dataobj.DataObj;
             var dobj = new F();
+
             if (params.raw) {
                 dobj.data = params.raw;
             }
             if (params.schema) {
                 dobj.schema = params.schema;
             }
+            if (params.hasOwnProperty("allow_off_schema")) {
+                dobj.allow_off_schema = params.allow_off_schema;
+            }
             return dobj;
         },
 
         DataObj : {
-            data : {},
-            schema : {},
 
             set_field : function(field, value) {
                 var cfg = this.schema[field];
+                if (!cfg) {
+                    if (!this.allow_off_schema) {
+                        throw "no schema entry defined for field " + field;
+                    } else {
+                        cfg = {path: field, type: "single"};
+                    }
+                }
                 if (cfg.type === "single") {
                     this.set_single(cfg, value);
+                } else if (cfg.type === "list") {
+                    // FIXME: we need a set_list method to overwrite any old lists
+                }
+            },
+
+            get_field : function(field) {
+                var cfg = this.schema[field];
+                if (!cfg) {
+                    if (!this.allow_off_schema) {
+                        return undefined;
+                    } else {
+                        cfg = {path: field, type: "single"}
+                    }
+                }
+                if (cfg.type === "single") {
+                    return this.get_single(cfg);
+                } else if (cfg.type === "list") {
+                    return this.get_list(cfg, true);
+                }
+            },
+
+            append_field : function(field, val) {
+                var cfg = this.schema[field];
+                if (!cfg) {
+                    if (!this.allow_off_schema) {
+                        throw "no schema entry defined for field " + field;
+                    } else {
+                        cfg = {path: field, type: "list"};
+                    }
+                }
+                if (cfg.type === "list") {
+                    this.add_to_list(cfg, val);
+                } else {
+                    throw "cannot append to a non-list field " + field;
                 }
             },
 
@@ -59,7 +106,7 @@ var octopus = {
                 }
 
                 // is the value one of the allowed values
-                if (cfg.allowed_values && !$.inArray(value, cfg.allowed_values)) {
+                if (cfg.allowed_values && $.inArray(value, cfg.allowed_values) === -1) {
                     throw "value" + value + " is not permitted at " + cfg.path;
                 }
 
@@ -76,6 +123,16 @@ var octopus = {
                 this.set_path(cfg.path, value);
             },
 
+            get_single : function(cfg) {
+                var val = this.get_path(cfg.path, cfg.default_value)
+
+                if (cfg.coerce && val !== undefined) {
+                    return cfg.coerce(val);
+                } else {
+                    return val;
+                }
+            },
+
             set_path : function(path, value) {
                 var parts = path.split(".");
                 var context = this.data;
@@ -90,6 +147,67 @@ var octopus = {
                         context = context[p];
                     } else {
                         context[p] = value;
+                    }
+                }
+            },
+
+            get_path : function(path, default_value) {
+                var parts = path.split(".");
+                var context = this.data;
+
+                for (var i = 0; i < parts.length; i++) {
+                    var p = parts[i];
+                    var d = i < parts.length - 1 ? {} : default_value;
+                    context = context[p] !== undefined ? context[p] : d;
+                }
+
+                return context;
+            },
+
+            add_to_list : function(cfg, val) {
+                if (cfg.coerce && val !== undefined) {
+                    val = cfg.coerce(val)
+                }
+                var current = this.get_list(cfg, true);
+                current.push(val);
+            },
+
+            get_list : function(cfg, by_reference) {
+                // get the raw value from the object
+                var val = this.get_path(cfg.path, undefined);
+
+                // if there is no value, but we want by-reference, then make a list, store it and return it
+                if (val === undefined && by_reference) {
+                    var mylist = [];
+                    this.set_single(cfg, mylist);
+                    return mylist;
+                }
+
+                // if there's no value and no interest in by-reference return an empty list
+                if (val === undefined && !by_reference) {
+                    return [];
+                }
+
+                // if the val is not a list don't return it
+                if( Object.prototype.toString.call(val) !== '[object Array]') {
+                    throw "Expecting a list at " + cfg.path + " but found " + Object.prototype.toString.call(val)
+                }
+
+                // if there is a value do we want to coerce?
+                if (cfg.coerce) {
+                    var coerced = [];
+                    for (var i = 0; i < val.length; i++) {
+                        coerced.push(cfg.coerce(val[i]));
+                    }
+                    if (by_reference) {
+                        this.set_path(cfg.path, coerced)
+                    }
+                    return coerced;
+                } else {
+                    if (by_reference) {
+                        return val;
+                    } else {
+                        return $.extend(true, {}, val);
                     }
                 }
             }
