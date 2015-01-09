@@ -1,44 +1,86 @@
-import smtplib, os
+from flask import render_template, request
+from flask_mail import Mail, Message, Attachment
 from octopus.core import app
 
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEBase import MIMEBase
-from email.MIMEText import MIMEText
-from email.Utils import COMMASPACE, formatdate
-from email import Encoders
+# Flask-Mail version of email service from util.py
+def send_mail(to, fro, subject, template_name=None, bcc=None, files=None, msg_body=None, **template_params):
+    bcc = [] if bcc is None else bcc
+    files = [] if files is None else files
 
-def send_mail(to, fro, subject, text, files=[], server="localhost"):
-    assert type(to)==list
-    assert type(files)==list
+    # ensure that email isn't sent if it is disabled
+    #if not app.config.get("ENABLE_EMAIL", False):
+     #   return
 
-    msg = MIMEMultipart()
-    msg['From'] = fro
-    msg['To'] = COMMASPACE.join(to)
-    msg['Date'] = formatdate(localtime=True)
-    msg['Subject'] = subject
+    assert type(to) == list
+    assert type(files) == list
+    if bcc and not isinstance(bcc, list):
+        bcc = [bcc]
 
-    msg.attach( MIMEText(text) )
+    #if app.config.get('CC_ALL_EMAILS_TO', None) is not None:
+     #   bcc.append(app.config.get('CC_ALL_EMAILS_TO'))
 
-    for file in files:
-        part = MIMEBase('application', "octet-stream")
-        part.set_payload( open(file,"rb").read() )
-        Encoders.encode_base64(part)
-        part.add_header('Content-Disposition', 'attachment; filename="%s"'
-                       % os.path.basename(file))
-        msg.attach(part)
+    # ensure everything is unicode
+    unicode_params = {}
+    for k, v in template_params.iteritems():
+        unicode_params[k] = to_unicode(v)
 
-    # now deal with connecting to the server
-    server = app.config.get("SMTP_SERVER")
-    server_port = app.config.get("SMTP_PORT")
-    smtp_user = app.config.get("SMTP_USER")
-    smtp_pass = app.config.get("SMTP_PASS")
+    # Get the body text from the msg_body parameter (for a contact form),
+    # or render from a template.
+    # TODO: This could also find and render an HTML template if present
+    appcontext = True
+    if msg_body:
+        plaintext_body = msg_body
+    else:
+        try:
+            plaintext_body = render_template(template_name, **unicode_params)
+        except:
+            appcontext = False
+            with app.test_request_context():
+                plaintext_body = render_template(template_name, **unicode_params)
 
-    smtp = smtplib.SMTP()  # just doing SMTP(server, server_port) does not work with Mailtrap
-    # but doing .connect explicitly afterwards works both with Mailtrap and with Mandrill
-    smtp.connect(server, server_port)
+    # create a message
+    msg = Message(subject=subject,
+                  recipients=to,
+                  body=plaintext_body,
+                  html=None,
+                  sender=fro,
+                  cc=None,
+                  bcc=bcc,
+                  attachments=files,
+                  reply_to=None,
+                  date=None,
+                  charset=None,
+                  extra_headers=None
+    )
 
-    if smtp_user is not None:
-        smtp.login(smtp_user, smtp_pass)
+    if appcontext:
+        mail = Mail(app)
+        mail.send(msg)
+    else:
+        with app.test_request_context():
+            mail = Mail(app)
+            mail.send(msg)
 
-    smtp.sendmail(fro, to, msg.as_string())
-    smtp.close()
+def to_unicode(val):
+    if isinstance(val, unicode):
+        return val
+    elif isinstance(val, basestring):
+        try:
+            return val.decode("utf8", "replace")
+        except UnicodeDecodeError:
+            raise ValueError("Could not decode string")
+    else:
+        return val
+
+def make_attachment(filename, content_type, data, disposition=None, headers=None):
+    """
+    Provide a function which can make attachments, insulating the caller from the flask-mail
+    underlying implementation.
+    :param filename:
+    :param content_type:
+    :param data:
+    :param disposition:
+    :param headers:
+    :return:
+    """
+    return Attachment(filename, content_type, data, disposition, headers)
