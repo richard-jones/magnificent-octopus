@@ -14,7 +14,7 @@
 
     </div>
     <div class="col-md-2">
-        <div class="alert {% if job.data['status'] == 'active' %}alert-success{% else %}alert-error{% endif %}"><strong>{{ job.data['status'] }}</strong></div>
+        <div class="alert {% if job.data['status'] == 'active' %}alert-success{% else %}alert-danger{% endif %}"><strong>{{ job.data['status'] }}</strong></div>
 
         <strong>Config:</strong>
         <ul>

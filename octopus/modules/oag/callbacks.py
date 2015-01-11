@@ -1,6 +1,6 @@
 import csv
 
-def csv_closure(success_file, error_file):
+def csv_closure(success_file="oagr_success.csv", error_file="oagr_error.csv"):
     def csv_callback(state):
         successes = state.flush_success()
         errors = state.flush_error()

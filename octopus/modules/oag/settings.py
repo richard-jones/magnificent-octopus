@@ -18,3 +18,5 @@ QUERY_ROUTE = {
 
 CLIENTJS_OAGR_QUERY_ENDPOINT = "/query/oagr"
 
+OAGR_RUNNER_CALLBACK_CLOSURE = "octopus.modules.oag.callbacks.csv_closure"
+
