@@ -2,7 +2,7 @@ from flask import Blueprint, make_response, url_for, request, abort
 import json
 from octopus.lib.dataobj import ObjectSchemaValidationError
 from octopus.core import app
-from octopus.lib import plugin
+from octopus.lib import plugin, webapp
 
 blueprint = Blueprint('crud', __name__)
 
@@ -55,6 +55,7 @@ def _get_class(container_type, operation):
     return plugin.load_class(m)
 
 @blueprint.route("/<container_type>", methods=["POST"])
+@webapp.jsonp
 def container(container_type=None):
     # if this is the creation of a new object
     if request.method == "POST":
@@ -81,6 +82,7 @@ def container(container_type=None):
     abort(405)
 
 @blueprint.route("/<container_type>/<type_id>", methods=["GET", "PUT", "DELETE"])
+@webapp.jsonp
 def entity(container_type=None, type_id=None):
     if request.method == "GET":
         # load the data management class for this operation type
