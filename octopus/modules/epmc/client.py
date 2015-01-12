@@ -3,6 +3,19 @@ from octopus.lib import dataobj
 import urllib, requests
 from lxml import etree
 
+def quote(s, **kwargs):
+    try:
+        return urllib.quote_plus(s, **kwargs)
+    except:
+        pass
+
+    try:
+        utf = s.encode("utf-8")
+        return urllib.quote(utf, **kwargs)
+    except:
+        return None
+
+
 class EuropePMCException(Exception):
     def __init__(self, httpresponse, *args, **kwargs):
         super(EuropePMCException, self).__init__(*args, **kwargs)
@@ -37,8 +50,13 @@ class EuropePMC(object):
     @classmethod
     def field_search(cls, field, value, fuzzy=False, page=1):
         wrap = "\"" if not fuzzy else ""
-        url = app.config.get("EPMC_REST_API") + "search/query=" + field + ":" + wrap + urllib.quote_plus(value, safe="/") + wrap
-        url += "&resultType=core&format=json&page=" + urllib.quote_plus(str(page))
+        quoted = quote(value, safe="/")
+        qpage = quote(str(page))
+        if quoted is None or qpage is None:
+            raise EuropePMCException(None, "unable to url escape the string")
+
+        url = app.config.get("EPMC_REST_API") + "search/query=" + field + ":" + wrap + quoted + wrap
+        url += "&resultType=core&format=json&page=" + qpage
         app.logger.debug("Requesting EPMC metadata from " + url)
 
         resp = requests.get(url)
