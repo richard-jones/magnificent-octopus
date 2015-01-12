@@ -41,6 +41,7 @@ STATIC_PATHS = [
     "magnificent-octopus/octopus/static",
 
     # octopus modules static directories
+    "magnificent-octopus/octopus/modules/crud/static",
     "magnificent-octopus/octopus/modules/es/static",
     "magnificent-octopus/octopus/modules/form/static",
     "magnificent-octopus/octopus/modules/oag/static"

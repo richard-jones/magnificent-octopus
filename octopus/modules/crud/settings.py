@@ -21,3 +21,5 @@ CRUD = {
     }
 }
 """
+
+CLIENTJS_CRUD_ENDPOINT = "/api"
