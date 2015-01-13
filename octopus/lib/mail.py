@@ -3,7 +3,7 @@ from flask_mail import Mail, Message, Attachment
 from octopus.core import app
 
 # Flask-Mail version of email service from util.py
-def send_mail(to, fro, subject, template_name=None, bcc=None, files=None, msg_body=None, **template_params):
+def send_mail(to, subject, fro=None, template_name=None, bcc=None, files=None, msg_body=None, **template_params):
     bcc = [] if bcc is None else bcc
     files = [] if files is None else files
 
@@ -37,6 +37,9 @@ def send_mail(to, fro, subject, template_name=None, bcc=None, files=None, msg_bo
             appcontext = False
             with app.test_request_context():
                 plaintext_body = render_template(template_name, **unicode_params)
+
+    if fro is None:
+        fro = app.config.get("MAIL_FROM_ADDRESS")
 
     # create a message
     msg = Message(subject=subject,
