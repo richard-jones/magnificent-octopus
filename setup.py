@@ -11,7 +11,7 @@ setup(
         "Flask-Login==0.1.3",
         "simplejson",
         "lxml",
-        "Flask-WTF==0.8.3"
+        "Flask-WTF==0.8.3",
         "nose"
     ],
     url = 'http://cottagelabs.com/',

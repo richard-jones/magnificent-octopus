@@ -4,6 +4,7 @@ CONFIG_FILES = [
     # octopus.lib config files
     "magnificent-octopus/octopus/config/webapp.py",
     "magnificent-octopus/octopus/config/googlemap.py",
+    "magnificent-octopus/octopus/config/mail.py",
 
     # octopus.module config files
     "magnificent-octopus/octopus/modules/crud/settings.py",

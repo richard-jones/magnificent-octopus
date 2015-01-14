@@ -1,0 +1,1 @@
+MAIL_FROM_ADDRESS = "none@example.com"
