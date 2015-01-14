@@ -6,7 +6,7 @@ from octopus.core import app
 class RequestState(object):
     _timestamp_format = "%Y-%m-%dT%H:%M:%SZ"
 
-    def __init__(self, identifiers, timeout=None, back_off_factor=1, max_back_off=120, max_retries=None, batch_size=1000, start=None):
+    def __init__(self, identifiers, timeout=None, back_off_factor=None, max_back_off=None, max_retries=None, batch_size=None, start=None):
         self.id = uuid.uuid4().hex
 
         self.success = {}
@@ -18,10 +18,24 @@ class RequestState(object):
 
         self.start = datetime.now() if start is None else start
 
+        if timeout is None:
+            timeout = app.config.get("OAG_STATE_DEFAULT_TIMEOUT")
         self.timeout = self.start + timedelta(seconds=timeout) if timeout is not None else None
+
+        if back_off_factor is None:
+            back_off_factor = app.config.get("OAG_STATE_BACK_OFF_FACTOR", 1)
         self.back_off_factor = back_off_factor
+
+        if max_back_off is None:
+            max_back_off = app.config.get("OAG_STATE_MAX_BACK_OFF", 120)
         self.max_back_off = max_back_off
+
+        if max_retries is None:
+            max_retries = app.config.get("OAG_STATE_MAX_RETRIES", None)
         self.max_retries = max_retries
+
+        if batch_size is None:
+            batch_size = app.config.get("OAG_STATE_BATCH_SIZE", 1000)
         self.batch_size = batch_size
 
         for ident in identifiers:
