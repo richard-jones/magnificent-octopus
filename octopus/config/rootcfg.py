@@ -2,9 +2,10 @@
 # to the desired config files (in the order you want them loaded)
 CONFIG_FILES = [
     # octopus.lib config files
-    "magnificent-octopus/octopus/config/webapp.py",
     "magnificent-octopus/octopus/config/googlemap.py",
+    "magnificent-octopus/octopus/config/http.py",
     "magnificent-octopus/octopus/config/mail.py",
+    "magnificent-octopus/octopus/config/webapp.py",
 
     # octopus.module config files
     "magnificent-octopus/octopus/modules/crud/settings.py",

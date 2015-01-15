@@ -12,9 +12,13 @@ class DOAJSearchClient(object):
         self.conn = esprit.raw.Connection(self.search_base, self.query_endpoint, port=self.search_port)
 
     def object_search(self, query):
-        resp = esprit.raw.search(self.conn, type=self.search_type, query=query, method="GET")
-        results = esprit.raw.unpack_result(resp)
-        return results
+        try:
+            resp = esprit.raw.search(self.conn, type=self.search_type, query=query, method="GET")
+            results = esprit.raw.unpack_result(resp)
+            return results
+        except:
+            app.logger.info("Got exception talking to DOAJ query endpoint")
+            return None
 
     def journals_by_issns(self, issns):
         q = IssnQuery("journal", issns)

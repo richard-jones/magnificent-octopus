@@ -1,6 +1,6 @@
 from octopus.core import app
-from octopus.lib import dataobj
-import urllib, requests
+from octopus.lib import dataobj, http
+import urllib
 from lxml import etree
 
 def quote(s, **kwargs):
@@ -17,7 +17,7 @@ def quote(s, **kwargs):
 
 
 class EuropePMCException(Exception):
-    def __init__(self, httpresponse, *args, **kwargs):
+    def __init__(self, httpresponse=None, *args, **kwargs):
         super(EuropePMCException, self).__init__(*args, **kwargs)
         self.response = httpresponse
 
@@ -59,11 +59,17 @@ class EuropePMC(object):
         url += "&resultType=core&format=json&page=" + qpage
         app.logger.debug("Requesting EPMC metadata from " + url)
 
-        resp = requests.get(url)
+        resp = http.get(url)
+        if resp is None:
+            raise EuropePMCException(message="could not get a response from EPMC")
         if resp.status_code != 200:
             raise EuropePMCException(resp)
 
-        j = resp.json()
+        try:
+            j = resp.json()
+        except:
+            raise EuropePMCException(message="could not decode JSON from EPMC response")
+
         results = [EPMCMetadata(r) for r in j.get("resultList", {}).get("result", [])]
         return results
 
@@ -71,7 +77,9 @@ class EuropePMC(object):
     def fulltext(cls, pmcid):
         url = app.config.get("EPMC_REST_API") + pmcid + "/fullTextXML"
         app.logger.debug("Searching for Fulltext at " + url)
-        resp = requests.get(url)
+        resp = http.get(url)
+        if resp is None:
+            raise EuropePMCException(message="could not get a response for fulltext from EPMC")
         if resp.status_code != 200:
             raise EuropePMCException(resp)
         return EPMCFullText(resp.text)
