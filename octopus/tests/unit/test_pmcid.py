@@ -19,9 +19,8 @@ class TestPMCID(unittest.TestCase):
         assert identifier == "PMC123456"
 
     def test_03_invalid_PMCID(self):
-        identifier = "not valid identifier"
-        identifier = pmcid.normalise(identifier)
-        assert identifier == "PMCnot valid identifier"
+        identifier = "ImnotaPMCID"
+        self.assertRaises(ValueError, pmcid.normalise, identifier)
 
 if __name__ == '__main__':
     unittest.main()

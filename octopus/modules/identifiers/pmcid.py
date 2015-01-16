@@ -1,7 +1,15 @@
+import re
+
 def normalise(pmcid):
     pmcid = pmcid.strip()
-    if pmcid.startswith("PMC"):
-        return pmcid
-    else:
+    rx = r"^(PMC){0,1}[\d]{5,7}$"
+
+    if not pmcid.startswith("PMC"):
         pmcid = "PMC" + pmcid
-        return pmcid
+
+    result = re.match(rx, pmcid)
+
+    if result is None:
+        raise ValueError(pmcid + " does not seem to be a valid PMCID")
+
+    return pmcid
