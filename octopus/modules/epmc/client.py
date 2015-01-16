@@ -1,6 +1,6 @@
 from octopus.core import app
 from octopus.lib import dataobj, http
-import urllib
+import urllib, string
 from lxml import etree
 
 def quote(s, **kwargs):
@@ -15,6 +15,16 @@ def quote(s, **kwargs):
     except:
         return None
 
+def to_keywords(s):
+    # FIXME: this method does not strip stop words - investigations into that indicate that as a natural language
+    # processing thing, the libraries required to do it are awkward and overblown for our purposes.
+
+    # translate out all of the punctuation
+    exclude = set(string.punctuation)
+    raw = ''.join(ch if ch not in exclude else " " for ch in s)
+
+    # normalise the spacing
+    return " ".join([x for x in raw.split(" ") if x != ""])
 
 class EuropePMCException(Exception):
     def __init__(self, httpresponse=None, *args, **kwargs):
@@ -45,7 +55,8 @@ class EuropePMC(object):
 
     @classmethod
     def title_approximate(cls, title, page=1):
-        return cls.field_search("TITLE", title, fuzzy=True, page=page)
+        nt = to_keywords(title)
+        return cls.field_search("TITLE", nt, fuzzy=True, page=page)
 
     @classmethod
     def field_search(cls, field, value, fuzzy=False, page=1):
