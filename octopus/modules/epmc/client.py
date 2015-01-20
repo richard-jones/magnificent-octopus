@@ -165,10 +165,10 @@ class EPMCFullText(object):
         type = l.get("license-type")
         url = l.get("{http://www.w3.org/1999/xlink}href")
 
-        # get the paragraph describing the licence
+        # get the paragraph(s) describing the licence
         para = self.xml.xpath("//license/license-p")
-        if len(para) > 0:
-            para = para[0]
-        p = etree.tostring(para)
+        out = ""
+        for p in para:
+            out += etree.tostring(p)
 
-        return type, url, p
+        return type, url, out
