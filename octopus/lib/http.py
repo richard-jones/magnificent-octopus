@@ -7,7 +7,12 @@ def _backoff(attempt_number, back_off_factor, max_back_off):
     seconds = seconds if seconds < max_back_off else max_back_off
     return seconds
 
-def get(url, retries=None, back_off_factor=None, max_back_off=None, timeout=None, response_encoding=None, retry_on_timeout=None, retry_codes=None, **kwargs):
+def _make_request(method, url,
+                  retries=None, back_off_factor=None, max_back_off=None, timeout=None, response_encoding=None,
+                  retry_on_timeout=None, retry_codes=None,
+                  **kwargs):
+
+    # fill out all the default arguments
     if retries is None:
         retries = app.config.get("HTTP_MAX_RETRIES", 0)
 
@@ -34,9 +39,19 @@ def get(url, retries=None, back_off_factor=None, max_back_off=None, timeout=None
 
     while attempt <= retries:
         try:
-            r = requests.get(url, timeout=timeout, **kwargs)
+            if method == "GET":
+                r = requests.get(url, timeout=timeout, **kwargs)
+            elif method == "POST":
+                r = requests.post(url, timeout=timeout, **kwargs)
+            else:
+                # FIXME: is this right?  Maybe raising an exception would be better
+                app.logger.debug("Method {method} not allowed".format(method=method))
+                return None
+
             if r.status_code not in retry_codes:
                 break
+            else:
+                app.logger.debug("Request to {url} resulted in status " + str(r.status_code))
         except requests.exceptions.Timeout:
             attempt += 1
             app.logger.debug('Request to {url} timeout, attempt {attempt}'.format(url=url, attempt=attempt))
@@ -51,6 +66,28 @@ def get(url, retries=None, back_off_factor=None, max_back_off=None, timeout=None
         r.encoding = 'utf-8'
 
     return r
+
+def post(url, retries=None, back_off_factor=None, max_back_off=None, timeout=None, response_encoding=None,
+         retry_on_timeout=None, retry_codes=None, **kwargs):
+    return _make_request("POST", url,
+                         retries=retries, back_off_factor=back_off_factor,
+                         max_back_off=max_back_off,
+                         timeout=timeout,
+                         response_encoding=response_encoding,
+                         retry_on_timeout=retry_on_timeout,
+                         retry_codes=retry_codes,
+                         **kwargs)
+
+def get(url, retries=None, back_off_factor=None, max_back_off=None, timeout=None, response_encoding=None,
+        retry_on_timeout=None, retry_codes=None, **kwargs):
+    return _make_request("GET", url,
+                         retries=retries, back_off_factor=back_off_factor,
+                         max_back_off=max_back_off,
+                         timeout=timeout,
+                         response_encoding=response_encoding,
+                         retry_on_timeout=retry_on_timeout,
+                         retry_codes=retry_codes,
+                         **kwargs)
 
 """
 we don't have immediate use for this, but it will be helpful in the future, so preserving in this block comment
