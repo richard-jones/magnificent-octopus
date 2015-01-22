@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import json, requests, time, sys, uuid
 from copy import deepcopy
 from octopus.core import app
+from octopus.lib import http
 
 class RequestState(object):
     _timestamp_format = "%Y-%m-%dT%H:%M:%SZ"
@@ -74,6 +75,16 @@ class RequestState(object):
             if earliest is None or o.get("due") < earliest:
                 earliest = o.get("due")
         return earliest
+
+    def record_requested(self, identifiers):
+        for id in identifiers:
+            if id in self.pending:
+                self.pending[id]["requested"] += 1
+                if self.max_retries is not None and self.pending[id]["requested"] >= self.max_retries:
+                    self.pending[id]["maxed"] = True
+            else:
+                print "id {id} is not in the pending list".format(id=id)
+
 
     def record_result(self, result):
         now = datetime.now()
@@ -226,8 +237,27 @@ class OAGClient(object):
                 first = False
             elif throttle > 0:
                 time.sleep(throttle)
-            result = self._query(batch)
-            state.record_result(result)
+
+            # first try and get the result - this could result in an HTTP error, and we
+            # don't want that to kill the thread.  If it fails, record a request against the
+            # identifier but leave it pending
+            result = None
+            recorded = False
+            try:
+                result = self._query(batch)
+            except requests.exceptions.HTTPError as e:
+                # record the records in this batch as requested once more
+                state.record_requested(batch)
+                recorded = True
+
+            # if we get a result, then record it.  Otherwise, again record the batch as requested
+            # but leave it in pending.
+            if result is not None:
+                state.record_result(result)
+            else:
+                # record the records in this batch as requested once more
+                if not recorded:
+                    state.record_requested(batch)
 
             print i,
             sys.stdout.flush()
@@ -245,8 +275,19 @@ class OAGClient(object):
             start += batch_size
         return batches
 
-    def _query(self, batch, retries=10, retry_throttle=2):
+    def _query(self, batch, retries=10):
         data = json.dumps(batch)
+        resp = http.post(self.lookup_url, retries=retries, headers={'Accept':'application/json'}, data=data)
+
+        if resp is None:
+            return None
+        elif resp.status_code == requests.codes.ok:
+            return resp.json()
+        else:
+            resp.raise_for_status()
+
+        """
+        old retry code, replaced by the standard octopus one above
         counter = 0
         while True:
             resp = requests.post(self.lookup_url, headers={'Accept':'application/json'}, data=data)
@@ -259,6 +300,7 @@ class OAGClient(object):
                 time.sleep(retry_throttle)
                 print "(retry)"
         return resp.json()
+        """
 
 def oag_it(lookup_url, identifiers,
            timeout=None, back_off_factor=1, max_back_off=120, max_retries=None, batch_size=1000,
