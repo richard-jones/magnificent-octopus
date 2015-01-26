@@ -39,7 +39,7 @@ class TlsSMTPHandler(logging.Handler):
             self.handleError(record)
 
 
-def setup_error_logging(app, email_subject, logging_level=logging.ERROR):
+def setup_error_logging(app, email_subject, stdout_logging_level=logging.ERROR, email_logging_level=logging.ERROR):
     # Custom logging WILL BE IGNORED by Flask if app.debug == True -
     # even if you remove the condition below.
     if app.debug:
@@ -60,13 +60,13 @@ def setup_error_logging(app, email_subject, logging_level=logging.ERROR):
                 email_subject,
                 credentials=(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
             )
-            mail_handler.setLevel(logging_level)
+            mail_handler.setLevel(email_logging_level)
             mail_handler.setFormatter(formatter)
             app.logger.addHandler(mail_handler)
 
     # send errors to stderr, supervisord will capture them in the app's
     # error log
     send_errors_to_supervisor = logging.StreamHandler(sys.stderr)
-    send_errors_to_supervisor.setLevel(logging_level)
+    send_errors_to_supervisor.setLevel(stdout_logging_level)
     send_errors_to_supervisor.setFormatter(formatter)
     app.logger.addHandler(send_errors_to_supervisor)
