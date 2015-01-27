@@ -19,27 +19,29 @@ var octopus = {
 
     dataobj : {
         newDataObj : function(params) {
-            var F = function() {
+            var DataObj = function(params) {
                 this.data = {};
                 this.schema = {};
                 this.allow_off_schema = false;
-            };
-            F.prototype = octopus.dataobj.DataObj;
-            var dobj = new F();
+            }
+            DataObj.prototype = octopus.dataobj.DataObjPrototype;
+            var dobj = new DataObj();
 
-            if (params.raw) {
-                dobj.data = params.raw;
-            }
-            if (params.schema) {
-                dobj.schema = params.schema;
-            }
-            if (params.hasOwnProperty("allow_off_schema")) {
-                dobj.allow_off_schema = params.allow_off_schema;
+            if (params) {
+                if (params.raw) {
+                    dobj.data = params.raw;
+                }
+                if (params.schema) {
+                    dobj.schema = params.schema;
+                }
+                if (params.hasOwnProperty("allow_off_schema")) {
+                    dobj.allow_off_schema = params.allow_off_schema;
+                }
             }
             return dobj;
         },
 
-        DataObj : {
+        DataObjPrototype : {
 
             set_field : function(field, value) {
                 var cfg = this.schema[field];
