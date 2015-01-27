@@ -1,10 +1,12 @@
 from octopus.modules.oag.oagr import JobRunner
-from octopus.modules.oag import callbacks
 from octopus.core import initialise, app
-from octopus.lib import plugin
+from octopus.lib import plugin, error_handler
+
+import logging
 
 if __name__ == "__main__":
     initialise()
+    error_handler.setup_error_logging(app, "OAGR Runner Error", stdout_logging_level=logging.INFO)
 
     closure_path = app.config.get("OAGR_RUNNER_CALLBACK_CLOSURE")
     if closure_path is None:
