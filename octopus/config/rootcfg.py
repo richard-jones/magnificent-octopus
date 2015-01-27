@@ -46,7 +46,8 @@ STATIC_PATHS = [
     "magnificent-octopus/octopus/modules/crud/static",
     "magnificent-octopus/octopus/modules/es/static",
     "magnificent-octopus/octopus/modules/form/static",
-    "magnificent-octopus/octopus/modules/oag/static"
+    "magnificent-octopus/octopus/modules/oag/static",
+    "magnificent-octopus/octopus/modules/sherpafact/static"
 ]
 
 # module import paths for the startup modules that need to run at application init type (in the order you want them run)

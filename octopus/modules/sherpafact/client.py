@@ -57,6 +57,7 @@ class FactClient(object):
     def raw_query(self, juliet_ids, journal_title=None, query_type=None, issn=None, output="json", trail=False):
         juliet_ids = self._normalise_juliet(juliet_ids)
         url = self.get_query_url(juliet_ids, journal_title, query_type, issn, output, trail)
+        app.logger.info("Making request to Sherpa FACT on url {url}".format(url=url))
         resp = requests.get(url)
         return resp, url
 
