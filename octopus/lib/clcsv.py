@@ -1,14 +1,24 @@
-import csv, codecs
+import csv, codecs, re, os
 import cStringIO
 
+class CsvReadException(Exception):
+    pass
 
 class ClCsv():
 
-    def __init__(self, file_path=None, writer=None):
+    def __init__(self, file_path=None, writer=None,
+                 output_encoding="utf-8", input_encoding="utf-8",
+                 try_encodings_hard=True, fallback_input_encodings=None):
         """
         Class to wrap the Python CSV library. Allows reading and writing by column.
         :param file_path: A file object or path to a file. Will create one at specified path if it does not exist.
         """
+        self.output_encoding = output_encoding
+        self.input_encoding = input_encoding
+
+        if fallback_input_encodings is None and try_encodings_hard:
+            fallback_input_encodings = ["cp1252", "cp1251", "iso-8859-1", "iso-8859-2", "windows-1252", "windows-1251"]
+        self.fallback_input_encodings = fallback_input_encodings
 
         # Store the csv contents in a list of tuples, [ (column_header, [contents]) ]
         self.data = []
@@ -16,36 +26,58 @@ class ClCsv():
         # Get an open file object from the given file_path or file object
         if file_path is not None:
             if type(file_path) == file:
+                # NOTE: if you have passed in a file object, it MUST work - as in, it must be set to
+                # read the right encoding, and everything.  We will not try to parse it again if it
+                # fails the first time.  If it is closed, you will also need to be sure to set the input_encoding.
+                # All round - better if you just give us the file path
                 self.file_object = file_path
                 if self.file_object.closed:
-                    self.file_object = codecs.open(self.file_object.name, 'r+b', encoding='utf-8')
-                self.read_file()
+                    self.file_object = codecs.open(self.file_object.name, 'r+b', encoding=self.input_encoding)
+
+                # explicitly read this file in
+                self._read_file(self.file_object)
             else:
-                try:
-                    self.file_object = codecs.open(file_path, 'r+b', encoding='utf-8')
-                    self.read_file()
-                except IOError:
+                if os.path.exists(file_path) and os.path.isfile(file_path):
+                    self._read_from_path(file_path)
+                else:
                     # If the file doesn't exist, create it.
-                    self.file_object = codecs.open(file_path, 'w+b', encoding='utf-8')
+                    self.file_object = codecs.open(file_path, 'w+b', encoding=self.output_encoding)
 
         elif writer is not None:
             self.file_object = writer
 
-    def read_file(self):
+    def _read_from_path(self, file_path):
+        codes = [self.input_encoding] + self.fallback_input_encodings
+        for code in codes:
+            try:
+                file_object = codecs.open(file_path, 'r+b', encoding=code)
+                self._read_file(file_object)
+                self.file_object = file_object
+                self.input_encoding = code
+                return
+            except:
+                pass
+        # if we get to here, we were unable to read the file using any method
+        raise CsvReadException("Unable to find a codec which can parse the file correctly")
+
+    def _read_file(self, file_object):
         """
         Retrieve all of the information from the stored file using standard csv lib
         :return: Entire CSV contents, a list of rows (like the standard csv lib)
         """
-        if self.file_object.closed:
-            codecs.open(self.file_object.name, 'r+b', encoding='utf-8')
+        try:
+            if file_object.closed:
+                codecs.open(file_object.name, 'r+b', encoding=self.input_encoding)
 
-        reader = UnicodeReader(self.file_object)
-        rows = []
-        for row in reader:
-            rows.append(row)
+            reader = UnicodeReader(file_object, output_encoding=self.output_encoding)
+            rows = []
+            for row in reader:
+                rows.append(row)
 
-        self._populate_data(rows)
-        return rows
+            self._populate_data(rows)
+            return rows
+        except:
+            raise CsvReadException("Unable to read file (possibly a codec problem, or a data structure problem)")
 
     def headers(self):
         """
@@ -189,7 +221,7 @@ class ClCsv():
         self.file_object.truncate()
 
         # Write new CSV data
-        writer = UnicodeWriter(self.file_object)
+        writer = UnicodeWriter(self.file_object, encoding=self.output_encoding)
         writer.writerows(rows)
 
         if close:
@@ -208,20 +240,79 @@ class ClCsv():
                 col_data.append(row[i])
             self.data.append((csv_rows[0][i], col_data))
 
+class BadCharReplacer:
+    """
+    Iterator that reads an encoded stream and replaces Bad Characters!
 
-class UTF8Recoder:
+    The underlying reader MUST be returning UTF-8 encoded unicode strings
     """
-    Iterator that reads an encoded stream and reencodes the input to UTF-8
-    """
-    def __init__(self, f, encoding):
+    def __init__(self, f, charmap=None):
         self.reader = f
+
+        self.charmap = charmap
+        if self.charmap is None:
+            self.charmap = {
+                # unicode versions
+                #'\xc2\x82' : ',',        # High code comma
+                #'\xc2\x84' : ',,',       # High code double comma
+                '\xc2\x85' : '...',      # Tripple dot
+                #'\xc2\x88' : '^',        # High carat
+                #'\xc2\x91' : '\x27',     # Forward single quote
+                #'\xc2\x92' : '\x27',     # Reverse single quote
+                #'\xc2\x93' : '\x22',     # Forward double quote
+                #'\xc2\x94' : '\x22',     # Reverse double quote
+                #'\xc2\x95' : ' ',
+                #'\xc2\x96' : '-',        # High hyphen
+                #'\xc2\x97' : '--',       # Double hyphen
+                #'\xc2\x99' : ' ',
+                #'\xc2\xa0' : ' ',
+                #'\xc2\xa6' : '|',        # Split vertical bar
+                #'\xc2\xab' : '<<',       # Double less than
+                #'\xc2\xbb' : '>>',       # Double greater than
+                #'\xc2\xbc' : '1/4',      # one quarter
+                #'\xc2\xbd' : '1/2',      # one half
+                #'\xc2\xbe' : '3/4',      # three quarters
+                #'\xca\xbf' : '\x27',     # c-single quote
+                #'\xcc\xa8' : '',         # modifier - under curve
+                #'\xcc\xb1' : '',         # modifier - under line
+            }
+
+        self.pattern = '(' + '|'.join(self.charmap.keys()) + ')'
+        self.rx = re.compile(self.pattern)
 
     def __iter__(self):
         return self
 
     def next(self):
         val = self.reader.next()
-        return val.encode("utf-8")
+
+        def replace_chars(match):
+            # this function returns the substitute value from the dict above
+            char = match.group(0)
+            return self.charmap[char]
+
+        # if the rx does match, then do the substitution.  I think this is the fastest
+        # way to do this
+        if self.rx.search(val) is not None:
+            return self.rx.sub(replace_chars, val)
+
+        # if no match, return the unmodifed string
+        return val
+
+class UTF8Recoder:
+    """
+    Iterator that reads an encoded stream and reencodes the input to UTF-8
+    """
+    def __init__(self, f, encoding):
+        self.reader = f # codecs.getreader("ISO-8859-2")(f) # FIXME: just for testing
+        self.encoding = encoding
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        val = self.reader.next()
+        return val.encode(self.encoding)
 
 class UnicodeReader:
     """
@@ -229,13 +320,14 @@ class UnicodeReader:
     which is encoded in the given encoding.
     """
 
-    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
-        f = UTF8Recoder(f, encoding)
+    def __init__(self, f, dialect=csv.excel, output_encoding="utf-8", **kwds):
+        self.output_encoding = output_encoding
+        f = UTF8Recoder(f, self.output_encoding)
         self.reader = csv.reader(f, dialect=dialect, **kwds)
 
     def next(self):
         row = self.reader.next()
-        return [unicode(s, "utf-8") for s in row]
+        return [unicode(s, self.output_encoding) for s in row]
 
     def __iter__(self):
         return self
@@ -252,6 +344,7 @@ class UnicodeWriter:
         self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
         self.stream = f
         self.encoder = codecs.getincrementalencoder(encoding)()
+        self.encoding = encoding
 
     def writerow(self, row):
         encoded_row = []
@@ -260,11 +353,11 @@ class UnicodeWriter:
                 s = ''
             if not isinstance(s, basestring):
                 s = str(s)
-            encoded_row.append(s.encode("utf-8"))
+            encoded_row.append(s.encode(self.encoding))
         self.writer.writerow(encoded_row)
         # Fetch UTF-8 output from the queue ...
         data = self.queue.getvalue()
-        data = data.decode("utf-8")
+        data = data.decode(self.encoding)
         # write to the target stream
         self.stream.write(data)
         # empty queue
