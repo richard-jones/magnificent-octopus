@@ -180,8 +180,11 @@ class FormContext(object):
             return f.errors
         return False
 
-    def render_template(self, **kwargs):
-        return render_template(self.template, form_context=self, **kwargs)
+    def render_template(self, template=None, **kwargs):
+        if template is not None:
+            return render_template(template, form_context=self, **kwargs)
+        else:
+            return render_template(self.template, form_context=self, **kwargs)
 
     def render_field_group(self, field_group_name=None):
         return self.renderer.render_field_group(self, field_group_name)
