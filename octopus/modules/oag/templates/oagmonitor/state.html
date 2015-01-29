@@ -125,8 +125,8 @@
             </tr>
         </thead>
         <tbody>
-            {% for id in state.pending.keys() %}
-                {% set p = state.pending[id] %}
+            {% for id in state.maxed.keys() %}
+                {% set p = state.maxed[id] %}
                 <tr>
                     <td>{{id}}</td>
                     <td>{{p.init}}</td>
