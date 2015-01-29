@@ -8,6 +8,7 @@ CONFIG_FILES = [
     "magnificent-octopus/octopus/config/webapp.py",
 
     # octopus.module config files
+    "magnificent-octopus/octopus/modules/clientjs/settings.py",
     "magnificent-octopus/octopus/modules/crud/settings.py",
     "magnificent-octopus/octopus/modules/doaj/settings.py",
     "magnificent-octopus/octopus/modules/epmc/settings.py",
@@ -43,6 +44,7 @@ STATIC_PATHS = [
     "magnificent-octopus/octopus/static",
 
     # octopus modules static directories
+    "magnificent-octopus/octopus/modules/clientjs/static",
     "magnificent-octopus/octopus/modules/crud/static",
     "magnificent-octopus/octopus/modules/es/static",
     "magnificent-octopus/octopus/modules/form/static",
