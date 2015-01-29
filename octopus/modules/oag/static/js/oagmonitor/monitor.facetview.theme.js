@@ -12,7 +12,8 @@ jQuery(document).ready(function($) {
         result += "<strong style='font-size: 150%'><a href='job/" + record['id'] + "'>" + record["id"] + "</a> - " + record["status"] + "</strong><br>";
         result += "Job Start Timestamp: " + record["start"] + "<br>";
         result += "Created: " + record["created_date"] + "; Last Modified: " + record["last_updated"] + "<br>";
-        result += "<strong>Pending: " + record["pending_count"] + "; Success: " + record["success_count"] + "; Errors: " + record["error_count"] + "</strong>";
+        result += "<strong>Pending: " + record["pending_count"] + "; Success: " + record["success_count"];
+        result += "; Errors: " + record["error_count"] + "; maxed: " + record['maxed_count'] + "</strong>";
         result += "</div></div>";
         result += options.resultwrap_end;
         return result;
@@ -35,7 +36,7 @@ jQuery(document).ready(function($) {
             {'display':'ID','field':'id'}
         ],
         render_result_record : discoveryRecordView,
-        fields : ["id", "status", "last_updated", "created_date", "start", "success_count", "error_count", "pending_count"]
+        fields : ["id", "status", "last_updated", "created_date", "start", "success_count", "error_count", "pending_count", "maxed_count"]
     });
 
 });

@@ -13,6 +13,7 @@ class RequestState(object):
         self.success = {}
         self.error = {}
         self.pending = {}
+        self.maxed = {}
 
         self.success_buffer = []
         self.error_buffer = []
@@ -40,7 +41,7 @@ class RequestState(object):
         self.batch_size = batch_size
 
         for ident in identifiers:
-            self.pending[ident] = {"init" : self.start, "due" : self.start, "requested" : 0, "maxed" : False}
+            self.pending[ident] = {"init" : self.start, "due" : self.start, "requested" : 0}
 
     def print_parameters(self):
         params = "Timeout: " + str(self.timeout) + "\n"
@@ -51,7 +52,10 @@ class RequestState(object):
         return params
 
     def print_status_report(self):
-        status = str(len(self.success.keys())) + " received; " + str(len(self.error.keys())) + " errors; " + str(len(self.pending.keys())) + " pending"
+        status = str(len(self.success.keys())) + " received; " + \
+                 str(len(self.error.keys())) + " errors; " + \
+                 str(len(self.pending.keys())) + " pending; " + \
+                 str(len(self.maxed.keys())) + " maxed"
         return status
 
     def finished(self):
@@ -60,14 +64,11 @@ class RequestState(object):
         if self.timeout is not None:
             if datetime.now() > self.timeout:
                 return True
-        unmaxed = [p for p in self.pending.keys() if not self.pending[p].get("maxed")]
-        if len(unmaxed) == 0:
-            return True
         return False
 
     def get_due(self):
         now = datetime.now()
-        return [p for p in self.pending.keys() if self.pending[p].get("due") < now and not self.pending[p].get("maxed")]
+        return [p for p in self.pending.keys() if self.pending[p].get("due") < now]
 
     def next_due(self):
         earliest = None
@@ -76,14 +77,20 @@ class RequestState(object):
                 earliest = o.get("due")
         return earliest
 
+    def _record_maxed(self, id):
+        self.maxed[id] = self.pending[id]
+        del self.pending[id]
+        if "due" in self.maxed[id]:
+            del self.maxed[id]["due"]
+
     def record_requested(self, identifiers):
         for id in identifiers:
             if id in self.pending:
                 self.pending[id]["requested"] += 1
                 if self.max_retries is not None and self.pending[id]["requested"] >= self.max_retries:
-                    self.pending[id]["maxed"] = True
+                    self._record_maxed(id)
             else:
-                print "id {id} is not in the pending list".format(id=id)
+                print "ERROR: id {id} is not in the pending list".format(id=id)
 
 
     def record_result(self, result):
@@ -123,12 +130,12 @@ class RequestState(object):
             id = p.get("identifier").get("id")
             ourrecord = self.pending.get(id)
             if ourrecord is None:
-                print "No record of pending id " + id
+                print "ERROR: No record of pending id " + id
                 continue
             self.pending[id]["requested"] += 1
             self.pending[id]["due"] = self._backoff(self.pending[id]["requested"])
             if self.max_retries is not None and self.pending[id]["requested"] >= self.max_retries:
-                self.pending[id]["maxed"] = True
+                self._record_maxed(id)
 
     def flush_success(self):
         buffer = self.success_buffer
@@ -172,6 +179,11 @@ class RequestState(object):
             obj["due"] = datetime.strptime(obj["due"], cls._timestamp_format)
             state.pending[s.get("id")] = obj
 
+        for s in j.get("maxed", []):
+            obj = deepcopy(s)
+            obj["init"] = datetime.strptime(obj["init"], cls._timestamp_format)
+            state.maxed[s.get("id")] = obj
+
         return state
 
     def json(self):
@@ -210,6 +222,13 @@ class RequestState(object):
             obj["init"] = datetime.strftime(obj["init"], self._timestamp_format)
             obj["due"] = datetime.strftime(obj["due"], self._timestamp_format)
             data["pending"].append(obj)
+
+        data["maxed"] = []
+        for k in self.maxed:
+            obj = {"id" : k}
+            obj.update(self.maxed[k])
+            obj["init"] = datetime.strftime(obj["init"], self._timestamp_format)
+            data["maxed"].append(obj)
 
         return data
 
@@ -312,7 +331,7 @@ def oag_it(lookup_url, identifiers,
 
         # run the callback on the state
         if callback is not None:
-            callback(state)
+            callback("cycle", state)
 
         # run the save method if there is one
         if save_state is not None:
@@ -320,6 +339,7 @@ def oag_it(lookup_url, identifiers,
 
         # if we are finished, break
         if state.finished():
+            callback("finished", state)
             print "FINISHED"
             break
 

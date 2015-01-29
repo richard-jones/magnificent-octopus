@@ -51,22 +51,20 @@ class JobRunner(object):
 
         # run the callback on the state
         if self.callback is not None:
-            self.callback(state)
+            self.callback("cycle", state)
 
         # run the save method if there is one
         self.save_job(state)
 
-        # if we have done work here, update the next due time for the busy
-        # loop aboge
-        next = state.next_due()
-        if next is not None:
-            print "Next request is due at", datetime.strftime(next, "%Y-%m-%d %H:%M:%S"), "\n"
-        else:
+        if state.finished():
+            self.callback("finished", state)
             print "JOB " + state.id + " HAS COMPLETED!!!"
-
-    def print_job_statuses(self):
-        for id, stat in self.job_statuses():
-            print id, stat
+        else:
+            # if we have done work here, update the next due time for the busy
+            # loop aboge
+            next = state.next_due()
+            if next is not None:
+                print "Next request is due at", datetime.strftime(next, "%Y-%m-%d %H:%M:%S"), "\n"
 
     def run(self):
         print "Starting OAGR ... Started"
@@ -90,4 +88,3 @@ class JobRunner(object):
                     col_counter = 0
             else:
                 print "Finished job processing for this round"
-                # self.print_job_statuses()
