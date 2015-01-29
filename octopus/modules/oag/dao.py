@@ -30,9 +30,11 @@ class JobsDAO(dao.ESDAO):
         successes = len(self.data.get("success", []))
         errors = len(self.data.get("error", []))
         pending = len(self.data.get("pending", []))
+        maxed = len(self.data.get("maxed", []))
         self.data["success_count"] = successes
         self.data["error_count"] = errors
         self.data["pending_count"] = pending
+        self.data["maxed_count"] = maxed
 
 class JobStatusQuery(object):
     def query(self):

@@ -10,7 +10,11 @@
         Job Start Timestamp: {{ state.start }} <br>
         Created: {{ job.created_date }}; Last Modified: {{ job.last_updated }}<br>
 
-        <strong>Pending: {{ job.data["pending_count"] }}; Success: {{ job.data["success_count"] }}; Errors: {{job.data["error_count"] }}</strong><br>
+        <strong>
+            Pending: {{ job.data.get("pending_count") }};
+            Success: {{ job.data.get("success_count") }};
+            Errors: {{job.data.get("error_count") }};
+            Maxed: {{job.data.get("maxed_count") }}</strong><br>
 
     </div>
     <div class="col-md-2">
@@ -38,7 +42,6 @@
                 <th>init</th>
                 <th>next due</th>
                 <th>requested</th>
-                <th>maxed?</th>
             </tr>
         </thead>
         <tbody>
@@ -49,7 +52,6 @@
                     <td>{{p.init}}</td>
                     <td>{{p.due}}</td>
                     <td>{{p.requested}}</td>
-                    <td>{{p.maxed}}</td>
                 </tr>
             {% endfor %}
         </tbody>
@@ -111,6 +113,31 @@
 </div></div>
 </div>
 
+<h2><a href="#" id="toggle_maxed"><span class="glyphicon glyphicon-expand"></span>Maxed ({{job.data.get("maxed_count", 0)}})</a></h2>
+<div style="display:none" id="maxed_container">
+<div class="row"><div class="col-md-12">
+    <table id="maxed" class="tablesorter-blue">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>init</th>
+                <th>requested</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for id in state.pending.keys() %}
+                {% set p = state.pending[id] %}
+                <tr>
+                    <td>{{id}}</td>
+                    <td>{{p.init}}</td>
+                    <td>{{p.requested}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div></div>
+</div>
+
 {% endblock %}
 
 
@@ -135,6 +162,13 @@ $(document).ready(function() {
     $("#toggle_success").click(function(event) {
         event.preventDefault();
         $("#success_container").toggle();
+        $(this).find("span").toggleClass("glyphicon-expand glyphicon-collapse-down");
+    });
+
+    $("#maxed").tablesorter();
+    $("#toggle_maxed").click(function(event) {
+        event.preventDefault();
+        $("#maxed_container").toggle();
         $(this).find("span").toggleClass("glyphicon-expand glyphicon-collapse-down");
     });
 });
