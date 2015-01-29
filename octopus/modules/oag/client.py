@@ -286,22 +286,6 @@ class OAGClient(object):
         else:
             resp.raise_for_status()
 
-        """
-        old retry code, replaced by the standard octopus one above
-        counter = 0
-        while True:
-            resp = requests.post(self.lookup_url, headers={'Accept':'application/json'}, data=data)
-            if resp.status_code == requests.codes.ok:
-                return resp.json()
-            elif counter >= retries:
-                resp.raise_for_status()
-            else:
-                counter += 1
-                time.sleep(retry_throttle)
-                print "(retry)"
-        return resp.json()
-        """
-
 def oag_it(lookup_url, identifiers,
            timeout=None, back_off_factor=1, max_back_off=120, max_retries=None, batch_size=1000,
             verbose=True, throttle=5,
