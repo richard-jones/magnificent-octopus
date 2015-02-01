@@ -58,3 +58,31 @@ class ES_CRUD_Wrapper(CRUDObject):
 
     def delete(self):
         self.inner.delete()
+
+class ES_CRUD_Wrapper_Ultra(ES_CRUD_Wrapper):
+    """
+    Same as ES_CRUD_Wrapper, but strips ids, created_date and last_updated as per
+    normal expected behaviour.
+    """
+    def __init__(self, raw=None):
+        if raw is not None:
+            # remove any disallowed fields
+            if "id" in raw:
+                del raw["id"]
+            if "created_date" in raw:
+                del raw["created_date"]
+            if "last_updated" in raw:
+                del raw["last_updated"]
+
+        super(ES_CRUD_Wrapper_Ultra, self).__init__(raw)
+
+    def update(self, data):
+        # carry over the data from the old object
+        data["id"] = self.inner.id
+        data["created_date"] = self.inner.created_date
+
+        # remove any disallowed fields
+        if "last_updated" in data:
+            del data["last_updated"]
+
+        super(ES_CRUD_Wrapper_Ultra, self).update(data)
