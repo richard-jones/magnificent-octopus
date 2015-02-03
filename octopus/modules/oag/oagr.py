@@ -1,5 +1,5 @@
 from octopus.core import app
-import time, sys
+import time, sys, traceback
 from datetime import datetime
 from octopus.modules.oag import client as oag
 from octopus.modules.oag import dao
@@ -70,21 +70,34 @@ class JobRunner(object):
         print "Starting OAGR ... Started"
         col_counter = 0
         while True:
-            time.sleep(self.es_throttle)
-            states = self.has_due()
-            found = False
-            for state, n, of in states:
-                found = True
-                col_counter = 0
-                print ""
-                print "Processing", n, "of", of, "in this round of jobs\n"
-                self.cycle_state(state)
-            if not found:
-                print ".",
-                sys.stdout.flush()
-                col_counter += 1
-                if col_counter >= 36:
-                    print ""
+            try:
+                time.sleep(self.es_throttle)
+                states = self.has_due()
+                found = False
+                for state, n, of in states:
+                    found = True
                     col_counter = 0
-            else:
-                print "Finished job processing for this round"
+                    print ""
+                    print "Processing", n, "of", of, "in this round of jobs\n"
+                    self.cycle_state(state)
+                if not found:
+                    print ".",
+                    sys.stdout.flush()
+                    col_counter += 1
+                    if col_counter >= 36:
+                        print ""
+                        col_counter = 0
+                else:
+                    print "Finished job processing for this round"
+            except Exception:
+                app.logger.error(traceback.format_exc())
+                msg = "Exception experienced in OAGR runner."
+                if app.config.get("OAGR_EXIT_ON_EXCEPTION", False):
+                    msg += " Exiting."
+                    print msg
+                    exit(0)
+                else:
+                    st = app.config.get("OAGR_EXCEPTION_SLEEP_TIME", 30)
+                    msg += " Sleeping for {x}s before attempting to resume normal operation".format(x=st)
+                    print msg
+                    time.sleep(st)

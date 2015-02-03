@@ -26,6 +26,15 @@ OAGR_JOBS_ES_TYPE = "oagr_jobs"
 
 OAGR_RUNNER_CALLBACK_CLOSURE = "octopus.modules.oag.callbacks.csv_closure"
 
+# if the runner experiences an exception, should it exit, or carry on
+OAGR_EXIT_ON_EXCEPTION = False
+
+# if the runner experiences an exception, and does not exit, how long should it wait for before attempting to
+# resume normal operation
+OAGR_EXCEPTION_SLEEP_TIME = 30
+
+
+
 # OAGR Monitor UI
 #######################################
 
