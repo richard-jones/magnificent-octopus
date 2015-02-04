@@ -9,6 +9,7 @@ CONFIG_FILES = [
 
     # octopus.module config files
     "magnificent-octopus/octopus/modules/clientjs/settings.py",
+    "magnificent-octopus/octopus/modules/coreacuk/settings.py",
     "magnificent-octopus/octopus/modules/crud/settings.py",
     "magnificent-octopus/octopus/modules/doaj/settings.py",
     "magnificent-octopus/octopus/modules/epmc/settings.py",
