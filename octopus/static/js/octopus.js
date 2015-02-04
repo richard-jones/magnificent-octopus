@@ -43,6 +43,10 @@ var octopus = {
 
         DataObjPrototype : {
 
+            /////////////////////////////////////////////////
+            // entry points to the data object - from outside you should only use these
+            /////////////////////////////////////////////////
+
             set_field : function(field, value) {
                 var cfg = this.schema[field];
                 if (!cfg) {
@@ -55,7 +59,7 @@ var octopus = {
                 if (cfg.type === "single") {
                     this.set_single(cfg, value);
                 } else if (cfg.type === "list") {
-                    // FIXME: we need a set_list method to overwrite any old lists
+                    this.set_list(cfg, value);
                 }
             },
 
@@ -90,6 +94,11 @@ var octopus = {
                     throw "cannot append to a non-list field " + field;
                 }
             },
+
+            //////////////////////////////////////////////////////
+            // getters and setters for individual values.
+            // values will be coerced, etc.
+            //////////////////////////////////////////////////////
 
             set_single : function(cfg, value) {
                 // set some default values for the config
@@ -135,35 +144,15 @@ var octopus = {
                 }
             },
 
-            set_path : function(path, value) {
-                var parts = path.split(".");
-                var context = this.data;
+            ////////////////////////////////////////////
+            // getters and setters for points whose values are lists
+            // the values in the supplied lists will be coerced, etc
+            ////////////////////////////////////////////
 
-                for (var i = 0; i < parts.length; i++) {
-                    var p = parts[i];
-
-                    if (!context.hasOwnProperty(p) && i < parts.length - 1) {
-                        context[p] = {};
-                        context = context[p];
-                    } else if (context.hasOwnProperty(p) && i < parts.length - 1) {
-                        context = context[p];
-                    } else {
-                        context[p] = value;
-                    }
+            set_list : function(cfg, val) {
+                for (var i = 0; i < val.length; i++) {
+                    this.add_to_list(cfg, val[i]);
                 }
-            },
-
-            get_path : function(path, default_value) {
-                var parts = path.split(".");
-                var context = this.data;
-
-                for (var i = 0; i < parts.length; i++) {
-                    var p = parts[i];
-                    var d = i < parts.length - 1 ? {} : default_value;
-                    context = context[p] !== undefined ? context[p] : d;
-                }
-
-                return context;
             },
 
             add_to_list : function(cfg, val) {
@@ -181,7 +170,7 @@ var octopus = {
                 // if there is no value, but we want by-reference, then make a list, store it and return it
                 if (val === undefined && by_reference) {
                     var mylist = [];
-                    this.set_single(cfg, mylist);
+                    this.set_path(cfg.path, mylist);
                     return mylist;
                 }
 
@@ -212,6 +201,41 @@ var octopus = {
                         return $.extend(true, {}, val);
                     }
                 }
+            },
+
+            ///////////////////////////////////////////////////////
+            // functions for directly writing to the underlying data structure
+            ///////////////////////////////////////////////////////
+
+            set_path : function(path, value) {
+                var parts = path.split(".");
+                var context = this.data;
+
+                for (var i = 0; i < parts.length; i++) {
+                    var p = parts[i];
+
+                    if (!context.hasOwnProperty(p) && i < parts.length - 1) {
+                        context[p] = {};
+                        context = context[p];
+                    } else if (context.hasOwnProperty(p) && i < parts.length - 1) {
+                        context = context[p];
+                    } else {
+                        context[p] = value;
+                    }
+                }
+            },
+
+            get_path : function(path, default_value) {
+                var parts = path.split(".");
+                var context = this.data;
+
+                for (var i = 0; i < parts.length; i++) {
+                    var p = parts[i];
+                    var d = i < parts.length - 1 ? {} : default_value;
+                    context = context[p] !== undefined ? context[p] : d;
+                }
+
+                return context;
             }
         }
     }

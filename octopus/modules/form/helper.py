@@ -84,17 +84,21 @@ class FormHelperBS3Horizontal(object):
 
     def _form_group(self, field, **kwargs):
         hidden = kwargs.pop("hidden", False)
+        suppress = kwargs.pop("suppress_form_group", False)
 
-        frag = '<div class="form-group'
-        if field.errors:
-            frag += " error"
-        frag += '" id="'
-        frag += field.short_name + '-form-group"'
-        if hidden:
-            frag += ' style="display:none;"'
-        frag += ">"
+        frag = ""
+        if not suppress:
+            frag += '<div class="form-group'
+            if field.errors:
+                frag += " error"
+            frag += '" id="'
+            frag += field.short_name + '-form-group"'
+            if hidden:
+                frag += ' style="display:none;"'
+            frag += ">"
         frag += self._input_field(field, **kwargs)
-        frag += "</div>"
+        if not suppress:
+            frag += "</div>"
 
         return frag
 
@@ -112,16 +116,6 @@ class FormHelperBS3Horizontal(object):
         elif label_width is not None and control_width is None:
             control_width = 12 - label_width
 
-        frag = ""
-
-        # If this is the kind of field that requires a label, give it one
-        if field.type not in ['SubmitField', 'HiddenField', 'CSRFTokenField']:
-            frag += '<label class="col-sm-' + str(label_width) + ' control-label" for="' + field.short_name + '">'
-            frag += field.label.text
-            if field.flags.required or field.flags.display_required_star:
-                frag += '&nbsp;<span class="required">*</span>'
-            frag += "</label>"
-
         # determine if this is a checkbox
         is_checkbox = False
         if (field.type == "SelectMultipleField"
@@ -129,11 +123,29 @@ class FormHelperBS3Horizontal(object):
                 and field.widget.__class__.__name__ == 'ListWidget'):
             is_checkbox = True
 
-        extra_class = ""
-        if is_checkbox:
-            extra_class += " checkboxes"
+        if field.type == "BooleanField":
+            is_checkbox = True
 
-        frag += '<div class="col-sm-' + str(control_width) + ' controls' + extra_class + '">'
+        frag = ""
+
+        # If this is the kind of field that requires a (separate) label, give it one
+        # (note that BooleanFields (checkboxes) come with their own label
+        if field.type not in ['SubmitField', 'HiddenField', 'CSRFTokenField', "BooleanField"]:
+            frag += '<label class="col-sm-' + str(label_width) + ' control-label" for="' + field.short_name + '">'
+            frag += field.label.text
+            if field.flags.required or field.flags.display_required_star:
+                frag += '&nbsp;<span class="required">*</span>'
+            frag += "</label>"
+
+        # render the div which will contain the form controls
+        classes = []
+        if is_checkbox:
+            classes.append("checkbox")
+        else:
+            classes.append("col-sm-" + str(control_width))
+            classes.append("controls")
+
+        frag += '<div class="' + " ".join(classes) + '">'
 
         attributes = kwargs.pop("attributes", {})
         if "class" in attributes:
@@ -145,10 +157,10 @@ class FormHelperBS3Horizontal(object):
             for subfield in field:
                 frag += self._render_radio(subfield, **kwargs)
         elif is_checkbox:
-            frag += '<ul id="' + field.short_name + '">'
-            for subfield in field:
-                frag += self._render_checkbox(subfield, **kwargs)
-            frag += "</ul>"
+            #frag += '<ul id="' + field.short_name + '">'
+            #for subfield in field:
+            frag += self._render_checkbox(field, **kwargs)
+            #frag += "</ul>"
         else:
             frag += field(**attributes)
 
@@ -172,12 +184,15 @@ class FormHelperBS3Horizontal(object):
         return frag
 
     def _render_checkbox(self, field, **kwargs):
-        frag = "<li>"
+        frag = "<label>"
         frag += field(**kwargs)
-        frag += '<label for="' + field.short_name + '">' + field.label.text + '</label>'
-        frag += "</li>"
+        frag += "&nbsp;" + field.label.text + "&nbsp;&nbsp;"
+        frag += '</label>'
         return frag
 
+
+"""
+This is the old form helper which the above classes supersede
 class FormHelper(object):
 
     def _form_group(self, field, container_class=None, hidden=False, render_subfields_horizontal=False, **kwargs):
@@ -350,3 +365,4 @@ class FormHelper(object):
         frag += "</li>"
         return frag
 
+"""

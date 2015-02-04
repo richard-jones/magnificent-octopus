@@ -7,6 +7,7 @@ jQuery(document).ready(function($) {
                 var list_selector = params.list_selector;
                 var entry_prefix = params.entry_prefix;
                 var enable_remove = params.enable_remove || false;
+                var remove_behaviour = params.remove_behaviour || "hide";
                 var remove_selector = params.remove_selector;
                 var remove_callback = params.remove_callback;
 
@@ -44,28 +45,35 @@ jQuery(document).ready(function($) {
                 // append a new section with a new, higher number (and hide it)
                 $(list_selector).append(ns);
 
-                $("#" + nid).find(".form-group").each(function () {
-                    var name = $(this).find(".form-control").attr("name");
+                $("#" + nid).find(".form-control").each(function () {
+                    var name = $(this).attr("name");
                     var bits = name.split("-");
-                    bits[bits.length - 2] = max + 1;
+                    bits[1] = max + 1;
                     var newname = bits.join("-");
 
-                    $(this).find(".form-control")
-                        .attr("name", newname)
+                    $(this).attr("name", newname)
                         .attr("id", newname)
                         .val("");
-                    $(this).find("label").attr("for", newname);
+                    $("#" + nid).find("label[for=" + name + "]").attr("for", newname);
                 });
 
                 if (enable_remove) {
-                    $(remove_selector).show()
-                        .unbind("click")
+                    if (remove_behaviour === "hide") {
+                        $(remove_selector).show();
+                    } else if (remove_behaviour === "disable") {
+                        $(remove_selector).removeAttr("disabled");
+                    }
+                    $(remove_selector).unbind("click")
                         .click(function (event) {
                             event.preventDefault();
-                            $(this).parent().remove();
+                            $(this).parents(".repeatable_container").remove();
 
                             if ($(list_selector).children().size() == 1) {
-                                $(remove_selector).hide();
+                                if (remove_behaviour === "hide") {
+                                    $(remove_selector).hide();
+                                } else if (remove_behaviour === "disable") {
+                                    $(remove_selector).attr("disabled", "disabled");
+                                }
                             }
 
                             if (remove_callback) {remove_callback()}
@@ -80,6 +88,7 @@ jQuery(document).ready(function($) {
                 var entry_prefix = params.entry_prefix;
                 var enable_remove = params.enable_remove || false;
                 var remove_selector = params.remove_selector;
+                var remove_behaviour = params.remove_behaviour || "hide";
                 var before_callback = params.before_callback;
                 var more_callback = params.more_callback;
                 var remove_callback = params.remove_callback;
@@ -93,9 +102,15 @@ jQuery(document).ready(function($) {
                         list_selector : list_selector,
                         entry_prefix : entry_prefix,
                         enable_remove : enable_remove,
-                        remove_selector : remove_callback,
+                        remove_behaviour: remove_behaviour,
+                        remove_selector : remove_selector,
                         remove_callback : remove_callback
                     });
+
+                    // each time it is used, re-bind it, as there may now be more
+                    // than one "more" button
+                    $(button_selector).unbind("click");
+                    octopus.forms.bindRepeatable(params);
 
                     if (more_callback) { more_callback() }
                 })
@@ -105,6 +120,7 @@ jQuery(document).ready(function($) {
                 var form_selector = params.form_selector;
                 var formobj = params.form_data_object;
                 var xwalk = params.xwalk;
+                var record_disabled = params.record_disabled || false;
 
                 // create an object where we can read the raw form data to
                 var rawformobj = octopus.dataobj.newDataObj({allow_off_schema: true});
@@ -115,10 +131,31 @@ jQuery(document).ready(function($) {
                 // for each input field, read it into the raw form object, recording any prefixes of fields which
                 // are lists
                 $(form_selector).find(":input").each(function() {
+                    // if the field is disabled, and disabled field reading is off, skip it
+                    if ($(this).attr("disabled") && !record_disabled) {
+                        return
+                    }
+
                     var name = $(this).attr("name");
                     if (name) {
+                        // get the input type if it has one
+                        var type = $(this).attr("type");
+
+                        // get the actual value of the field
                         var val = $(this).val();
+                        var storable = false;
                         if (val) {
+                            storable = true;
+                        }
+
+                        // now adjust based on the type
+                        // if it is a checkbox, we want the boolean value, not the actual value
+                        if (type && type === "checkbox") {
+                            val = $(this).is(":checked");
+                            storable = true;
+                        }
+
+                        if (storable) {
                             var bits = name.split("-");
                             if (bits.length > 1) {
                                 if ($.inArray(bits[0], lists) === -1) {
