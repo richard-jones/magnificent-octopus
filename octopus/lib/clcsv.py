@@ -9,7 +9,7 @@ class ClCsv():
     def __init__(self, file_path=None, writer=None,
                  output_encoding="utf-8", input_encoding="utf-8",
                  try_encodings_hard=True, fallback_input_encodings=None,
-                 from_row=0, from_col=0):
+                 from_row=0, from_col=0, ignore_blank_rows=False):
         """
         Class to wrap the Python CSV library. Allows reading and writing by column.
         :param file_path: A file object or path to a file. Will create one at specified path if it does not exist.
@@ -23,6 +23,7 @@ class ClCsv():
 
         self.from_row = from_row
         self.from_col = from_col
+        self.ignore_blank_rows = ignore_blank_rows
 
         # Store the csv contents in a list of tuples, [ (column_header, [contents]) ]
         self.data = []
@@ -231,6 +232,9 @@ class ClCsv():
         if close:
             self.file_object.close()
 
+    def _is_empty(self, row):
+        return sum([1 if c is not None and c != "" else 0 for c in row]) == 0
+
     def _populate_data(self, csv_rows):
         # Reset the stored data
         self.data = []
@@ -241,6 +245,10 @@ class ClCsv():
         for i in range(self.from_col, len(csv_rows[0])):        # for each column
             col_data = []
             for row in csv_rows[self.from_row + 1:]:            # for each row
+                if self.ignore_blank_rows:                      # conditionally ignore blank rows
+                    row_segment = row[self.from_col:]
+                    if self._is_empty(row_segment):
+                        continue
                 col_data.append(row[i])
             self.data.append((csv_rows[self.from_row][i], col_data))    # register along with the header
 
