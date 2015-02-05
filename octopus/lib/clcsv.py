@@ -8,7 +8,8 @@ class ClCsv():
 
     def __init__(self, file_path=None, writer=None,
                  output_encoding="utf-8", input_encoding="utf-8",
-                 try_encodings_hard=True, fallback_input_encodings=None):
+                 try_encodings_hard=True, fallback_input_encodings=None,
+                 from_row=0, from_col=0):
         """
         Class to wrap the Python CSV library. Allows reading and writing by column.
         :param file_path: A file object or path to a file. Will create one at specified path if it does not exist.
@@ -19,6 +20,9 @@ class ClCsv():
         if fallback_input_encodings is None and try_encodings_hard:
             fallback_input_encodings = ["cp1252", "cp1251", "iso-8859-1", "iso-8859-2", "windows-1252", "windows-1251"]
         self.fallback_input_encodings = fallback_input_encodings
+
+        self.from_row = from_row
+        self.from_col = from_col
 
         # Store the csv contents in a list of tuples, [ (column_header, [contents]) ]
         self.data = []
@@ -234,11 +238,11 @@ class ClCsv():
             return
 
         # Add new data
-        for i in range(0, len(csv_rows[0])):
+        for i in range(self.from_col, len(csv_rows[0])):        # for each column
             col_data = []
-            for row in csv_rows[1:]:
+            for row in csv_rows[self.from_row + 1:]:            # for each row
                 col_data.append(row[i])
-            self.data.append((csv_rows[0][i], col_data))
+            self.data.append((csv_rows[self.from_row][i], col_data))    # register along with the header
 
 class BadCharReplacer:
     """
