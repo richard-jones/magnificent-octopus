@@ -132,6 +132,22 @@ class ClCsv():
             else:
                 c.append("")
 
+    def triples(self):
+        """
+        Iterate over every cell in the body of the sheet, taking the header and the
+        first value in the row as the indices, and the value in the intersecting cell
+        :return: (column header, row title, value)
+        """
+        _, c = self.get_column(0)
+        headers = self.headers()
+
+        vert = 0
+        for y in c:
+            for x in headers[1:]:
+                _, col = self.get_column(x)
+                yield x, y, col[vert]
+            vert += 1
+
     def get_column(self, col_identifier):
         """
         Get a column from the CSV file.
