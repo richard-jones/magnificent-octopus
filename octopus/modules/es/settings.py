@@ -6,6 +6,8 @@
 ELASTIC_SEARCH_HOST = "http://localhost:9200"
 ELASTIC_SEARCH_INDEX = "db"
 
+ELASTIC_SEARCH_VERSION = "0.90.13"
+
 # index to use for testing (see testindex.py)
 ELASTIC_SEARCH_TEST_INDEX = "test"
 

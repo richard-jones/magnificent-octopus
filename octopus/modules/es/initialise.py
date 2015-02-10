@@ -18,6 +18,9 @@ def initialise():
     # get the list of classes which carry the mappings to be loaded
     mapping_daos = app.config.get("ELASTIC_SEARCH_MAPPINGS", [])
 
+    # get the ES version that we're working with
+    es_version = app.config.get("ELASTIC_SEARCH_VERSION", "0.90.13")
+
     # load each class and execute the "mappings" function to get the mappings
     # that need to be imported
     for cname in mapping_daos:
@@ -26,8 +29,8 @@ def initialise():
 
         # for each mapping (a class may supply multiple), create them in the index
         for key, mapping in mappings.iteritems():
-            if not esprit.raw.has_mapping(conn, key):
-                r = esprit.raw.put_mapping(conn, key, mapping)
-                print "Creating ES mapping for", key, "; status:", r.status_code
+            if not esprit.raw.type_exists(conn, key):   # FIXME: check this behaves the same in ES 0.x and 1.x
+                r = esprit.raw.put_mapping(conn, key, mapping, es_version=es_version)
+                print "Creating ES Type+Mapping for", key, "; status:", r.status_code
             else:
-                print "ES Mapping already exists for ", key
+                print "ES Type+Mapping already exists for ", key
