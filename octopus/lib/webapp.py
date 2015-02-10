@@ -44,8 +44,11 @@ def jsonp(f):
     def decorated_function(*args, **kwargs):
         callback = request.args.get('callback', False)
         if callback:
-            content = str(callback) + '(' + str(f(*args,**kwargs).data) + ')'
-            return current_app.response_class(content, mimetype='application/javascript')
+            resp = f(*args,**kwargs)
+            content = str(callback) + '(' + str(resp.data) + ')'
+            nr = current_app.response_class(content, mimetype='application/javascript')
+            nr.status_code = resp.status_code
+            return nr
         else:
             return f(*args, **kwargs)
     return decorated_function
