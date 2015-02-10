@@ -1,4 +1,5 @@
 from copy import deepcopy
+import locale
 
 class DataSchemaException(Exception):
     pass
@@ -171,6 +172,54 @@ class DataObj(object):
                 return unicode(val)
 
         return to_utf8_unicode
+
+    def _int(self):
+        def intify(val):
+            # try the straight cast
+            try:
+                return int(val)
+            except ValueError:
+                pass
+
+            # could have commas in it, so try stripping them
+            try:
+                return int(val.replace(",", ""))
+            except ValueError:
+                pass
+
+            # try the locale-specific approach
+            try:
+                return locale.atoi(val)
+            except ValueError:
+                pass
+
+            raise ValueError("Could not convert string to int: {x}".format(x=val))
+
+        return intify
+
+    def _float(self):
+        def floatify(val):
+            # try the straight cast
+            try:
+                return float(val)
+            except ValueError:
+                pass
+
+            # could have commas in it, so try stripping them
+            try:
+                return float(val.replace(",", ""))
+            except ValueError:
+                pass
+
+            # try the locale-specific approach
+            try:
+                return locale.atof(val)
+            except ValueError:
+                pass
+
+            raise ValueError("Could not convert string to float: {x}".format(x=val))
+
+        return floatify
 
 class ObjectSchemaValidationError(Exception):
     pass
