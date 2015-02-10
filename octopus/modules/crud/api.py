@@ -7,18 +7,21 @@ from octopus.lib import plugin, webapp
 blueprint = Blueprint('crud', __name__)
 
 def _not_found():
+    app.logger.debug("Sending 404 Not Found")
     resp = make_response(json.dumps({"status" : "not found"}))
     resp.mimetype = "application/json"
     resp.status_code = 404
     return resp
 
 def _bad_request(e):
+    app.logger.info("Sending 400 Bad Request from client: {x}".format(x=e.message))
     resp = make_response(json.dumps({"status" : "error", "error" : e.message}))
     resp.mimetype = "application/json"
     resp.status_code = 400
     return resp
 
 def _created(obj, container_type):
+    app.logger.info("Sending 201 Created: {x} {y}".format(x=container_type, y=obj.id))
     url = url_for("crud.entity", container_type=container_type, type_id=obj.id)
     resp = make_response(json.dumps({"status" : "success", "id" : obj.id, "location" : url }))
     resp.mimetype = "application/json"
@@ -27,6 +30,7 @@ def _created(obj, container_type):
     return resp
 
 def _success():
+    app.logger.debug("Sending 200 OK")
     resp = make_response(json.dumps({"status" : "success"}))
     return resp
 
@@ -59,6 +63,8 @@ def _get_class(container_type, operation):
 def container(container_type=None):
     # if this is the creation of a new object
     if request.method == "POST":
+        app.logger.info("Request for creation of new object of type {x}".format(x=container_type))
+
         # load the data management class for this operation type
         klazz = _get_class(container_type, "create")
         if klazz is None:
@@ -71,6 +77,7 @@ def container(container_type=None):
         try:
             obj = klazz(data)
         except ObjectSchemaValidationError as e:
+            app.logger.info("Error processing create request {x}".format(x=e.message))
             return _bad_request(e)
 
         # call save on the object
@@ -85,6 +92,8 @@ def container(container_type=None):
 @webapp.jsonp
 def entity(container_type=None, type_id=None):
     if request.method == "GET":
+        app.logger.info("Retrieve request for {x} {y}".format(x=container_type, y=type_id))
+
         # load the data management class for this operation type
         klazz = _get_class(container_type, "retrieve")
         if klazz is None:
@@ -100,6 +109,8 @@ def entity(container_type=None, type_id=None):
         return resp
 
     elif request.method == "PUT":
+        app.logger.info("Update request for {x} {y}".format(x=container_type, y=type_id))
+
         # load the data management class for this operation type
         klazz = _get_class(container_type, "update")
         if klazz is None:
@@ -115,6 +126,7 @@ def entity(container_type=None, type_id=None):
         try:
             obj.update(data)
         except ObjectSchemaValidationError as e:
+            app.logger.info("Error processing update request {x}".format(x=e.message))
             return _bad_request(e)
 
         # call save on the object
@@ -124,6 +136,8 @@ def entity(container_type=None, type_id=None):
         return _success()
 
     elif request.method == "DELETE":
+        app.logger.info("Delete request for {x} {y}".format(x=container_type, y=type_id))
+
         # load the data management class for this operation type
         klazz = _get_class(container_type, "delete")
         if klazz is None:
