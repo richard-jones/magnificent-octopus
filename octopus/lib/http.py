@@ -1,6 +1,17 @@
 from octopus.core import app
-import requests, time
+import requests, time, urllib
 
+def quote(s, **kwargs):
+    try:
+        return urllib.quote_plus(s, **kwargs)
+    except:
+        pass
+
+    try:
+        utf = s.encode("utf-8")
+        return urllib.quote(utf, **kwargs)
+    except:
+        return None
 
 def _backoff(attempt_number, back_off_factor, max_back_off):
     seconds = 2**attempt_number * back_off_factor
