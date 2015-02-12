@@ -2,6 +2,37 @@ jQuery(document).ready(function($) {
     $.extend(octopus, {
         forms: {
 
+            setValue : function(params) {
+                var jqel = params.jqel;
+                var val = params.val;
+
+                // some properties we might be interested in
+                var tag = jqel.prop("tagName");
+                var type = jqel.attr("type");
+
+                // if this is a select2 select box, setting the val directly won't have the desired
+                // effect, and we want to use the select2 native method
+                if (tag && tag.toLowerCase() === "select") {
+                    var classes = jqel.attr("class").split(" ");
+                    for (var i = 0; i < classes.length; i++) {
+                        if (classes[i].lastIndexOf("select2", 0) === 0) { // startsWith in javascript :)
+                            // this is a select2 select box, so we need to use the select2 val setter
+                            jqel.select2("val", val);
+                            return;
+                        }
+                    }
+                }
+
+                // if this is a checkbox, setting the val doesn't mean anything, instead we need to
+                // set whether it is checked or not
+                if (type && type.toLowerCase() === "checkbox") {
+                    jqel.prop("checked", val);
+                }
+
+                // jquery's default value setter - will work for most form elements
+                jqel.val(val);
+            },
+
             repeat : function(params) {
 
                 var list_selector = params.list_selector;
@@ -270,24 +301,41 @@ jQuery(document).ready(function($) {
                 // now map the incoming object values to the form fields, populating their values
                 for (i = 0; i < fields.length; i++) {
                     var f = fields[i];
+
                     if ($.inArray(f, lists) === -1) {
                         // if just a flat field, just copy the value over to the element
                         var el = formstruct.get_field(f);
                         var val = formobj.get_field(f);
-                        el.val(val);
+                        octopus.forms.setValue({jqel: el, val: val});
+                        // el.val(val);
+
                     } else {
-                        // if it's a list instead, get the list of groups of fields, then for each object in
-                        // order map the values to the form elements
+                        // if it's a list instead, get the list of (groups of) fields and work through them
                         var elsetlist = formstruct.get_field(f);
-                        var objlist = formobj.get_field(f);
-                        if (objlist) {
-                            for (var j = 0; j < objlist.length; j++) {
-                                var elset = elsetlist[j];
-                                var obj = objlist[j];
-                                var subfields = Object.keys(obj);
-                                for (var k = 0; k < subfields.length; k++) {
-                                    var sf = subfields[k];
-                                    elset[sf].val(obj[sf]);
+                        var vallist = formobj.get_field(f);
+
+                        if (vallist && elsetlist) {
+                            // now we have to decide whether there are sub-fields, or just arrays of values (the difference
+                            // between a list of fields, and a list of sub-forms, with multiple fields per repeat)
+
+                            // go through each value in the value list, and determine if it is a sub-object or a
+                            // straight-up literal value
+                            for (var j = 0; j < vallist.length; j++) {
+                                var value = vallist[j];
+                                if ($.isPlainObject(value)) {
+                                    // is this an object, which will therefore have sub fields?
+                                    var elset = elsetlist[j];
+                                    var subfields = Object.keys(value);
+                                    for (var k = 0; k < subfields.length; k++) {
+                                        var sf = subfields[k];
+                                        // elset[sf].val(value[sf]);
+                                        octopus.forms.setValue({jqel: elset[sf], val: value[sf]});
+                                    }
+                                } else {
+                                    // is this is literal, to be rendered into the form
+                                    var vel = elsetlist[j];
+                                    // vel.val(value);
+                                    octopus.forms.setValue({jqel: vel, val: value});
                                 }
                             }
                         }
