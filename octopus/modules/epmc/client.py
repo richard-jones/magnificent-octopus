@@ -172,3 +172,10 @@ class EPMCFullText(object):
             out += etree.tostring(p)
 
         return type, url, out
+
+    @property
+    def copyright_statement(self):
+        cs = self.xml.xpath("//copyright-statement")
+        if len(cs) > 0:
+            return cs[0].text
+        return None
