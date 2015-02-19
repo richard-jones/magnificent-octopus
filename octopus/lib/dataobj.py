@@ -105,7 +105,7 @@ class DataObj(object):
         except (ValueError, TypeError):
             if accept_failure:
                 return val
-            raise DataSchemaException("Cast with " + str(cast) + " failed on " + str(val))
+            raise DataSchemaException(u"Cast with {x} failed on {y}".format(x=cast, y=val))
 
     def _get_single(self, path, coerce=None, default=None, allow_coerce_failure=True):
         # get the value at the point in the object
@@ -134,7 +134,7 @@ class DataObj(object):
 
         # check that the val is actually a list
         if not isinstance(val, list):
-            raise DataSchemaException("Expecting a list at " + path + " but found " + str(type(val)))
+            raise DataSchemaException(u"Expecting a list at {x} but found {y}".format(x=path, y=val))
 
         # if there is a value, do we want to coerce each of them
         if coerce is not None:
@@ -155,19 +155,19 @@ class DataObj(object):
             return
 
         if val is None and not allow_none:
-            raise DataSchemaException("NoneType is not allowed at " + path)
+            raise DataSchemaException(u"NoneType is not allowed at {x}".format(x=path))
 
         # first see if we need to coerce the value (and don't coerce None)
         if coerce is not None and val is not None:
             val = self._coerce(val, coerce, accept_failure=allow_coerce_failure)
 
         if allowed_values is not None and val not in allowed_values:
-            raise DataSchemaException("Value " + str(val) + " is not permitted at " + path)
+            raise DataSchemaException(u"Value {x} is not permitted at {y}".format(x=val, y=path))
 
         if allowed_range is not None:
             lower, upper = allowed_range
             if (lower is not None and val < lower) or (upper is not None and val > upper):
-                raise DataSchemaException("Value " + str(val) + " is outside the allowed range: " + str(lower) + " - " + str(upper))
+                raise DataSchemaException("Value {x} is outside the allowed range: {l} - {u}".format(x=val, l=lower, u=upper))
 
         # now set it at the path point in the object
         self._set_path(path, val)
@@ -188,7 +188,7 @@ class DataObj(object):
             return
 
         if val is None and not allow_none:
-            raise DataSchemaException("NoneType is not allowed in list at " + path)
+            raise DataSchemaException(u"NoneType is not allowed in list at {x}".format(x=path))
 
         # first coerce the value
         if coerce is not None:
@@ -204,7 +204,7 @@ class DataObj(object):
                 try:
                     return val.decode("utf8", "strict")
                 except UnicodeDecodeError:
-                    raise ValueError("Could not decode string")
+                    raise ValueError(u"Could not decode string")
             else:
                 return unicode(val)
 
@@ -212,6 +212,11 @@ class DataObj(object):
 
     def _int(self):
         def intify(val):
+            # strip any characters that are outside the ascii range - they won't make up the float anyway
+            # and this will get rid of things like strange currency marks
+            if isinstance(val, unicode):
+                val = val.encode("ascii", errors="ignore")
+
             # try the straight cast
             try:
                 return int(val)
@@ -230,12 +235,17 @@ class DataObj(object):
             except ValueError:
                 pass
 
-            raise ValueError("Could not convert string to int: {x}".format(x=val))
+            raise ValueError(u"Could not convert string to int: {x}".format(x=val))
 
         return intify
 
     def _float(self):
         def floatify(val):
+            # strip any characters that are outside the ascii range - they won't make up the float anyway
+            # and this will get rid of things like strange currency marks
+            if isinstance(val, unicode):
+                val = val.encode("ascii", errors="ignore")
+
             # try the straight cast
             try:
                 return float(val)
@@ -254,7 +264,7 @@ class DataObj(object):
             except ValueError:
                 pass
 
-            raise ValueError("Could not convert string to float: {x}".format(x=val))
+            raise ValueError(u"Could not convert string to float: {x}".format(x=val))
 
         return floatify
 
