@@ -46,6 +46,31 @@ class DataObj(object):
             else:
                 context[p] = val
 
+    def _delete_from_list(self, path, val=None, matchsub=None, prune=True):
+        l = self._get_list(path)
+
+        removes = []
+        i = 0
+        for entry in l:
+            if val is not None:
+                if entry == val:
+                    removes.append(i)
+            elif matchsub is not None:
+                matches = 0
+                for k, v in matchsub.iteritems():
+                    if entry.get(k) == v:
+                        matches += 1
+                if matches == len(matchsub.keys()):
+                    removes.append(i)
+            i += 1
+
+        removes.sort(reverse=True)
+        for r in removes:
+            del l[r]
+
+        if len(l) == 0 and prune:
+            self._delete(path, prune)
+
     def _delete(self, path, prune=True):
         parts = path.split(".")
         context = self.data
@@ -59,7 +84,7 @@ class DataObj(object):
                     context = context[p]
                 else:
                     del context[p]
-                    if prune:
+                    if prune and len(stack) > 0:
                         stack.pop() # the last element was just deleted
                         self._prune_stack(stack)
 
@@ -122,7 +147,12 @@ class DataObj(object):
             else:
                 return deepcopy(val)
 
-    def _set_single(self, path, val, coerce=None, allow_coerce_failure=False, allowed_values=None, allowed_range=None, allow_none=True):
+    def _set_single(self, path, val, coerce=None, allow_coerce_failure=False, allowed_values=None, allowed_range=None,
+                    allow_none=True, ignore_none=False):
+
+        if val is None and ignore_none:
+            return
+
         if val is None and not allow_none:
             raise DataSchemaException("NoneType is not allowed at " + path)
 
@@ -152,7 +182,13 @@ class DataObj(object):
         # now set it on the path
         self._set_path(path, val)
 
-    def _add_to_list(self, path, val, coerce=None, allow_coerce_failure=False):
+    def _add_to_list(self, path, val, coerce=None, allow_coerce_failure=False, allow_none=False, ignore_none=True):
+        if val is None and ignore_none:
+            return
+
+        if val is None and not allow_none:
+            raise DataSchemaException("NoneType is not allowed in list at " + path)
+
         # first coerce the value
         if coerce is not None:
             val = self._coerce(val, coerce, accept_failure=allow_coerce_failure)
