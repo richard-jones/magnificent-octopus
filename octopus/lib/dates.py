@@ -3,6 +3,8 @@ from octopus.core import app
 from datetime import datetime
 
 def parse(s, format=None, guess=True):
+    s = s.strip()
+
     if format is not None:
         try:
             return datetime.strptime(s, format)
