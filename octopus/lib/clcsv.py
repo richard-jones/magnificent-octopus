@@ -416,6 +416,10 @@ class SheetWrapper(object):
     # DEFAULT_VALUES mapping
     EMPTY_STRING_AS_NONE = False
 
+    # should values be trimmed before being returned.  This will be applied before the empty string
+    # check, so can be used to return all whitespace-only strings as None too
+    TRIM = True
+
     def __init__(self, path=None, writer=None, spec=None):
         if path is not None:
             self._sheet = ClCsv(path, ignore_blank_rows=True)
@@ -454,12 +458,14 @@ class SheetWrapper(object):
         return None
 
     def _value(self, field, value):
+        if self.TRIM:
+            value = value.strip()
         if value is None or value == "":
             if field in self.DEFAULT_VALUES:
                 return self.DEFAULT_VALUES.get(field, "")
             elif self.EMPTY_STRING_AS_NONE:
                 return None
-                
+
         return value
 
     def objects(self):
