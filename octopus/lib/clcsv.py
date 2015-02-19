@@ -394,3 +394,91 @@ class UnicodeWriter:
     def writerows(self, rows):
         for row in rows:
             self.writerow(row)
+
+
+######################################################################
+
+
+class SheetWrapper(object):
+    # map from values that will appear in the headers for real (i.e. human readable) to values
+    # that should be used to refer to that column internally
+    HEADERS = {}
+
+    # order of headers as they should be saved - use the internal reference name, not the human
+    # readable name
+    OUTPUT_ORDER = []
+
+    # values to set in cells where no value is provided when adding a row/object - use the internal
+    # reference name as the key, and the default value as the value
+    DEFAULT_VALUES = {}
+
+    # should any empty string be represented as a None?  Is overridden by anything in the
+    # DEFAULT_VALUES mapping
+    EMPTY_STRING_AS_NONE = False
+
+    def __init__(self, path=None, writer=None, spec=None):
+        if path is not None:
+            self._sheet = ClCsv(path, ignore_blank_rows=True)
+        elif writer is not None:
+            self._sheet = ClCsv(writer=writer, ignore_blank_rows=True)
+            self._set_headers(spec)
+
+    def _set_headers(self, spec=None):
+        headers = []
+
+        # only write headers which are in the object spec
+        if spec is not None:
+            oo = [x for x in self.OUTPUT_ORDER if x in spec]
+        else:
+            oo = self.OUTPUT_ORDER
+
+        # write the headers in the correct order, ensuring they exist in the
+        # Master spreadsheet header definitions
+        for o in oo:
+            found = False
+            for k, v in self.HEADERS.iteritems():
+                if v == o:
+                    headers.append(k)
+                    found = True
+                    break
+            if not found:
+                headers.append(o)
+
+        # finally write the filtered, sanitised headers
+        self._sheet.set_headers(headers)
+
+    def _header_key_map(self, key):
+        for k, v in self.HEADERS.iteritems():
+            if key.strip().lower() == k.lower():
+                return v
+        return None
+
+    def _value(self, field, value):
+        if value is None or value == "":
+            if field in self.DEFAULT_VALUES:
+                return self.DEFAULT_VALUES.get(field, "")
+            elif self.EMPTY_STRING_AS_NONE:
+                return None
+                
+        return value
+
+    def objects(self):
+        for o in self._sheet.objects():
+            no = {}
+            for key, val in o.iteritems():
+                k = self._header_key_map(key)
+                if k is not None:
+                    no[k] = self._value(k, val)
+            yield no
+
+    def add_object(self, obj):
+        no = {}
+        for k, v in obj.iteritems():
+            for k1, v1 in self.HEADERS.iteritems():
+                if k == v1:
+                    no[k1] = self._value(k, v)
+                    break
+        self._sheet.add_object(no)
+
+    def save(self):
+        self._sheet.save(close=False)
