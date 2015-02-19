@@ -1,3 +1,4 @@
+from octopus.lib import dates
 from copy import deepcopy
 import locale
 
@@ -256,6 +257,12 @@ class DataObj(object):
             raise ValueError("Could not convert string to float: {x}".format(x=val))
 
         return floatify
+
+    def _date_str(self, in_format=None, out_format=None):
+        def datify(val):
+            return dates.reformat(val, in_format=in_format, out_format=out_format)
+
+        return datify
 
 class ObjectSchemaValidationError(Exception):
     pass
