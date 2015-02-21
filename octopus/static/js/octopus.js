@@ -17,6 +17,12 @@ var octopus = {
         }
     },
 
+    string : {
+        startsWith : function(str, prefix) {
+           return str.lastIndexOf(prefix, 0) === 0
+        }
+    },
+
     dataobj : {
         newDataObj : function(params) {
             var DataObj = function(params) {
