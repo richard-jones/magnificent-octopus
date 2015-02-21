@@ -21,6 +21,8 @@ class DOAJSearchClient(object):
             return None
 
     def journals_by_issns(self, issns):
+        if not isinstance(issns, list):
+            issns = [issns]
         q = IssnQuery("journal", issns)
         return self.object_search(q.query())
 
