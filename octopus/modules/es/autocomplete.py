@@ -126,10 +126,15 @@ def compound(config_name):
     query["size"] = size
 
     # add the fields constraint
+    esv = app.config.get("ELASTIC_SEARCH_VERSION", "0.90.13")
+    fields_key = "fields"
+    if esv.startswith("1"):
+        fields_key = "_source"
+
     fields = cfg.get("fields")
     if fields is None or len(fields) == 0:
         abort(500)
-    query["fields"] = fields
+    query[fields_key] = fields
 
     # get the name of the model that will handle this query, and then look up
     # the class that will handle it
