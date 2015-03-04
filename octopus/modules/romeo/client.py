@@ -74,7 +74,13 @@ class Publisher(object):
         for rest in restrictions:
             if "embargo" in rest.lower():
                 return self._parse_embargo(rest)
-        return None
+        return None, None
+
+    @property
+    def name(self):
+        names = self.xml.xpath("//name")
+        if len(names) > 0:
+            return names[0].text
 
     @property
     def preprint(self):
@@ -87,6 +93,18 @@ class Publisher(object):
     @property
     def pdf(self):
         return self._archive_conditions("//pdfarchiving", "//pdfrestriction")
+
+    @property
+    def preprint_archiving(self):
+        return self.preprint[0]
+
+    @property
+    def postprint_archiving(self):
+        return self.postprint[0]
+
+    @property
+    def pdf_archiving(self):
+        return self.pdf[0]
 
     @property
     def preprint_embargo(self):
