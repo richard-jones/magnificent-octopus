@@ -20,8 +20,10 @@ class RomeoClient(object):
 
     def get_by_issn(self, issn):
         url = self.base_url + "?issn=" + http.quote(issn)
+        app.logger.info("Looking up ISSN in Romeo with URL {x}".format(x=url))
         resp = http.get(url)
         if resp is None or resp.status_code != 200:
+            app.logger.info("Unable to retrieve {x} from Romeo".format(x=issn))
             raise RomeoClientException("Unable to get by issn")
         xml = xmlutil.fromstring(resp.text)
         return SearchResult(xml)
