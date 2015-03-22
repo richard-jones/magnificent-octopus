@@ -27,20 +27,25 @@ class Core(object):
         url = self.api_base_url + "search/"
         quoted = quote(search_criteria)
         url += quoted + "?format=json&count=" + quote(str(count)) + "&offset=" + quote(str(offset)) + "&api_key=" + quote(self.api_key)
+        app.logger.info("Searching CORE with URL {x}".format(x=url))
 
         # make the request
         resp = http.get(url)
 
         # if we didn't get a response, raise an error
         if resp is None:
+            app.logger.info("Was unable to communicate with CORE")
             raise CoreClientException("Was unable to communicate with CORE")
 
         if resp.status_code not in [200, 204]:
+            app.logger.info("Got Not-OK status code from CORE: {x}".format(x=resp.status_code))
             resp.raise_for_status()
 
         if resp.status_code == 200:
+            app.logger.info("Got search results from CORE")
             sr = SearchResult(resp.json())
         else:
+            app.logger.info("Got no results from CORE - returning empty result set")
             sr = SearchResult()
 
         return sr
