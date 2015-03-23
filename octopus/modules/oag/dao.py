@@ -37,14 +37,27 @@ class JobsDAO(dao.ESDAO):
         self.data["maxed_count"] = maxed
 
 class JobStatusQuery(object):
+    def __init__(self):
+        esv = app.config.get("ELASTIC_SEARCH_VERSION", "0.90.13")
+        if esv.startswith("0"):
+            self.fields = "fields"
+        else:
+            self.fields = "_source"
     def query(self):
         return {
             "query" : { "match_all" : {}},
-            "fields" : ["id", "status"],
+            self.fields : ["id", "status"],
             "size" : 1000
         }
 
 class DueJobsQuery(object):
+    def __init__(self):
+        esv = app.config.get("ELASTIC_SEARCH_VERSION", "0.90.13")
+        if esv.startswith("0"):
+            self.fields = "fields"
+        else:
+            self.fields = "_source"
+
     def query(self):
         now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         return {
@@ -70,6 +83,7 @@ class DueJobsQuery(object):
             },
             # FIXME: removed because of a bug in ES around date sorting
             # "sort" : [{"pending.due" : {"order" : "asc", "mode" : "min"}}],
-            "fields" : ["id"],
+            self.fields : [ "id" ],
+            # "fields" : ["id"],
             "size" : 10000
         }

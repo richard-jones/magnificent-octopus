@@ -17,6 +17,21 @@ var octopus = {
         }
     },
 
+    string : {
+        startsWith : function(str, prefix) {
+           return str.lastIndexOf(prefix, 0) === 0
+        },
+
+        escapeHtml : function (unsafe) {
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+    },
+
     dataobj : {
         newDataObj : function(params) {
             var DataObj = function(params) {

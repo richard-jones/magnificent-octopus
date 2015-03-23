@@ -461,7 +461,11 @@ class SheetWrapper(object):
 
     def _value(self, field, value):
         if self.TRIM:
-            value = value.strip()
+            try:
+                value = value.strip()
+            except AttributeError:
+                # this is a type that can't be stripped
+                pass
         if value is None or value == "":
             if field in self.DEFAULT_VALUES:
                 return self.DEFAULT_VALUES.get(field, "")

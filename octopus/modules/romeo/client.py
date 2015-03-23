@@ -20,8 +20,10 @@ class RomeoClient(object):
 
     def get_by_issn(self, issn):
         url = self.base_url + "?issn=" + http.quote(issn)
+        app.logger.info("Looking up ISSN in Romeo with URL {x}".format(x=url))
         resp = http.get(url)
         if resp is None or resp.status_code != 200:
+            app.logger.info("Unable to retrieve {x} from Romeo".format(x=issn))
             raise RomeoClientException("Unable to get by issn")
         xml = xmlutil.fromstring(resp.text)
         return SearchResult(xml)
@@ -74,7 +76,13 @@ class Publisher(object):
         for rest in restrictions:
             if "embargo" in rest.lower():
                 return self._parse_embargo(rest)
-        return None
+        return None, None
+
+    @property
+    def name(self):
+        names = self.xml.xpath("//name")
+        if len(names) > 0:
+            return names[0].text
 
     @property
     def preprint(self):
@@ -87,6 +95,18 @@ class Publisher(object):
     @property
     def pdf(self):
         return self._archive_conditions("//pdfarchiving", "//pdfrestriction")
+
+    @property
+    def preprint_archiving(self):
+        return self.preprint[0]
+
+    @property
+    def postprint_archiving(self):
+        return self.postprint[0]
+
+    @property
+    def pdf_archiving(self):
+        return self.pdf[0]
 
     @property
     def preprint_embargo(self):
