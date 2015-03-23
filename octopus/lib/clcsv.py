@@ -9,7 +9,8 @@ class ClCsv():
     def __init__(self, file_path=None, writer=None,
                  output_encoding="utf-8", input_encoding="utf-8",
                  try_encodings_hard=True, fallback_input_encodings=None,
-                 from_row=0, from_col=0, ignore_blank_rows=False):
+                 from_row=0, from_col=0, ignore_blank_rows=False,
+                 input_dialect=csv.excel):
         """
         Class to wrap the Python CSV library. Allows reading and writing by column.
         :param file_path: A file object or path to a file. Will create one at specified path if it does not exist.
@@ -24,6 +25,7 @@ class ClCsv():
         self.from_row = from_row
         self.from_col = from_col
         self.ignore_blank_rows = ignore_blank_rows
+        self.input_dialect = input_dialect
 
         # Store the csv contents in a list of tuples, [ (column_header, [contents]) ]
         self.data = []
@@ -74,7 +76,7 @@ class ClCsv():
             if file_object.closed:
                 codecs.open(file_object.name, 'r+b', encoding=self.input_encoding)
 
-            reader = UnicodeReader(file_object, output_encoding=self.output_encoding)
+            reader = UnicodeReader(file_object, output_encoding=self.output_encoding, dialect=self.input_dialect)
             rows = []
             for row in reader:
                 rows.append(row)
