@@ -100,6 +100,8 @@ class DataObj(object):
                 del context[d]
 
     def _coerce(self, val, cast, accept_failure=False):
+        if cast is None:
+            return val
         try:
             return cast(val)
         except (ValueError, TypeError):
@@ -172,13 +174,27 @@ class DataObj(object):
         # now set it at the path point in the object
         self._set_path(path, val)
 
-    def _set_list(self, path, val, coerce=None, allow_coerce_failure=False):
+    def _set_list(self, path, val, coerce=None, allow_coerce_failure=False, allow_none=True, ignore_none=False):
         # first ensure that the value is a list
         if not isinstance(val, list):
             val = [val]
 
-        # now coerce each of the values
-        val = [self._coerce(v, coerce, accept_failure=allow_coerce_failure) for v in val]
+        # now carry out the None check
+        # for each supplied value, if it is none, and none is not allowed, raise an error if we do not
+        # plan to ignore the nones.
+        for v in val:
+            if v is None and not allow_none:
+                if not ignore_none:
+                    raise DataSchemaException(u"NoneType is not allowed at {x}".format(x=path))
+
+        # now coerce each of the values, stripping out Nones if necessary
+        val = [self._coerce(v, coerce, accept_failure=allow_coerce_failure) for v in val if v is not None or not ignore_none]
+
+        # now check that the array has length at all (if it does not this is equivalent to a None)
+        if len(val) == 0 and not allow_none:
+            raise DataSchemaException(u"Empty array not permitted at {x}".format(x=path))
+        elif len(val) == 0 and ignore_none:
+            return
 
         # now set it on the path
         self._set_path(path, val)
