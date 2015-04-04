@@ -323,3 +323,42 @@ def validate(obj, schema):
                 pass # we are not imposing a schema on this object
             else:
                 validate(v, object_schema)
+
+def test_dataobj(obj, fields_and_values):
+    """
+    Test a dataobj to make sure that the getters and setters you have specified
+    are working correctly.
+
+    Provide it a data object and a list of fields with the values to set and the expeceted return values (if required):
+
+    {
+        "key" : ("set value", "get value")
+    }
+
+    If you provide only the set value, then the get value will be required to be the same as the set value in the test
+
+    {
+        "key" : "set value"
+    }
+
+    :param obj:
+    :param fields_and_values:
+    :return:
+    """
+    for k, valtup in fields_and_values.iteritems():
+        if not isinstance(valtup, tuple):
+            valtup = (valtup,)
+        set_val = valtup[0]
+        try:
+            setattr(obj, k, set_val)
+        except AttributeError:
+            assert False, u"Unable to set attribute {x} with value {y}".format(x=k, y=set_val)
+
+    for k, valtup in fields_and_values.iteritems():
+        if not isinstance(valtup, tuple):
+            valtup = (valtup,)
+        get_val = valtup[0]
+        if len(valtup) > 1:
+            get_val = valtup[1]
+        val = getattr(obj, k)
+        assert val == get_val, (k, val, get_val)
