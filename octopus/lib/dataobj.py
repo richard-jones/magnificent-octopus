@@ -22,6 +22,10 @@ class DataObj(object):
             validate(self.data, self.SCHEMA)
         return True
 
+    def populate(self, fields_and_values):
+        for k, v in fields_and_values.iteritems():
+            setattr(self, k, v)
+
     def _get_path(self, path, default):
         parts = path.split(".")
         context = self.data

@@ -492,5 +492,16 @@ class SheetWrapper(object):
                     break
         self._sheet.add_object(no)
 
+    def dataobjs(self, template, skip_on_error=False):
+        for o in self.objects():
+            do = template()
+            try:
+                do.populate(o)
+                yield do
+            except Exception as e:
+                if skip_on_error:
+                    continue
+                raise e
+
     def save(self):
         self._sheet.save(close=False)
