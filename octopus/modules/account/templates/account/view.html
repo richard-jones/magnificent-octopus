@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% if current_user.id == account.id or current_user.is_super %}
+
+    {% if current_user.id != account.id %}
+        <div class="alert alert-danger"><strong>NOTE</strong> you are editing a user account that is not your own.  Be careful!</div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-12">
+            <div style="padding-bottom: 10px; margin-bottom: 30px; padding-left: 30px; border-bottom: 3px dashed #aaaaaa">
+                <h1>{{account.email}}</h1>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-6">
+            <div style="border: 1px solid #cccccc; padding: 10px; margin: 10px">
+                <h3 style="padding-bottom: 10px">Update your details</h3>
+                <form id="updateform" method="post" action="{{url_for('account.username', username=account.id)}}">
+                    <div class="form-horizontal wide">
+                        {% autoescape off %}
+                        {{ form_context.render_field_group('details') }}
+                        {% endautoescape %}
+                        <button type="submit" class="btn btn-success" name="submit">Update <i class="icon-white icon-pencil"></i></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {#
+        <div class="span6">
+            <div style="border: 1px solid #cccccc; padding: 10px; margin: 10px">
+                <h3 style="padding-bottom: 10px">Change your password</h3>
+                <form action="" method="POST">
+                    <div class="form-horizontal wide">
+                    {{ render_field(pwform.old_password, style="width: 90%", placeholder="current password") }}
+                    {{ render_field(pwform.password, style="width: 90%", placeholder="new password") }}
+                    {{ render_field(pwform.confirm_password, style="width: 90%", placeholder="confirm your new password") }}
+                    <button type="submit" class="btn btn-success" name="submit">Update <i class="icon-white icon-pencil"></i></button>
+                    </div>
+                </form>
+            </div>
+
+            <div style="border: 1px solid #cccccc; padding: 10px; margin: 10px">
+                <h3 style="padding-bottom: 10px">Want to delete your account?</h3>
+                <p class="help-block" style="margin-bottom: 10px">If you delete your account, it will also deactivate all of your adverts.  You can re-create your
+                account at any time in the future.</p>
+                <form action="" method="POST">
+                    <button type="submit" class="btn btn-danger" id="delete_account" value="Delete" name="submit">Delete <i class="icon-white icon-trash"></i></button>
+                </form>
+            </div>
+
+        </div>
+        #}
+
+    </div>
+
+
+{% else %}
+
+    <div class="row">
+        <div class="col-md-6">
+            <div style="padding-bottom: 10px; margin-bottom: 30px; padding-left: 30px; border-bottom: 3px dashed #aaaaaa">
+                <h1>{{account.email}}</h1>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <p>You are not logged in as this user. Use the <a href="/account/login">login page</a> if you want to change this</p>
+        </div>
+    </div>
+    
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js_bottom %}
+
+{% endblock extra_js_bottom %}
+

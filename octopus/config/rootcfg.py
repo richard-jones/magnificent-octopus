@@ -9,6 +9,7 @@ CONFIG_FILES = [
     "magnificent-octopus/octopus/config/webapp.py",
 
     # octopus.module config files
+    "magnificent-octopus/octopus/modules/account/settings.py",
     "magnificent-octopus/octopus/modules/clientjs/settings.py",
     "magnificent-octopus/octopus/modules/coreacuk/settings.py",
     "magnificent-octopus/octopus/modules/crud/settings.py",
@@ -33,6 +34,7 @@ TEMPLATE_PATHS = [
     "magnificent-octopus/octopus/templates",
 
     # octopus modules templates
+    "magnificent-octopus/octopus/modules/account/templates",
     "magnificent-octopus/octopus/modules/clientjs/templates",
     "magnificent-octopus/octopus/modules/oag/templates"
 ]
@@ -46,6 +48,7 @@ STATIC_PATHS = [
     "magnificent-octopus/octopus/static",
 
     # octopus modules static directories
+    "magnificent-octopus/octopus/modules/account/static",
     "magnificent-octopus/octopus/modules/clientjs/static",
     "magnificent-octopus/octopus/modules/crud/static",
     "magnificent-octopus/octopus/modules/es/static",
@@ -57,5 +60,11 @@ STATIC_PATHS = [
 # module import paths for the startup modules that need to run at application init type (in the order you want them run)
 INITIALISE_MODULES = [
     # octopus modules initialisation
-    "octopus.modules.es.initialise"
+    "octopus.modules.es.initialise",
+    "octopus.modules.account.initialise"
 ]
+
+# command names and paths to scripts that can be run through the standard runner
+SCRIPTS = {
+    "usermod" : "octopus.modules.account.scripts.UserMod"
+}
