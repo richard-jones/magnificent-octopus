@@ -26,6 +26,9 @@ class DataObj(object):
         for k, v in fields_and_values.iteritems():
             setattr(self, k, v)
 
+    def clone(self):
+        return self.__class__(deepcopy(self.data))
+
     def _get_path(self, path, default):
         parts = path.split(".")
         context = self.data
