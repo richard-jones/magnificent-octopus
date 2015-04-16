@@ -19,14 +19,14 @@ class FirstErrorWrapper(object):
     def __init__(self, inner):
         self.inner = inner
 
-    def render_field(self, **kwargs):
+    def render_field(self, field, **kwargs):
         first_error = kwargs.pop("first_error", False)
 
         frag = ""
         if first_error:
             frag += '<a name="first_problem"></a>'
 
-        frag += self.inner.render_field(**kwargs)
+        frag += self.inner.render_field(field, **kwargs)
 
         return frag
 
@@ -34,10 +34,10 @@ class ContainerWrapper(object):
     def __init__(self, inner):
         self.inner = inner
 
-    def render_field(self, **kwargs):
+    def render_field(self, field, **kwargs):
         container_class = kwargs.pop("container_class", "")
         frag = "<div class='" + container_class + "'>"
-        frag += self.inner.render_field(**kwargs)
+        frag += self.inner.render_field(field, **kwargs)
         frag += "</div>"
         return frag
 
