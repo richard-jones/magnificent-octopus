@@ -45,22 +45,20 @@ def make_account(cls, email, name=None, phone=None, roles=[]):
     return a
 """
 
+@app.login_manager.user_loader
+def load_account_for_login_manager(userid):
+    return AccountFactory.get_model().pull_by_email(userid)
+
 '''
 @app.before_request
 def standard_authentication():
     """Check remote_user on a per-request basis."""
     remote_user = request.headers.get('REMOTE_USER', '')
     if remote_user:
-        user = models.Account.pull(remote_user)
+        Account = AccountFactory.get_model()
+        user = Account.pull_by_email(remote_user)
         if user:
             login_user(user, remember=False)
-    # add a check for provision of api key
-    elif 'api_key' in request.values:
-        res = models.Account.query(q='api_key:"' + request.values['api_key'] + '"')['hits']['hits']
-        if len(res) == 1:
-            user = models.Account.pull(res[0]['_source']['id'])
-            if user:
-                login_user(user, remember=False)
 '''
 
 @blueprint.route('/')
@@ -168,9 +166,13 @@ def login():
                     return fc.render_template()
 
                 if user.check_password(password):
-                    login_user(user, remember=True)
-                    flash('Welcome back.', 'success')
-                    return redirect(get_redirect_target(form=fc.form))
+                    inlog = login_user(user, remember=True)
+                    if not inlog:
+                        flash("Problem logging in", "error")
+                        return fc.render_template()
+                    else:
+                        flash('Welcome back.', 'success')
+                        return redirect(get_redirect_target(form=fc.form))
                 else:
                     flash('Incorrect username/password', 'error')
                     return fc.render_template()

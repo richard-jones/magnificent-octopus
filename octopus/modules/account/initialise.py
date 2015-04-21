@@ -7,6 +7,3 @@ def initialise():
     login_manager = LoginManager()
     login_manager.init_app(app)
 
-    @login_manager.user_loader
-    def load_account_for_login_manager(userid):
-        return AccountFactory.get_model().pull_by_email(userid)
