@@ -11,5 +11,9 @@ You can then put it into
 Finally, enable the site:
 
     /etc/nginx/sites-enabled
-    ln -s ../sites-available/[your app] [your app]
+    sudo ln -s ../sites-available/[your app] [your app]
+
+You should then be able to restart nginx with
+
+    
 
