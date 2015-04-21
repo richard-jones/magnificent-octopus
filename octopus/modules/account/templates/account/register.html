@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% from "_formhelpers.html" import render_field %}
+
+<div class="row-fluid">
+    <div class="span12">
+        <div style="padding-bottom: 10px; margin-bottom: 30px; padding-left: 30px; border-bottom: 3px dashed #aaaaaa">
+            <h1>Register for UniBoard</h1>
+        </div>
+    </div>
+</div>
+
+<form id="signupform" method="post" action="{{url_for('account.register')}}">
+<div class="row-fluid">
+    <div class="span3">&nbsp;</div>
+    <div class="span6">
+        <div class="alert alert-success">When registering, make sure that you use the email address given to you by your university.  You won't be able register with a different email.</div>
+        <div class="form-horizontal wide">
+            {{ render_field(form.email, style="width: 400px", placeholder="your institutional email address") }}
+            {{ render_field(form.name, style="width: 400px", placeholder="your name") }}
+            {{ render_field(form.degree, class="input-large") }}
+            {{ render_field(form.postcode, style="width: 150px", placeholder="term-time postcode") }}
+            {{ render_field(form.phone, style="width: 200px", placeholder="your telephone number") }}
+            {{ render_field(form.graduation, style="width: 100px", placeholder="e.g. 2016") }}
+        </div>
+    </div>
+</div>
+
+<div class="row-fluid">
+    <div class="span4">&nbsp;</div>
+    <div class="span4">
+        <button class="btn btn-primary" id="signup" type="submit" style="width: 100%; font-size: 30px; line-height: 30px">
+            Create my account!
+        </button>
+    </div>
+</div>
+
+</form>
+
+{% endblock %}
+
+{% block extra_js_bottom %}
+{{super()}}
+<script type="text/javascript" src="/static/uniboard/js/register.js"></script>
+
+{% endblock extra_js_bottom %}
+

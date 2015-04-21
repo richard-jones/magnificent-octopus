@@ -14,3 +14,5 @@ if __name__ == "__main__":
 
     if args.config:
         print_config()
+    else:
+        parser.print_help()

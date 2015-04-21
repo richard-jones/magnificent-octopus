@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+{% if current_user.has_role("create_user") %}<p><a href="{{url_for('account.register')}}">create new user</a></p>{% endif %}
+
+<div id="userfacetview"></div>
+
+{% endblock %}
+
+{% block extra_js_bottom %}
+<script type="text/javascript">
+
+    {# FIXME #}
+
+</script>
+{% endblock extra_js_bottom %}

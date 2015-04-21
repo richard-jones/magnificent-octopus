@@ -5,6 +5,7 @@ setup(
     version = '1.0.0',
     packages = find_packages(),
     install_requires = [
+        "werkzeug==0.8.3",  # required to explicitly set the correct version
         "requests",
         "Flask==0.9",
         "esprit",
@@ -12,7 +13,8 @@ setup(
         "simplejson",
         "lxml",
         "Flask-WTF==0.8.3",
-        "nose"
+        "nose",
+        "Flask-Mail==0.9.1"
     ],
     url = 'http://cottagelabs.com/',
     author = 'Cottage Labs',
