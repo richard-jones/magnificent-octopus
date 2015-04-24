@@ -28,6 +28,11 @@ ACCOUNT_ALLOW_REGISTER = False
 ACCOUNT_USER_FORM_CONTEXT = "octopus.modules.account.forms.BasicUserFormContext"
 ACCOUNT_LOGIN_FORM_CONTEXT = "octopus.modules.account.forms.LoginFormContext"
 
+# where to direct the user after login if they haven't already got a page in their "next" location
+ACCOUNT_LOGIN_REDIRECT_ROUTE = "index"
+
+# URL routing (suitable for passing to url_for) to redirect the user to on logout
+ACCOUNT_LOGOUT_REDIRECT_ROUTE = "index"
 
 # amount of time a reset token is valid for (86400 is 24 hours)
 PASSWORD_RESET_TIMEOUT = 86400

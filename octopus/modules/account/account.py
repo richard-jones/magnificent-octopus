@@ -21,7 +21,7 @@ def get_redirect_target(form=None):
             continue
         if target == is_safe_url(target):
             return target
-    return url_for('root')
+    return url_for(app.config.get("ACCOUNT_LOGIN_REDIRECT_ROUTE", "index"))
 
 # we are not having usernames (people are identified by email address), so we either
 # want to use their email address as their id, or mint them an opaque id.
@@ -62,6 +62,52 @@ def standard_authentication():
         if user:
             login_user(user, remember=False)
 '''
+
+
+@blueprint.route('/login', methods=['GET', 'POST'])
+@ssl_required
+def login():
+    # current_info = {'next': request.args.get('next', '')}
+    fc = AccountFactory.get_login_formcontext(request.form)
+
+    if request.method == 'POST':
+        if fc.validate():
+            password = fc.form.password.data
+            email = fc.form.email.data
+
+            Account = AccountFactory.get_model()
+            user = Account.pull_by_email(email)
+
+            if user is not None:
+                if not user.can_log_in():
+                    flash('Invalid credentials', 'error')
+                    return fc.render_template()
+
+                if user.check_password(password):
+                    inlog = login_user(user, remember=True)
+                    if not inlog:
+                        flash("Problem logging in", "error")
+                        return fc.render_template()
+                    else:
+                        flash('Welcome back.', 'success')
+                        return redirect(get_redirect_target(form=fc.form))
+                else:
+                    flash('Incorrect username/password', 'error')
+                    return fc.render_template()
+            else:
+                flash('Incorrect username/password', 'error')
+                return fc.render_template()
+        else:
+            flash('Invalid credentials', 'error')
+
+    return fc.render_template()
+
+@blueprint.route('/logout')
+@ssl_required
+def logout():
+    logout_user()
+    flash('You are now logged out', 'success')
+    return redirect(url_for(app.config.get("ACCOUNT_LOGOUT_REDIRECT_ROUTE", "index")))
 
 @blueprint.route('/')
 @login_required
@@ -148,43 +194,7 @@ def username(username):
         pw = SetPasswordForm(csrf_enabled=False)
         return render_template('account/view.html', account=acc, adverts=adverts, form=form, pwform=pw)
 
-@blueprint.route('/login', methods=['GET', 'POST'])
-@ssl_required
-def login():
-    # current_info = {'next': request.args.get('next', '')}
-    fc = AccountFactory.get_login_formcontext(request.form)
 
-    if request.method == 'POST':
-        if fc.validate():
-            password = fc.form.password.data
-            email = fc.form.email.data
-
-            Account = AccountFactory.get_model()
-            user = Account.pull_by_email(email)
-
-            if user is not None:
-                if not user.can_log_in():
-                    flash('Invalid credentials', 'error')
-                    return fc.render_template()
-
-                if user.check_password(password):
-                    inlog = login_user(user, remember=True)
-                    if not inlog:
-                        flash("Problem logging in", "error")
-                        return fc.render_template()
-                    else:
-                        flash('Welcome back.', 'success')
-                        return redirect(get_redirect_target(form=fc.form))
-                else:
-                    flash('Incorrect username/password', 'error')
-                    return fc.render_template()
-            else:
-                flash('Incorrect username/password', 'error')
-                return fc.render_template()
-        else:
-            flash('Invalid credentials', 'error')
-
-    return fc.render_template()
 
 
 @blueprint.route('/forgot', methods=['GET', 'POST'])
@@ -279,12 +289,7 @@ def reset(reset_token):
         return redirect(url_for('root'))
 
 
-@blueprint.route('/logout')
-@ssl_required
-def logout():
-    logout_user()
-    flash('You are now logged out', 'success')
-    return redirect('/')
+
 
 
 @blueprint.route('/register', methods=['GET', 'POST'])
