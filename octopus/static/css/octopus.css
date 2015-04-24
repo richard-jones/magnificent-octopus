@@ -53,6 +53,10 @@ form{
     display:inline;
 }
 
+#footer {
+    margin-top: 50px;
+}
+
 /************************************
   * Page loader elements
   ***********************************/

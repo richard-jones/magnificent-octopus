@@ -142,6 +142,13 @@ def username(username):
 
     is_delete = request.method == "DELETE" or (request.method == "POST" and request.values.get("submit", False) == "Delete")
     if is_delete:
+        # validate the delete
+        if not current_user.check_password(request.values.get("password")):
+            flash("Incorrect password", "error")
+            fc = AccountFactory.get_user_formcontext(acc=acc)
+            return fc.render_template()
+
+        # if the password validates, go ahead and do it
         acc.remove()    # Note we don't use the DAO's delete method - this allows the model to decide the delete behaviour
         logout_user()
         flash('Account {x} deleted'.format(x=username), "success")

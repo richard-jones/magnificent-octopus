@@ -4,6 +4,7 @@ from wtforms.fields import StringField, HiddenField, PasswordField
 from octopus.modules.form.context import FormContext, Renderer
 from octopus.modules.account.factory import AccountFactory
 from octopus.modules.account import exceptions
+from flask.ext.login import current_user
 
 #####################################################################
 ## Login
@@ -140,7 +141,8 @@ class BasicUserFormContext(FormContext):
         return True
 
     def _check_password(self):
-        return self.source.check_password(self.form.password.data)
+        # we check the password of the logged in user, not the account (this allows for admins to set user passwords)
+        return current_user.check_password(self.form.password.data)
 
     def _check_email(self):
         suggested = self.form.email.data
