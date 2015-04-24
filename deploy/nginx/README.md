@@ -15,5 +15,7 @@ Finally, enable the site:
 
 You should then be able to restart nginx with
 
+    sudo nginx -s reload
+
     
 
