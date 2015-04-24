@@ -1,7 +1,10 @@
-import os, esprit, jinja2
+import os, jinja2
 from flask import Flask
 from urllib import unquote
 from datetime import datetime
+
+from flask.ext.login import LoginManager, current_user
+login_manager = LoginManager()
 
 # obtain the base path of the application
 BASE_PATH = os.path.dirname(            # service base directory
@@ -16,6 +19,7 @@ def create_app():
     app = Flask(__name__)
     configure_app(app)
     setup_jinja(app)
+    login_manager.setup_app(app)
     print "App created at ", datetime.now().strftime("%H:%M:%S %d-%m-%Y")
     return app
 

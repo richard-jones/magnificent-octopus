@@ -5,11 +5,11 @@ setup(
     version = '1.0.0',
     packages = find_packages(),
     install_requires = [
-        "werkzeug==0.8.3",  # required to explicitly set the correct version
-        "requests",
+        "werkzeug==0.8.3",
         "Flask==0.9",
-        "esprit",
         "Flask-Login==0.1.3",
+        "requests",
+        "esprit",
         "simplejson",
         "lxml",
         "Flask-WTF==0.8.3",

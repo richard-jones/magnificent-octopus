@@ -45,9 +45,11 @@ def make_account(cls, email, name=None, phone=None, roles=[]):
     return a
 """
 
+"""
 @app.login_manager.user_loader
 def load_account_for_login_manager(userid):
     return AccountFactory.get_model().pull_by_email(userid)
+"""
 
 '''
 @app.before_request
