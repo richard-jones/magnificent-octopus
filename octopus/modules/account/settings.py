@@ -25,8 +25,8 @@ ACCOUNT_EDIT_USERS_ROLE = "edit_users"
 ACCOUNT_ALLOW_REGISTER = False
 
 # UI Form Contexts for the various interface aspects
-ACCOUNT_USER_FORM_CONTEXT = "octopus.modules.account.forms.BasicUserFormContext"
 ACCOUNT_LOGIN_FORM_CONTEXT = "octopus.modules.account.forms.LoginFormContext"
+ACCOUNT_USER_FORM_CONTEXT = "octopus.modules.account.forms.BasicUserFormContext"
 
 # where to direct the user after login if they haven't already got a page in their "next" location
 ACCOUNT_LOGIN_REDIRECT_ROUTE = "index"

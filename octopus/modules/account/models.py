@@ -78,6 +78,16 @@ class BasicAccount(dataobj.DataObj, dao.BasicAccountDAO, UserMixin):
     def reset_expires(self):
         return self._get_single("reset_expires", coerce=self._date_str())
 
+    def is_reset_expired(self):
+        if self.reset_expires is None:
+            return True
+
+        ed = datetime.strptime(self.reset_expires, "%Y-%m-%dT%H:%M:%SZ")
+        if ed < datetime.now():
+            return True
+
+        return False
+
     @property
     def activation_token(self):
         return self._get_single("activation_token", coerce=self._utf8_unicode())
@@ -101,6 +111,16 @@ class BasicAccount(dataobj.DataObj, dao.BasicAccountDAO, UserMixin):
     def activation_expires(self):
         return self._get_single("activation_expires", coerce=self._date_str())
 
+    def is_activation_expired(self):
+        if self.activation_expires is None:
+            return True
+
+        ed = datetime.strptime(self.activation_expires, "%Y-%m-%dT%H:%M:%SZ")
+        if ed < datetime.now():
+            return True
+
+        return False
+
     @property
     def is_super(self):
         return Authorise.has_role(app.config["ACCOUNT_SUPER_USER_ROLE"], self.role)
@@ -121,6 +141,9 @@ class BasicAccount(dataobj.DataObj, dao.BasicAccountDAO, UserMixin):
 
     def can_log_in(self):
         return True
+
+    def remove(self):
+        self.delete()
 
 
 class ContactableAccount(dataobj.DataObj):
@@ -219,6 +242,9 @@ class MonitoredAccount(dataobj.DataObj):
     @property
     def is_deleted(self):
         return self._get_single("admin.deleted", coerce=bool)
+
+    def remove(self):
+        self.set_deleted(True)
 
     def set_deleted(self, val):
         self._set_single("admin.deleted", val, coerce=bool)

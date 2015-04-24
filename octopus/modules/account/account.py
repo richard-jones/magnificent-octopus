@@ -8,6 +8,7 @@ from octopus.core import app
 from octopus.lib.webapp import ssl_required, request_wants_json, flash_with_url, is_safe_url
 from octopus.lib import mail
 from octopus.modules.account.factory import AccountFactory
+from octopus.modules.account import exceptions
 
 blueprint = Blueprint('account', __name__)
 
@@ -76,7 +77,11 @@ def login():
             email = fc.form.email.data
 
             Account = AccountFactory.get_model()
-            user = Account.pull_by_email(email)
+            try:
+                user = Account.pull_by_email(email)
+            except exceptions.NonUniqueAccountException:
+                flash("Permanent Error: unable to log you in with these credentials - please contact an administrator", "error")
+                return fc.render_template()
 
             if user is not None:
                 if not user.can_log_in():
@@ -109,6 +114,63 @@ def logout():
     flash('You are now logged out', 'success')
     return redirect(url_for(app.config.get("ACCOUNT_LOGOUT_REDIRECT_ROUTE", "index")))
 
+@blueprint.route('/<username>', methods=['GET', 'POST', 'DELETE'])
+@login_required
+@ssl_required
+def username(username):
+    Account = AccountFactory.get_model()
+    acc = Account.pull(username)
+    if acc is None:
+        try:
+            acc = Account.pull_by_email(username)
+        except exceptions.NonUniqueAccountException:
+            flash("Permanent Error: these user credentials are invalid - please contact an administrator", "error")
+            return redirect(url_for(("logut")))
+
+    if acc is None:
+        abort(404)
+
+    # actions on this page are only availble to the actual user, or a user with the edit-users role
+    if current_user.id != acc.id or not current_user.has_role(app.config.get("ACCOUNT_EDIT_USERS_ROLE")):
+        abort(401)
+
+    # if this is a request for the user page, just render it
+    if request.method == "GET":
+        fc = AccountFactory.get_user_formcontext(acc)
+        return fc.render_template()
+
+
+    is_delete = request.method == "DELETE" or (request.method == "POST" and request.values.get("submit", False) == "Delete")
+    if is_delete:
+        acc.remove()    # Note we don't use the DAO's delete method - this allows the model to decide the delete behaviour
+        logout_user()
+        flash('Account {x} deleted'.format(x=username), "success")
+        return redirect(url_for(app.config.get("ACCOUNT_LOGOUT_REDIRECT_ROUTE", "index")))
+
+    if request.method == "POST":
+        fc = AccountFactory.get_user_formcontext(acc=acc, form_data=request.form)
+
+        # attempt to validate the form
+        if not fc.validate():
+            flash("There was a problem when submitting the form", "error")
+            return fc.render_template()
+
+        # if the form validates, then check the legality of the submission
+        try:
+            fc.legal()
+        except exceptions.AccountException as e:
+            flash(e.message, "error")
+            return fc.render_template()
+
+        # if we get to here, then update the user record
+        fc.finalise()
+
+        # tell the user that everything is good
+        flash("Account updated", "success")
+
+        # end with a redirect because some details have changed
+        return redirect(url_for("account.username", username=fc.target.email))
+
 @blueprint.route('/')
 @login_required
 @ssl_required
@@ -118,84 +180,6 @@ def index():
     if not current_user.has_role(app.config.get("ACCOUNT_LIST_USERS_ROLE", "list_users")):
         abort(401)
     return render_template('account/users.html')
-
-
-@blueprint.route('/<username>', methods=['GET', 'POST', 'DELETE'])
-@login_required
-@ssl_required
-def username(username):
-    Account = AccountFactory.get_model()
-    acc = Account.pull(username)
-    if acc is None:
-        acc = Account.pull_by_email(username)
-
-    if not current_user.has_role(app.config.get("ACCOUNT_EDIT_USERS_ROLE")) or current_user.id != acc.id:
-        abort(401)
-
-    if acc is None:
-        abort(404)
-
-    if request.method == "GET":
-        fc = AccountFactory.get_user_formcontext(acc)
-        return fc.render_template()
-
-    is_delete = request.method == "DELETE" or (request.method == "POST" and request.values.get("submit", False) == "Delete")
-    if is_delete:
-        if current_user.id != acc.id and not current_user.is_super:
-            abort(401)
-
-        acc.set_deleted(True, cascade=True, save=True) # this automatically deletes all the ads and saves
-        logout_user()
-        flash('Account ' + acc.id + ' deleted', "success")
-        return redirect(url_for('root'))
-
-    if request.method == "POST":
-        if current_user.id != acc.id and not current_user.is_super:
-            abort(401)
-
-        newdata = request.json if request.json else request.values
-
-        # is this a password update request?
-        if "password" in newdata:
-            pw = SetPasswordForm(request.form, csrf_enabled=False)
-            form = _get_user_form(acc)
-            adverts = models.Advert.get_by_owner(username)
-
-            # first check that the form validates
-            if not pw.validate():
-                flash("There was a problem with your password change request", "error")
-                return render_template('account/view.html', account=acc, adverts=adverts, form=form, pwform=pw)
-
-            # now check that the current password is correct
-            if not acc.check_password(pw.old_password.data):
-                flash("The current password you supplied was wrong", "error")
-                pw.old_password.errors.append("Your password was incorrect")
-                return render_template('account/view.html', account=acc, adverts=adverts, form=form, pwform=pw)
-
-            # if we get to here, we can set the password
-            acc.set_password(pw.password.data)
-            acc.save()
-            flash("Password updated", "success")
-            return render_template('account/view.html', account=acc, adverts=adverts, form=form, pwform=pw)
-
-        # is this a user details update request (which is all that is left here)
-        form = _get_user_form(acc, use_form_data=True)
-        if not form.validate():
-            flash("There was a problem with your change of details request", "error")
-            pw = SetPasswordForm(csrf_enabled=False)
-            adverts = models.Advert.get_by_owner(username)
-            return render_template('account/view.html', account=acc, adverts=adverts, form=form, pwform=pw)
-
-        # if we get to here then we need to update the account record
-        _update_account(acc, form)
-        acc.save()
-        flash("Account updated", "success")
-        adverts = models.Advert.get_by_owner(username)
-        pw = SetPasswordForm(csrf_enabled=False)
-        return render_template('account/view.html', account=acc, adverts=adverts, form=form, pwform=pw)
-
-
-
 
 @blueprint.route('/forgot', methods=['GET', 'POST'])
 @ssl_required
