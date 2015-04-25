@@ -2,7 +2,8 @@ from flask import Blueprint, make_response, url_for, request, abort
 import json
 from octopus.lib.dataobj import ObjectSchemaValidationError
 from octopus.core import app
-from octopus.lib import plugin, webapp
+from octopus.lib import webapp
+from octopus.modules.crud.factory import CRUDFactory
 
 blueprint = Blueprint('crud', __name__)
 
@@ -34,30 +35,6 @@ def _success():
     resp = make_response(json.dumps({"status" : "success"}))
     return resp
 
-def _get_class(container_type, operation):
-    # get the CRUD configuration object
-    cfgs = app.config.get("CRUD")
-    if cfgs is None:
-        return None
-
-    # get the container configuration
-    ct = cfgs.get(container_type)
-    if ct is None:
-        return None
-
-    # get the model object reference
-    m = ct.get("model")
-    if m is None:
-        return None
-
-    # determine if the operation is permitted
-    if operation not in ct:
-        return None
-    if not ct.get(operation).get("enable", False):
-        return None
-
-    return plugin.load_class(m)
-
 @blueprint.route("/<container_type>", methods=["POST"])
 @webapp.jsonp
 def container(container_type=None):
@@ -66,7 +43,7 @@ def container(container_type=None):
         app.logger.info("Request for creation of new object of type {x}".format(x=container_type))
 
         # load the data management class for this operation type
-        klazz = _get_class(container_type, "create")
+        klazz = CRUDFactory.get_class(container_type, "create")
         if klazz is None:
             return _not_found()
 
@@ -75,7 +52,7 @@ def container(container_type=None):
 
         # make and save a new object
         try:
-            obj = klazz(data)
+            obj = klazz(data, request.headers)
         except ObjectSchemaValidationError as e:
             app.logger.info("Error processing create request {x}".format(x=e.message))
             return _bad_request(e)
@@ -95,7 +72,7 @@ def entity(container_type=None, type_id=None):
         app.logger.info("Retrieve request for {x} {y}".format(x=container_type, y=type_id))
 
         # load the data management class for this operation type
-        klazz = _get_class(container_type, "retrieve")
+        klazz = CRUDFactory.get_class(container_type, "retrieve")
         if klazz is None:
             return _not_found()
 
@@ -112,7 +89,7 @@ def entity(container_type=None, type_id=None):
         app.logger.info("Update request for {x} {y}".format(x=container_type, y=type_id))
 
         # load the data management class for this operation type
-        klazz = _get_class(container_type, "update")
+        klazz = CRUDFactory.get_class(container_type, "update")
         if klazz is None:
             return _not_found()
 
@@ -139,7 +116,7 @@ def entity(container_type=None, type_id=None):
         app.logger.info("Delete request for {x} {y}".format(x=container_type, y=type_id))
 
         # load the data management class for this operation type
-        klazz = _get_class(container_type, "delete")
+        klazz = CRUDFactory.get_class(container_type, "delete")
         if klazz is None:
             return _not_found()
 

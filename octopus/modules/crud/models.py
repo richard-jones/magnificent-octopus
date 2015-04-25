@@ -1,6 +1,8 @@
 from octopus.core import app
 
 class CRUDObject(object):
+    def __init__(self, raw=None, headers=None):
+        pass
 
     @classmethod
     def pull(cls, id):
@@ -16,7 +18,7 @@ class CRUDObject(object):
     def json(self):
         raise NotImplementedError()
 
-    def update(self, data):
+    def update(self, data, headers=None):
         raise NotImplementedError()
 
     def delete(self):
@@ -27,12 +29,14 @@ class ES_CRUD_Wrapper(CRUDObject):
 
     INNER_TYPE = None
 
-    def __init__(self, raw=None):
+    def __init__(self, raw=None, headers=None):
+        super(ES_CRUD_Wrapper, self).__init__(raw, headers)
         if raw is not None:
             # remove any disallowed fields
             pass
 
         self.inner = self.INNER_TYPE(raw)
+        self.headers = headers
 
     @classmethod
     def pull(cls, id):
@@ -53,7 +57,7 @@ class ES_CRUD_Wrapper(CRUDObject):
     def json(self):
         return self.inner.json()
 
-    def update(self, data):
+    def update(self, data, headers=None):
         self.inner = self.INNER_TYPE(data)
 
     def delete(self):
@@ -76,7 +80,7 @@ class ES_CRUD_Wrapper_Ultra(ES_CRUD_Wrapper):
 
         super(ES_CRUD_Wrapper_Ultra, self).__init__(raw)
 
-    def update(self, data):
+    def update(self, data, headers=None):
         # carry over the data from the old object
         data["id"] = self.inner.id
         data["created_date"] = self.inner.created_date
