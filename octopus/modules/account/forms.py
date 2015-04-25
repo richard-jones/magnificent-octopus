@@ -5,6 +5,9 @@ from octopus.modules.form.context import FormContext, Renderer
 from octopus.modules.account.factory import AccountFactory
 from octopus.modules.account import exceptions
 from flask.ext.login import current_user
+from flask import url_for, request
+from octopus.core import app
+from octopus.lib import mail
 
 #####################################################################
 ## Login
@@ -159,8 +162,6 @@ class BasicUserFormContext(FormContext):
         except exceptions.NonUniqueAccountException:
             return False
 
-
-
 class BasicUserFormRenderer(Renderer):
     def __init__(self):
         super(BasicUserFormRenderer, self).__init__()
@@ -198,21 +199,73 @@ class BasicUserFormRenderer(Renderer):
 
 ###################################################
 
+class ForgotForm(Form):
+    email = StringField("Email", [validators.DataRequired(), validators.Email()])
+
+class ForgotFormContext(FormContext):
+    def set_template(self):
+        self.template = "account/forgot.html"
+
+    def make_renderer(self):
+        self.renderer = ForgotFormRenderer()
+
+    def blank_form(self):
+        self.form = ForgotForm()
+
+    def data2form(self):
+        self.form = ForgotForm(formdata=self.form_data)
+
+    def finalise(self):
+        super(ForgotFormContext, self).finalise()
+
+        Account = AccountFactory.get_model()
+        acc = Account.pull_by_email(self.form.email.data)
+        if acc is None:
+            raise exceptions.AccountNotFoundException("There is no user account with that email address")
+
+        acc.activate_reset_mode()
+        acc.save()
+
+        self._send_reset_email(acc)
+
+    def _send_reset_email(self, acc):
+        base = request.url_root
+        if base.endswith("/"):
+            base = base[:-1]
+        reset_url = base + url_for("account.reset", reset_token=acc.reset_token)
+
+        to = [acc.email]
+        fro = app.config.get('MAIL_FROM_ADDRESS')
+        subject = app.config.get("ACCOUNT_RESET_EMAIL_SUBJECT", "(no subject)")
+
+        try:
+            mail.send_mail(to=to, fro=fro, subject=subject, template_name="account/emails/password_reset.txt", reset_url=reset_url, account=acc)
+        except Exception as e:
+            raise exceptions.EmailFailedException("Unable to send email to the address provided", e)
+
+class ForgotFormRenderer(Renderer):
+    def __init__(self):
+        super(ForgotFormRenderer, self).__init__()
+
+        self.FIELD_GROUPS = {
+            "email" : {
+                "helper" : "bs3_horizontal",
+                "wrappers" : ["first_error", "container"],
+                "label_width" : 4,
+                "control_width" : 8,
+                "fields" : [
+                    {
+                        "email" : {
+                            "attributes" : {}
+                        }
+                    }
+                ]
+            }
+        }
+
+######################################################
+
 """
-class RedirectForm(Form):
-    next = HiddenField()
-
-    def __init__(self, *args, **kwargs):
-        Form.__init__(self, *args, **kwargs)
-        if not self.next.data:
-            self.next.data = get_redirect_target() or ''
-
-    def redirect(self, endpoint='index', **values):
-        if self.next.data == is_safe_url(self.next.data):
-            return redirect(self.next.data)
-        target = get_redirect_target()
-        return redirect(target or url_for(endpoint, **values))
-
 
 class RegisterForm(Form):
     name = TextField('Full name', [validators.Required()])
@@ -228,13 +281,5 @@ class RegisterForm(Form):
                          description='We will use this postcode to obtain the approximate location of your term-time residence, to give you information about items for sale that are close to you.',)
     phone = TextField('Phone number')
     graduation = TextField('Graduation Year')
-
-class SetPasswordForm(Form):
-    old_password = PasswordField("Current Password", [validators.Required()])
-    password = PasswordField('New Password', [
-        validators.Required(),
-        validators.EqualTo('confirm_password', message='Passwords must match')
-    ])
-    confirm_password = PasswordField('Repeat Password', [validators.Required()])
 
 """

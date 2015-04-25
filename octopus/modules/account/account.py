@@ -178,6 +178,44 @@ def username(username):
         # end with a redirect because some details have changed
         return redirect(url_for("account.username", username=fc.target.email))
 
+@blueprint.route('/forgot', methods=['GET', 'POST'])
+@ssl_required
+def forgot():
+    if request.method == "GET":
+        fc = AccountFactory.get_forgot_formcontext()
+        return fc.render_template()
+
+    if request.method == 'POST':
+        fc = AccountFactory.get_forgot_formcontext(form_data=request.form)
+
+        # attempt to validate the form
+        if not fc.validate():
+            flash("There was a problem when submitting the form", "error")
+            return fc.render_template()
+
+        # call finalise on the context, to trigger the reset process
+        try:
+            fc.finalise()
+        except exceptions.NonUniqueAccountException:
+            flash("Permanent Error: cannot reset password for this account - please contact an administrator", "error")
+            return fc.render_template()
+        except exceptions.AccountNotFoundException:
+            flash('Your account email address is not recognised.', 'error')
+            return fc.render_template()
+        except exceptions.AccountException:
+            flash("Unable to reset the password for this account", "error")
+            return fc.render_template()
+
+        # if we get to here, reset was successful, so we should redirect the user
+        return redirect(url_for(app.config.get("ACCOUNT_FORGOT_REDIRECT_ROUTE", "account.forgot_pending")))
+
+@blueprint.route("/forgot-pending", methods=["GET"])
+@ssl_required
+def forgot_pending():
+    return render_template("account/forgot_pending.html")
+
+
+
 @blueprint.route('/')
 @login_required
 @ssl_required
@@ -188,61 +226,7 @@ def index():
         abort(401)
     return render_template('account/users.html')
 
-@blueprint.route('/forgot', methods=['GET', 'POST'])
-@ssl_required
-def forgot():
-    if request.method == 'POST':
-        # get hold of the user account
-        un = request.form.get('un', "")
-        account = models.Account.pull(un)
-        if account is None:
-            account = models.Account.pull_by_email(un)
-        if account is None:
-            flash_with_url('Your account email address is not recognised.', 'error')
-            return render_template('account/forgot.html')
 
-        if account.is_deleted():
-            flash_with_url('Your account email address is not recognised.', 'error')
-            return render_template('account/forgot.html')
-
-        if account.is_banned():
-            flash('This account is banned from the service', 'error')
-            return render_template('account/forgot.html')
-
-        if not account.data.get('email'):
-            flash_with_url('Your account does not have an associated email address.', 'error')
-            return render_template('account/forgot.html')
-
-        # if we get to here, we have a user account to reset
-        reset_token = uuid.uuid4().hex
-        account.set_reset_token(reset_token, app.config.get("PASSWORD_RESET_TIMEOUT", 86400))
-        account.save()
-
-        sep = "/"
-        if request.url_root.endswith("/"):
-            sep = ""
-        reset_url = request.url_root + sep + "account/reset/" + reset_token
-
-        to = [account.data['email'], app.config['FEEDBACK_EMAIL']]
-        fro = app.config['FEEDBACK_EMAIL']
-        subject = app.config.get("SERVICE_NAME", "") + " - password reset"
-        text = "A password reset request for account '" + account.id + "' has been received and processed.\n\n"
-        text += "Please visit " + reset_url + " and enter your new password.\n\n"
-        text += "If you are the user " + account.id + " and you requested this change, please visit that link now and set the password to something of your preference.\n\n"
-        text += "If you are the user " + account.id + " and you did not request this change, you can ignore this email.\n\n"
-        text += "Regards, The UniBoard Team"
-        try:
-            mail.send_mail(to=to, fro=fro, subject=subject, text=text)
-            flash('Instructions to reset your password have been sent to you. Please check your emails.', "success")
-            if app.config.get('DEBUG', False):
-                flash('Debug mode - url for reset is ' + reset_url, "error")
-        except Exception as e:
-            flash('Hm, sorry - sending the password reset email didn\'t work.', 'error')
-            if app.config.get('DEBUG', False):
-                flash('Debug mode - url for reset is' + reset_url, "error")
-                # app.logger.error(magic + "\n" + repr(e))
-
-    return render_template('account/forgot.html')
 
 
 @blueprint.route("/reset/<reset_token>", methods=["GET", "POST"])

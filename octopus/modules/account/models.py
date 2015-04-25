@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import uuid
 
 from flask.ext.login import UserMixin
 from werkzeug import generate_password_hash, check_password_hash
@@ -87,6 +88,10 @@ class BasicAccount(dataobj.DataObj, dao.BasicAccountDAO, UserMixin):
             return True
 
         return False
+
+    def activate_reset_mode(self):
+        reset_token = uuid.uuid4().hex
+        self.set_reset_token(reset_token, app.config.get("ACCOUNT_RESET_TIMEOUT", 86400))
 
     @property
     def activation_token(self):

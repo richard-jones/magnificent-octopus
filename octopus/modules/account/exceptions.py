@@ -9,3 +9,9 @@ class IncorrectPasswordException(AccountException):
 
 class NonUniqueAccountException(AccountException):
     pass
+
+class AccountNotFoundException(AccountException):
+    pass
+
+class EmailFailedException(AccountException):
+    pass
