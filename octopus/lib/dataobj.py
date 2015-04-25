@@ -1,6 +1,6 @@
 from octopus.lib import dates
 from copy import deepcopy
-import locale
+import locale, json
 
 class DataSchemaException(Exception):
     pass
@@ -28,6 +28,9 @@ class DataObj(object):
 
     def clone(self):
         return self.__class__(deepcopy(self.data))
+
+    def json(self):
+        return json.dumps(self.data)
 
     def _get_path(self, path, default):
         parts = path.split(".")
