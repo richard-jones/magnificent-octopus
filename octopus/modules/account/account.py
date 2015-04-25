@@ -24,46 +24,12 @@ def get_redirect_target(form=None):
             return target
     return url_for(app.config.get("ACCOUNT_LOGIN_REDIRECT_ROUTE", "index"))
 
-# we are not having usernames (people are identified by email address), so we either
-# want to use their email address as their id, or mint them an opaque id.
-"""
-@classmethod
-def make_account(cls, email, name=None, phone=None, roles=[]):
-    a = cls.pull(email)
-    if a:
-        return a
 
-    a = Account()
-    a.id = email
-    a.name = name
-    a.set_phone(phone) if phone else None
-    for role in roles:
-        a.add_role(role)
+def _do_login(user):
+    return login_user(user, remember=True)
 
-    activation_token = uuid.uuid4().hex
-    # give them 14 days to create their first password if timeout not specified in config
-    a.set_activation_token(activation_token, app.config.get("PASSWORD_CREATE_TIMEOUT", app.config.get('PASSWORD_RESET_TIMEOUT', 86400) * 14))
-    return a
-"""
-
-"""
-@app.login_manager.user_loader
-def load_account_for_login_manager(userid):
-    return AccountFactory.get_model().pull_by_email(userid)
-"""
-
-'''
-@app.before_request
-def standard_authentication():
-    """Check remote_user on a per-request basis."""
-    remote_user = request.headers.get('REMOTE_USER', '')
-    if remote_user:
-        Account = AccountFactory.get_model()
-        user = Account.pull_by_email(remote_user)
-        if user:
-            login_user(user, remember=False)
-'''
-
+def _do_logout():
+    logout_user()
 
 @blueprint.route('/login', methods=['GET', 'POST'])
 @ssl_required
@@ -89,7 +55,7 @@ def login():
                     return fc.render_template()
 
                 if user.check_password(password):
-                    inlog = login_user(user, remember=True)
+                    inlog = _do_login(user)
                     if not inlog:
                         flash("Problem logging in", "error")
                         return fc.render_template()
@@ -110,7 +76,7 @@ def login():
 @blueprint.route('/logout')
 @ssl_required
 def logout():
-    logout_user()
+    _do_logout()
     flash('You are now logged out', 'success')
     return redirect(url_for(app.config.get("ACCOUNT_LOGOUT_REDIRECT_ROUTE", "index")))
 
@@ -150,7 +116,7 @@ def username(username):
 
         # if the password validates, go ahead and do it
         acc.remove()    # Note we don't use the DAO's delete method - this allows the model to decide the delete behaviour
-        logout_user()
+        _do_logout()
         flash('Account {x} deleted'.format(x=username), "success")
         return redirect(url_for(app.config.get("ACCOUNT_LOGOUT_REDIRECT_ROUTE", "index")))
 
@@ -215,6 +181,38 @@ def forgot_pending():
     return render_template("account/forgot_pending.html")
 
 
+@blueprint.route("/reset/<reset_token>", methods=["GET", "POST"])
+@ssl_required
+def reset(reset_token):
+    Account = AccountFactory.get_model()
+    acc = Account.get_by_reset_token(reset_token)
+    if acc is None:
+        abort(404)
+
+    if not acc.can_log_in():
+        abort(404)
+
+
+
+    if request.method == "GET":
+        fc = AccountFactory.get_reset_formcontext(acc)
+        return fc.render_template()
+
+    elif request.method == "POST":
+        fc = AccountFactory.get_reset_formcontext(acc, request.form)
+        if not fc.validate():
+            flash("There was a problem with your form", "error")
+            return fc.render_template()
+
+        # if the form is good, finalise the user's password change
+        fc.finalise()
+
+        # log the user in
+        _do_login(acc)
+        flash("Password has been reset and you have been logged in", "success")
+        return redirect(url_for(app.config.get("ACCOUNT_LOGIN_REDIRECT_ROUTE", "index")))
+
+
 
 @blueprint.route('/')
 @login_required
@@ -225,46 +223,6 @@ def index():
     if not current_user.has_role(app.config.get("ACCOUNT_LIST_USERS_ROLE", "list_users")):
         abort(401)
     return render_template('account/users.html')
-
-
-
-
-@blueprint.route("/reset/<reset_token>", methods=["GET", "POST"])
-@ssl_required
-def reset(reset_token):
-    account = models.Account.get_by_reset_token(reset_token)
-    if account is None:
-        abort(404)
-
-    if account.is_deleted():
-        abort(404)
-
-    if account.is_banned():
-        abort(403)
-
-    if request.method == "GET":
-        return render_template("account/reset.html", account=account)
-
-    elif request.method == "POST":
-        # check that the passwords match, and bounce if not
-        pw = request.values.get("password")
-        conf = request.values.get("confirm")
-        if pw != conf:
-            flash("Passwords do not match - please try again", "error")
-            return render_template("account/reset.html", account=account)
-
-        # update the user's account
-        account.set_password(pw)
-        account.remove_reset_token()
-        account.save()
-        flash("Password has been reset", "success")
-
-        # log the user in
-        login_user(account, remember=True)
-        return redirect(url_for('root'))
-
-
-
 
 
 @blueprint.route('/register', methods=['GET', 'POST'])
@@ -370,7 +328,7 @@ def activate(activation_token):
         flash("Password has been set", "success")
 
         # log the user in
-        login_user(account, remember=True)
+        _do_login(account)
         return redirect('/')
 
 

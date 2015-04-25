@@ -28,6 +28,7 @@ ACCOUNT_ALLOW_REGISTER = False
 ACCOUNT_LOGIN_FORM_CONTEXT = "octopus.modules.account.forms.LoginFormContext"
 ACCOUNT_USER_FORM_CONTEXT = "octopus.modules.account.forms.BasicUserFormContext"
 ACCOUNT_FORGOT_FORM_CONTEXT = "octopus.modules.account.forms.ForgotFormContext"
+ACCOUNT_RESET_FORM_CONTEXT = "octopus.modules.account.forms.ResetFormContext"
 
 # where to direct the user after login if they haven't already got a page in their "next" location
 ACCOUNT_LOGIN_REDIRECT_ROUTE = "index"

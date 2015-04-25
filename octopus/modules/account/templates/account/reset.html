@@ -2,21 +2,26 @@
 
 {% block content %}
 
-<h1 style="margin-bottom: 40px">Hi {{account.id}}: Reset Your Password</h1>
-
-<div class="row-fluid">
-    <div class="span4">
-        &nbsp;
+<div class="row">
+    <div class="col-md-offset-4 col-md-4">
+        <h1>Reset your password</h1>
     </div>
-    <div class="span5">
-        <form action="" method="POST">
-            <input type="password" name="password" placeholder="new password"><br>
-            <input type="password" name="confirm" placeholder="confirm your new password"><br>
-            <input type="submit" class="btn btn-success" name="submit" value="Update">
-        </form>
-    </div>
-    
 </div>
+
+<form method="post" action="{{url_for('account.reset', reset_token=account.reset_token)}}">
+    <div class="row">
+        <div class="col-md-offset-4 col-md-4 form-horizontal wide">
+            {% autoescape off %}
+            {{ form_context.render_field_group("reset") }}
+            {% endautoescape %}
+
+            <button class="btn btn-primary" id="reset" type="submit" style="width: 100%; font-size: 30px; line-height: 30px">
+                Reset it!
+            </button>
+        </div>
+    </div>
+
+</form>
 
 {% endblock %}
 

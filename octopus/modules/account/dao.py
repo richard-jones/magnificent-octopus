@@ -62,8 +62,8 @@ class AccountQuery(object):
         if self.email is not None:
             q["query"]["bool"]["must"].append({"term" : {"email.exact" : self.email}})
         if self.reset_token is not None:
-            q["query"]["bool"]["must"].append({"term" : {"reset_token.exact" : self.email}})
+            q["query"]["bool"]["must"].append({"term" : {"reset_token.exact" : self.reset_token}})
         if self.activation_token is not None:
-            q["query"]["bool"]["must"].append({"term" : {"activation_token.exact" : self.email}})
+            q["query"]["bool"]["must"].append({"term" : {"activation_token.exact" : self.activation_token}})
 
         return q

@@ -29,3 +29,10 @@ class AccountFactory(object):
         klazz = plugin.load_class(path)
         fc = klazz(form_data)
         return fc
+
+    @classmethod
+    def get_reset_formcontext(cls, acc=None, form_data=None):
+        path = app.config.get("ACCOUNT_RESET_FORM_CONTEXT")
+        klazz = plugin.load_class(path)
+        fc = klazz(form_data, acc)
+        return fc

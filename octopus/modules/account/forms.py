@@ -265,6 +265,67 @@ class ForgotFormRenderer(Renderer):
 
 ######################################################
 
+class ResetForm(Form):
+    new_password = PasswordField('New Password', [
+        validators.DataRequired(),
+        validators.EqualTo('confirm_new_password', message='Passwords must match')
+    ])
+    confirm_new_password = PasswordField('Repeat Password', [validators.DataRequired()])
+
+class ResetFormContext(FormContext):
+    def set_template(self):
+        self.template = "account/reset.html"
+
+    def make_renderer(self):
+        self.renderer = ResetFormRenderer()
+
+    def blank_form(self):
+        self.form = ResetForm()
+
+    def data2form(self):
+        self.form = ResetForm(formdata=self.form_data)
+
+    def source2form(self):
+        self.form = ResetForm()
+
+    def finalise(self):
+        super(ResetFormContext, self).finalise()
+
+        password = self.form.new_password.data
+        self.source.set_password(password)
+        self.source.remove_reset_token()
+        self.source.save(blocking=True)
+
+    def render_template(self, template=None, **kwargs):
+        return super(ResetFormContext, self).render_template(template=template, account=self.source, **kwargs)
+
+class ResetFormRenderer(Renderer):
+    def __init__(self):
+        super(ResetFormRenderer, self).__init__()
+
+        self.FIELD_GROUPS = {
+            "reset" : {
+                "helper" : "bs3_horizontal",
+                "wrappers" : ["first_error", "container"],
+                "label_width" : 4,
+                "control_width" : 8,
+                "fields" : [
+                    {
+                        "new_password" : {
+                            "attributes" : {}
+                        }
+                    },
+                    {
+                        "confirm_new_password" : {
+                            "attributes" : {}
+                        }
+                    }
+                ]
+            }
+        }
+
+
+
 """
 
 class RegisterForm(Form):
