@@ -41,6 +41,8 @@ def send_mail(to, subject, fro=None, template_name=None, bcc=None, files=None, m
     if fro is None:
         fro = app.config.get("MAIL_FROM_ADDRESS")
 
+    subject = app.config.get("MAIL_SUBJECT_PREFIX", "") + subject
+
     # create a message
     msg = Message(subject=subject,
                   recipients=to,
