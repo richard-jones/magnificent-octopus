@@ -31,3 +31,19 @@ class ESDAO(esprit.dao.DomainObject):
         self.prep()
         super(ESDAO, self).save(**kwargs)
 
+class QueryStringQuery(object):
+    def __init__(self, qs, fro, psize):
+        self.qs = qs
+        self.fro = fro
+        self.psize = psize
+
+    def query(self):
+        return {
+            "query" :{
+                "query_string" : {
+                    "query" : self.qs
+                }
+            },
+            "from" : self.fro,
+            "size" : self.psize
+        }

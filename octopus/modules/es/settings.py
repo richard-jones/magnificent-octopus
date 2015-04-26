@@ -57,6 +57,21 @@ QUERY_FILTERS = {
 """
 
 ##############################################################
+# Public Search API Configuration
+##############################################################
+
+# maximum results per page to return, irrespective of what the user asks for
+SEARCH_MAX_PAGE_SIZE = 100
+
+# DAO through which search requests should pass.  You MUST update this if you are using
+# this module, as the one defined here is just a template
+SEARCH_DAO = "octopus.modules.es.dao.ESDAO"
+
+# reference for a function to which all search results will be passed for filtering
+# before being sent to the user
+SEARCH_RESULT_FILTER = None
+
+##############################################################
 # Compound Field Auto-Complete Configuration
 ##############################################################
 
