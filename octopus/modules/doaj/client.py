@@ -9,7 +9,9 @@ class DOAJSearchClient(object):
         self.search_type = search_type if search_type else app.config.get("DOAJ_SEARCH_TYPE", "journal,article")
         self.search_port = search_port if search_port else app.config.get("DOAJ_SEARCH_PORT", 80)
 
-        self.conn = esprit.raw.Connection(self.search_base, self.query_endpoint, port=self.search_port)
+        # FIXME: we have turned off SSL verification for the moment, for convenience of working with the new
+        # https-everywhere policy of the DOAJ
+        self.conn = esprit.raw.Connection(self.search_base, self.query_endpoint, port=self.search_port, verify_ssl=False)
 
     def object_search(self, query):
         try:
