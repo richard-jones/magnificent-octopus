@@ -12,6 +12,12 @@ from octopus.modules.account import exceptions
 
 blueprint = Blueprint('account', __name__)
 
+@app.login_manager.user_loader
+def load_account_for_login_manager(userid):
+    from octopus.modules.account.factory import AccountFactory
+    acc = AccountFactory.get_model().pull(userid)
+    return acc
+
 def get_redirect_target(form=None):
     form_target = ''
     if form and hasattr(form, 'next') and getattr(form, 'next'):

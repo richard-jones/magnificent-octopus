@@ -4,6 +4,12 @@
 #ELASTIC_SEARCH_MAPPINGS = [
 #  octopus.modules.account.dao.BasicAccountDAO
 #]
+#
+# To use the command line scripts, ensure that the following is configured in the CLI_SCRIPTS config:
+#
+# CLI_SCRIPTS = {
+#    "usermod" : "octopus.modules.account.scripts.UserMod"
+#}
 
 # make this something secret in your overriding local.cfg
 SECRET_KEY = "default-key"
