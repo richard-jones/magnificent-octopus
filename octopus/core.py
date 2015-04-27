@@ -3,8 +3,8 @@ from flask import Flask
 from urllib import unquote
 from datetime import datetime
 
-from flask.ext.login import LoginManager, current_user
-login_manager = LoginManager()
+#from flask.ext.login import LoginManager, current_user
+#login_manager = LoginManager()
 
 # obtain the base path of the application
 BASE_PATH = os.path.dirname(            # service base directory
@@ -19,7 +19,8 @@ def create_app():
     app = Flask(__name__)
     configure_app(app)
     setup_jinja(app)
-    login_manager.setup_app(app)
+    module_setup(app)
+    # login_manager.setup_app(app)
     print "App created at ", datetime.now().strftime("%H:%M:%S %d-%m-%Y")
     return app
 
@@ -85,9 +86,6 @@ def setup_jinja(app):
         return ''
     app.jinja_env.filters['debug']=jinja_debug
 
-
-
-
 def setup_error_email(app):
     ADMINS = app.config.get('ADMINS', '')
     if not app.debug and ADMINS:
@@ -99,9 +97,17 @@ def setup_error_email(app):
         mail_handler.setLevel(logging.ERROR)
         app.logger.addHandler(mail_handler)
 
-
+def module_setup(app):
+    # now run the additional app creation tasks from modules
+    from octopus.lib import plugin
+    mods = app.config.get("SETUP_MODULES", [])
+    for modpath in mods:
+        fn = plugin.load_function_raw(modpath + ".setup_app")
+        if fn is not None:
+            fn(app)
 
 app = create_app()
+
 
 # everything beneath here can be run after the app has been officially created
 # though note that all the imports are delayed because of the import circularity-avoidance
@@ -112,5 +118,6 @@ def initialise():
     for modpath in mods:
         mod = plugin.load_module(modpath)
         fn = getattr(mod, "initialise")
-        fn()
+        if fn is not None:
+            fn()
     print "App initialised at ", datetime.now().strftime("%H:%M:%S %d-%m-%Y")

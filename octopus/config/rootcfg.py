@@ -2,6 +2,7 @@
 # to the desired config files (in the order you want them loaded)
 CONFIG_FILES = [
     # octopus.lib config files
+    "magnificent-octopus/octopus/config/cli.py",
     "magnificent-octopus/octopus/config/dates.py",
     "magnificent-octopus/octopus/config/googlemap.py",
     "magnificent-octopus/octopus/config/http.py",
@@ -57,14 +58,14 @@ STATIC_PATHS = [
     "magnificent-octopus/octopus/modules/sherpafact/static"
 ]
 
-# module import paths for the startup modules that need to run at application init type (in the order you want them run)
-INITIALISE_MODULES = [
-    # octopus modules initialisation
-    "octopus.modules.es.initialise",
-    "octopus.modules.account.initialise"
+# module import paths for the app initialisation modules that need to run at flask app creation
+# (e.g. to do things like add login management support)
+SETUP_MODULES = [
+    "octopus.modules.account.setup_app"
 ]
 
-# command names and paths to scripts that can be run through the standard runner
-SCRIPTS = {
-    "usermod" : "octopus.modules.account.scripts.UserMod"
-}
+# module import paths for the startup modules that need to run at application startup (in the order you want them run)
+# (e.g. to do things like create/pre-populate the database)
+INITIALISE_MODULES = [
+    "octopus.modules.es.initialise"
+]
