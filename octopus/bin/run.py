@@ -5,7 +5,7 @@ import sys
 command = sys.argv[1]
 args = sys.argv[2:]
 
-for name, path in app.config.get("SCRIPTS", {}).iteritems():
+for name, path in app.config.get("CLI_SCRIPTS", {}).iteritems():
     ran = False
     if name == command:
         # get an instance of the script
