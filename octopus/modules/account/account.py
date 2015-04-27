@@ -218,8 +218,6 @@ def reset(reset_token):
         flash("Password has been reset and you have been logged in", "success")
         return redirect(url_for(app.config.get("ACCOUNT_LOGIN_REDIRECT_ROUTE", "index")))
 
-
-
 @blueprint.route('/')
 @login_required
 @ssl_required
@@ -231,6 +229,7 @@ def index():
     return render_template('account/users.html')
 
 
+"""
 @blueprint.route('/register', methods=['GET', 'POST'])
 @ssl_required
 def register():
@@ -307,8 +306,9 @@ def register():
     if request.method == 'POST' and not form.validate():
         flash('Please correct the errors', 'error')
     return render_template('account/register.html', form=form)
+"""
 
-
+"""
 @blueprint.route("/activate/<activation_token>", methods=["GET", "POST"])
 @ssl_required
 def activate(activation_token):
@@ -336,38 +336,4 @@ def activate(activation_token):
         # log the user in
         _do_login(account)
         return redirect('/')
-
-
-
-def _get_user_form(acc, use_form_data=False):
-    form = None
-    if use_form_data:
-        form = RegisterForm(request.form, csrf_enabled=False)
-        form.email.data = acc.email
-    else:
-        form = RegisterForm(csrf_enabled=False)
-        form.name.data = acc.name
-        form.email.data = acc.email
-        form.degree.data = acc.degree
-        form.postcode.data = acc.postcode
-        form.phone.data = acc.phone
-        form.graduation.data = acc.graduation
-    return form
-
-def _update_account(account, form):
-    account.set_name(form.name.data)
-
-    if form.degree.data:
-        account.set_degree(form.degree.data)
-    elif form.degree.data == "":
-        del account.degree
-
-    if form.phone.data:
-        account.set_phone(form.phone.data)
-    elif form.phone.data == "":
-        del account.phone
-
-    if form.graduation.data:
-        account.set_graduation(form.graduation.data)
-    elif form.graduation.data == "":
-        del account.graduation
+"""

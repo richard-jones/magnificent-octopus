@@ -2,8 +2,16 @@
 
 {% block content %}
 
+{% if current_user.has_role(config.get("ACCOUNT_CREATE_USER_ROLE")) %}
+<div class="row">
+    <div class="col-md-12" style="text-align: right">
+        {# FIXME: need to set the URL correctly when account.register is enabled #}
+        <a class="btn btn-info" href="{{url_for('account.index')}}">Create User</a>
+    </div>
+</div>
+{% endif %}
 
-{% if current_user.has_role("create_user") %}<p><a href="{{url_for('account.register')}}">create new user</a></p>{% endif %}
+<h1>User Management Here</h1>
 
 <div id="userfacetview"></div>
 

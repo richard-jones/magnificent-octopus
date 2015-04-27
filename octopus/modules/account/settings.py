@@ -27,6 +27,9 @@ ACCOUNT_LIST_USERS_ROLE = "list_users"
 # the user role which allows a user to edit other user accounts
 ACCOUNT_EDIT_USERS_ROLE = "edit_users"
 
+# the user role which allows a user to create a new user
+ACCOUNT_CREATE_USER_ROLE = "create_users"
+
 # should unregsitered/unauthenticated people be allowed to hit the registration page
 ACCOUNT_ALLOW_REGISTER = False
 
