@@ -6,6 +6,7 @@ import json as jsonlib
 class ESDAO(esprit.dao.DomainObject):
     __type__ = 'index'
     __conn__ = esprit.raw.Connection(app.config.get('ELASTIC_SEARCH_HOST'), app.config.get('ELASTIC_SEARCH_INDEX'))
+    __es_version__ = app.config.get("ELASTIC_SEARCH_VERSION")
 
     @classmethod
     def mappings(cls):
@@ -20,6 +21,13 @@ class ESDAO(esprit.dao.DomainObject):
                 )
             )
         }
+
+    @classmethod
+    def delete_by_query(cls, query, conn=None, es_version="0.90.13"):
+        esv = cls.__es_version__
+        if esv is None:
+            esv = es_version
+        super(ESDAO, cls).delete_by_query(query, conn=conn, es_version=esv)
 
     def json(self):
         return jsonlib.dumps(self.data)
