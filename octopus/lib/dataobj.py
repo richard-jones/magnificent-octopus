@@ -200,11 +200,15 @@ class DataObj(object):
         # now coerce each of the values, stripping out Nones if necessary
         val = [self._coerce(v, coerce, accept_failure=allow_coerce_failure) for v in val if v is not None or not ignore_none]
 
-        # now check that the array has length at all (if it does not this is equivalent to a None)
-        if len(val) == 0 and not allow_none:
-            raise DataSchemaException(u"Empty array not permitted at {x}".format(x=path))
-        elif len(val) == 0 and ignore_none:
-            return
+        # check that the cleaned array isn't empty, and if it is behave appropriately
+        if len(val) == 0:
+            # this is equivalent to a None, so we need to decide what to do
+            if ignore_none:
+                # if we are ignoring nones, just do nothing
+                return
+            elif not allow_none:
+                # if we are not ignoring nones, and not allowing them, raise an error
+                raise DataSchemaException(u"Empty array not permitted at {x}".format(x=path))
 
         # now set it on the path
         self._set_path(path, val)
