@@ -11,6 +11,7 @@ CONFIG_FILES = [
 
     # octopus.module config files
     "magnificent-octopus/octopus/modules/account/settings.py",
+    "magnificent-octopus/octopus/modules/cache/settings.py",
     "magnificent-octopus/octopus/modules/clientjs/settings.py",
     "magnificent-octopus/octopus/modules/coreacuk/settings.py",
     "magnificent-octopus/octopus/modules/crud/settings.py",
@@ -61,11 +62,13 @@ STATIC_PATHS = [
 # module import paths for the app initialisation modules that need to run at flask app creation
 # (e.g. to do things like add login management support)
 SETUP_MODULES = [
-    "octopus.modules.account.setup_app"     # NOTE that you will also need to set ACCOUNT_ENABLE=True for this to run
+    "octopus.modules.account.setup_app",     # NOTE that you will also need to set ACCOUNT_ENABLE=True for this to run
+    "service.setup_app"
 ]
 
 # module import paths for the startup modules that need to run at application startup (in the order you want them run)
 # (e.g. to do things like create/pre-populate the database)
 INITIALISE_MODULES = [
-    "octopus.modules.es.initialise"
+    "octopus.modules.es.initialise",
+    "service.initialise"
 ]

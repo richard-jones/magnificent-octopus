@@ -116,8 +116,8 @@ def initialise():
     from octopus.lib import plugin
     mods = app.config.get("INITIALISE_MODULES", [])
     for modpath in mods:
-        mod = plugin.load_module(modpath)
-        fn = getattr(mod, "initialise")
+        fn = plugin.load_function_raw(modpath + ".initialise")
         if fn is not None:
             fn()
+
     print "App initialised at ", datetime.now().strftime("%H:%M:%S %d-%m-%Y")

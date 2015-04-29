@@ -10,8 +10,11 @@ class PluginException(Exception):
 def load_class_raw(classpath):
     modpath = ".".join(classpath.split(".")[:-1])
     classname = classpath.split(".")[-1]
-    mod = importlib.import_module(modpath)
-    klazz = getattr(mod, classname)
+    try:
+        mod = importlib.import_module(modpath)
+    except ImportError:
+        return None
+    klazz = getattr(mod, classname, None)
     return klazz
 
 def load_class(classpath, cache_class_ref=True):
@@ -21,6 +24,9 @@ def load_class(classpath, cache_class_ref=True):
         return klazz
 
     klazz = load_class_raw(classpath)
+    if klazz is None:
+        app.logger.info("Could not load function {x}".format(x=classpath))
+        return None
 
     if cache_class_ref:
         if "PLUGIN_CLASS_REFS" not in app.config:
@@ -35,8 +41,11 @@ def load_module(modpath):
 def load_function_raw(fnpath):
     modpath = ".".join(fnpath.split(".")[:-1])
     fnname = fnpath.split(".")[-1]
-    mod = importlib.import_module(modpath)
-    fn = getattr(mod, fnname)
+    try:
+        mod = importlib.import_module(modpath)
+    except ImportError:
+        return None
+    fn = getattr(mod, fnname, None)
     return fn
 
 def load_function(fnpath, cache_fn_ref=True):
@@ -46,6 +55,9 @@ def load_function(fnpath, cache_fn_ref=True):
         return fn
 
     fn = load_function_raw(fnpath)
+    if fn is None:
+        app.logger.info("Could not load function {x}".format(x=fnpath))
+        return None
 
     if cache_fn_ref:
         if "PLUGIN_FN_REFS" not in app.config:
