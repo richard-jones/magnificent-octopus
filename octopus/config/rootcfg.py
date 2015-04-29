@@ -61,7 +61,7 @@ STATIC_PATHS = [
 # module import paths for the app initialisation modules that need to run at flask app creation
 # (e.g. to do things like add login management support)
 SETUP_MODULES = [
-    "octopus.modules.account.setup_app"
+    "octopus.modules.account.setup_app"     # NOTE that you will also need to set ACCOUNT_ENABLE=True for this to run
 ]
 
 # module import paths for the startup modules that need to run at application startup (in the order you want them run)

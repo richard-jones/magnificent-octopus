@@ -11,6 +11,9 @@
 #    "usermod" : "octopus.modules.account.scripts.UserMod"
 #}
 
+# enbale the account module at all - setting this to True will cause the setup script to run
+ACCOUNT_ENABLE = False
+
 # make this something secret in your overriding local.cfg
 SECRET_KEY = "default-key"
 
