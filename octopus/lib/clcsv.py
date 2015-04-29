@@ -1,7 +1,11 @@
 import csv, codecs, re, os
 import cStringIO
+from octopus.core import app
 
 class CsvReadException(Exception):
+    pass
+
+class CsvStructureException(Exception):
     pass
 
 class ClCsv():
@@ -18,8 +22,11 @@ class ClCsv():
         self.output_encoding = output_encoding
         self.input_encoding = input_encoding
 
+        # useful to know about this for any future work on encodings: https://docs.python.org/2.4/lib/standard-encodings.html
         if fallback_input_encodings is None and try_encodings_hard:
-            fallback_input_encodings = ["cp1252", "cp1251", "iso-8859-1", "iso-8859-2", "windows-1252", "windows-1251"]
+            fallback_input_encodings = ["cp1252", "cp1251", "iso-8859-1", "iso-8859-2", "windows-1252", "windows-1251", "mac_roman"]
+        else:
+            fallback_input_encodings = []
         self.fallback_input_encodings = fallback_input_encodings
 
         self.from_row = from_row
@@ -62,8 +69,12 @@ class ClCsv():
                 self.file_object = file_object
                 self.input_encoding = code
                 return
-            except:
-                pass
+            except CsvReadException as e:
+                app.logger.info(e.message)
+            except CsvStructureException as e:
+                app.logger.info(e.message)
+            except Exception as e:
+                app.logger.info(e.message)
         # if we get to here, we were unable to read the file using any method
         raise CsvReadException("Unable to find a codec which can parse the file correctly")
 
@@ -80,11 +91,14 @@ class ClCsv():
             rows = []
             for row in reader:
                 rows.append(row)
+        except:
+            raise CsvReadException("Unable to read file - likely an encoding problem")
 
+        try:
             self._populate_data(rows)
             return rows
         except:
-            raise CsvReadException("Unable to read file (possibly a codec problem, or a data structure problem)")
+            raise CsvStructureException("Unable to read file into meaningful datastructure")
 
     def headers(self):
         """
