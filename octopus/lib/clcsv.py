@@ -525,6 +525,34 @@ class SheetWrapper(object):
                     continue
                 raise e
 
+    def add_dataobj(self, dobj, coerce=None):
+        obj = {}
+        for field in self.HEADERS.values():
+            # get the attribute for the header if it exists
+            att = getattr(dobj, field, None)
+            if att is None:
+                continue            # Do it this way round to avoid further indentation
+
+            # if the attribute exists, we now have its value
+            coerced = False
+            if coerce is not None:
+                # we may have been passed a coerce function for this field
+                fn = coerce.get(field)
+                if fn is not None:
+                    att = fn(att)
+                    coerced = True
+
+            # as a special favour, if the value is a list and we haven't been given
+            # a coerce function, then join it with commas
+            if isinstance(att, list) and not coerced:
+                att = ", ".join(att)
+
+            # now record the value in the object
+            obj[field] = att
+
+        # finally, add the object to the sheet
+        self.add_object(obj)
+
     def filename(self):
         return self._sheet.filename()
 
