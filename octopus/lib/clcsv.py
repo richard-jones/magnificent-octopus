@@ -1,6 +1,7 @@
 import csv, codecs, re, os
 import cStringIO
 from octopus.core import app
+from StringIO import StringIO
 
 class CsvReadException(Exception):
     pass
@@ -558,3 +559,21 @@ class SheetWrapper(object):
 
     def save(self):
         self._sheet.save(close=False)
+
+def get_csv_string(csv_row):
+    '''
+    csv.writer only writes to files - it'd be a lot easier if it
+    could give us the string it generates, but it can't. This
+    function uses StringIO to capture every CSV row that csv.writer
+    produces and returns it.
+
+    :param csv_row: A list of strings, each representing a CSV cell.
+        This is the format required by csv.writer .
+    '''
+    csvstream = StringIO()
+    csvwriter = csv.writer(csvstream, quoting=csv.QUOTE_ALL)
+    # normalise the row - None -> "", and unicode > 128 to ascii
+    csvwriter.writerow([unicode(c).encode("utf8", "replace") if c is not None else "" for c in csv_row])
+    csvstring = csvstream.getvalue()
+    csvstream.close()
+    return csvstring
