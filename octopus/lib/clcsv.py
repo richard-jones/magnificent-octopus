@@ -19,6 +19,7 @@ class ClCsv():
         Class to wrap the Python CSV library. Allows reading and writing by column.
         :param file_path: A file object or path to a file. Will create one at specified path if it does not exist.
         """
+        self.file_path = None
         self.output_encoding = output_encoding
         self.input_encoding = input_encoding
 
@@ -40,6 +41,7 @@ class ClCsv():
         # Get an open file object from the given file_path or file object
         if file_path is not None:
             if type(file_path) == file:
+                self.file_path = file_path.name
                 # NOTE: if you have passed in a file object, it MUST work - as in, it must be set to
                 # read the right encoding, and everything.  We will not try to parse it again if it
                 # fails the first time.  If it is closed, you will also need to be sure to set the input_encoding.
@@ -51,6 +53,7 @@ class ClCsv():
                 # explicitly read this file in
                 self._read_file(self.file_object)
             else:
+                self.file_path = file_path
                 if os.path.exists(file_path) and os.path.isfile(file_path):
                     self._read_from_path(file_path)
                 else:
@@ -92,13 +95,13 @@ class ClCsv():
             for row in reader:
                 rows.append(row)
         except:
-            raise CsvReadException("Unable to read file - likely an encoding problem")
+            raise CsvReadException("Unable to read file with {x} - likely an encoding problem (non fatal)".format(x=self.input_encoding))
 
         try:
             self._populate_data(rows)
             return rows
         except:
-            raise CsvStructureException("Unable to read file into meaningful datastructure")
+            raise CsvStructureException("Unable to read file into meaningful datastructure using encoding {x} (non fatal)".format(x=self.input_encoding))
 
     def headers(self):
         """
@@ -263,6 +266,11 @@ class ClCsv():
 
         if close:
             self.file_object.close()
+
+    def filename(self):
+        if self.file_path is not None:
+            return os.path.basename(self.file_path)
+        return None
 
     def _is_empty(self, row):
         return sum([1 if c is not None and c != "" else 0 for c in row]) == 0
@@ -516,6 +524,9 @@ class SheetWrapper(object):
                 if skip_on_error:
                     continue
                 raise e
+
+    def filename(self):
+        return self._sheet.filename()
 
     def save(self):
         self._sheet.save(close=False)
