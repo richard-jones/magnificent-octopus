@@ -62,7 +62,8 @@ def _make_request(method, url,
             if r.status_code not in retry_codes:
                 break
             else:
-                app.logger.debug("Request to {url} resulted in status " + str(r.status_code))
+                attempt += 1
+                app.logger.debug("Request to {url} resulted in status {status}, attempt {attempt}".format(status=r.status_code, url=url, attempt=attempt))
         except requests.exceptions.Timeout:
             attempt += 1
             app.logger.debug('Request to {url} timeout, attempt {attempt}'.format(url=url, attempt=attempt))
