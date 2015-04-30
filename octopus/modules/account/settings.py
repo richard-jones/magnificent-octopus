@@ -36,7 +36,9 @@ CLIENTJS_ACCOUNT_LIST_ENDPOINT = "/account_query/account"
 #         "account" : {
 #             "auth" : True,
 #             "role" : "list-users",
-#             "filters" : [],
+#             "filters" : [
+#                  "octopus.modules.account.dao.query_filter"
+#              ],
 #             "dao" : "octopus.modules.account.dao.BasicAccountDAO"
 #         }
 #     }
