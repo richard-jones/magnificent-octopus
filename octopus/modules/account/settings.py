@@ -27,6 +27,22 @@ ACCOUNT_MODEL = "octopus.modules.account.models.BasicAccount"
 ACCOUNT_LIST_USERS = False
 ACCOUNT_LIST_USERS_ROLE = "list_users"
 
+# if user listing is enabled, this points to the query endpoint where the data can be retrieved
+CLIENTJS_ACCOUNT_LIST_ENDPOINT = "/account_query/account"
+
+# You will also need to specify the query route as follows
+# QUERY_ROUTE = {
+#     "account_query" : {
+#         "account" : {
+#             "auth" : True,
+#             "role" : "list-users",
+#             "filters" : [],
+#             "dao" : "octopus.modules.account.dao.BasicAccountDAO"
+#         }
+#     }
+# }
+# and you will also need to setup your query endpoint at those paths
+
 # the user role which allows a user to edit other user accounts
 ACCOUNT_EDIT_USERS_ROLE = "edit_users"
 
@@ -56,3 +72,4 @@ ACCOUNT_RESET_TIMEOUT = 86400
 ACCOUNT_ACTIVATE_TIMEOUT = ACCOUNT_RESET_TIMEOUT * 14
 
 ACCOUNT_RESET_EMAIL_SUBJECT = "Password reset"
+
