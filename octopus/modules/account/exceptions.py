@@ -15,3 +15,6 @@ class AccountNotFoundException(AccountException):
 
 class EmailFailedException(AccountException):
     pass
+
+class CannotLoginException(AccountException):
+    pass

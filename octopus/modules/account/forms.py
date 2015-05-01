@@ -324,23 +324,117 @@ class ResetFormRenderer(Renderer):
             }
         }
 
+##############################################
 
+class BasicRegisterFormXwalk(object):
+    @classmethod
+    def obj2form(cls, acc):
+        data = {}
+        data["email"] = acc.email
+        # Note that we don't crosswalk the password, as this is meaningless
+        return data
 
-"""
+    @classmethod
+    def form2obj(cls, form, acc=None):
+        if acc is None:
+            klazz = AccountFactory.get_model()
+            acc = klazz()
+        else:
+            acc = acc.clone()
 
-class RegisterForm(Form):
-    name = TextField('Full name', [validators.Required()])
-    email = TextField('Email Address',
-                    [
-                        validators.Required(),
-                        validators.Length(min=3, max=35),
-                        validators.Email(message='Must be a valid email address')
-                    ],
-                    description="You must use your institutional email here")
-    degree = TextField('Course')
-    postcode = TextField('Postcode of term-time residence',
-                         description='We will use this postcode to obtain the approximate location of your term-time residence, to give you information about items for sale that are close to you.',)
-    phone = TextField('Phone number')
-    graduation = TextField('Graduation Year')
+        # update the email address
+        if form.email.data:
+            acc.email = form.email.data
 
-"""
+        # if a new password has been provided, update it
+        if form.new_password.data:
+            acc.set_password(form.new_password.data)
+
+        return acc
+
+class BasicRegisterForm(Form):
+    email = StringField("Email", [validators.DataRequired(), validators.Email()])
+
+class BasicRegisterFormContext(FormContext):
+    def set_template(self):
+        self.template = "account/register.html"
+
+    def make_renderer(self):
+        self.renderer = BasicRegisterFormRenderer()
+
+    def blank_form(self):
+        self.form = BasicRegisterForm()
+
+    def data2form(self):
+        self.form = BasicRegisterForm(formdata=self.form_data)
+
+    def finalise(self):
+        super(BasicRegisterFormContext, self).finalise()
+
+        # handle the possibility that the account already exists
+        existing = AccountFactory.get_model().pull_by_email(self.form.email.data)
+        if existing is not None:
+            if not existing.can_log_in():
+                raise exceptions.CannotLoginException("This email address is currently not allowed to log in to the system")
+        else:
+            existing = AccountFactory.get_model()()
+
+        # populate the account with the email address, and set the activation mode
+        existing.email = self.form.email.data
+        existing.role = app.config.get("ACCOUNT_DEFAULT_ROLES", [])
+        existing.activate_activation_mode()
+        existing.save(blocking=True)
+
+        self._send_activation_email(existing)
+
+    def _send_activation_email(self, acc):
+        base = request.url_root
+        if base.endswith("/"):
+            base = base[:-1]
+        activate_url = base + url_for("account.activate", activation_token=acc.activation_token)
+
+        to = [acc.email]
+        fro = app.config.get('MAIL_FROM_ADDRESS')
+        subject = app.config.get("ACCOUNT_ACTIVATE_EMAIL_SUBJECT", "(no subject)")
+
+        try:
+            mail.send_mail(to=to, fro=fro, subject=subject, template_name="account/emails/activate.txt", activate_url=activate_url, account=acc)
+        except Exception as e:
+            raise exceptions.EmailFailedException("Unable to send email to the address provided", e)
+
+    #####################################################
+    ## register form extension to context
+
+    def legal(self):
+        if not self._check_email():
+            raise exceptions.EmailInUseException("The email address you provided is in use by another user")
+
+        return True
+
+    def _check_email(self):
+        suggested = self.form.email.data
+        try:
+            existing = AccountFactory.get_model().pull_by_email(suggested)
+            return existing is None
+        except exceptions.NonUniqueAccountException:
+            return False
+
+class BasicRegisterFormRenderer(Renderer):
+    def __init__(self):
+        super(BasicRegisterFormRenderer, self).__init__()
+
+        self.FIELD_GROUPS = {
+            "register" : {
+                "helper" : "bs3_horizontal",
+                "wrappers" : ["first_error", "container"],
+                "label_width" : 4,
+                "control_width" : 8,
+                "fields" : [
+                    {
+                        "email" : {
+                            "attributes" : {}
+                        }
+                    }
+                ]
+            }
+        }

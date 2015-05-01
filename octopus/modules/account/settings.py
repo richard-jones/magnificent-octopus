@@ -59,6 +59,7 @@ ACCOUNT_LOGIN_FORM_CONTEXT = "octopus.modules.account.forms.LoginFormContext"
 ACCOUNT_USER_FORM_CONTEXT = "octopus.modules.account.forms.BasicUserFormContext"
 ACCOUNT_FORGOT_FORM_CONTEXT = "octopus.modules.account.forms.ForgotFormContext"
 ACCOUNT_RESET_FORM_CONTEXT = "octopus.modules.account.forms.ResetFormContext"
+ACCOUNT_REGISTER_FORM_CONTEXT = "octopus.modules.account.forms.BasicRegisterFormContext"
 
 # where to direct the user after login if they haven't already got a page in their "next" location
 ACCOUNT_LOGIN_REDIRECT_ROUTE = "index"
@@ -69,9 +70,15 @@ ACCOUNT_LOGOUT_REDIRECT_ROUTE = "index"
 # where to direct the user once they have submitted a forgotten password request
 ACCOUNT_FORGOT_REDIRECT_ROUTE = "account.forgot_pending"
 
+# where to direct the user once they have created a user account
+ACCOUNT_REGISTER_REDIECT_ROUTE = "account.index"
+
 # amount of time a reset token is valid for (86400 is 24 hours)
 ACCOUNT_RESET_TIMEOUT = 86400
 ACCOUNT_ACTIVATE_TIMEOUT = ACCOUNT_RESET_TIMEOUT * 14
 
 ACCOUNT_RESET_EMAIL_SUBJECT = "Password reset"
+ACCOUNT_ACTIVATE_EMAIL_SUBJECT = "Activate your account"
 
+# Default roles to create your users with
+ACCOUNT_DEFAULT_ROLES = []

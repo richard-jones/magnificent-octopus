@@ -126,6 +126,10 @@ class BasicAccount(dataobj.DataObj, dao.BasicAccountDAO, UserMixin):
 
         return False
 
+    def activate_activation_mode(self):
+        activation_token = uuid.uuid4().hex
+        self.set_activation_token(activation_token, app.config.get("ACCOUNT_ACTIVATE_TIMEOUT", 86400))
+
     @property
     def is_super(self):
         return Authorise.has_role(app.config["ACCOUNT_SUPER_USER_ROLE"], self.role)

@@ -198,8 +198,6 @@ def reset(reset_token):
     if not acc.can_log_in():
         abort(404)
 
-
-
     if request.method == "GET":
         fc = AccountFactory.get_reset_formcontext(acc)
         return fc.render_template()
@@ -228,87 +226,39 @@ def index():
         abort(401)
     return render_template('account/users.html')
 
-
-"""
 @blueprint.route('/register', methods=['GET', 'POST'])
 @ssl_required
 def register():
-    form = RegisterForm(request.form, csrf_enabled=False)
+    # access to registration may not be for the public
+    if current_user.is_anonymous() and not app.config.get("ACCOUNT_ALLOW_REGISTER", False):
+        abort(404)
 
-    if request.method == 'POST' and form.validate():
-        existing_account = models.Account.pull(form.email.data)
-        account = None
-        if existing_account is not None:
-            if existing_account.is_banned():
-                flash('You have been banned from using this service.', "error")
-                return render_template('account/register.html', form=form)
-            elif existing_account.is_deleted():
-                flash('Your old account has been restored. Welcome back!', "success")
-                existing_account.set_deleted(False, save=False)
-                account = existing_account
-                account.clear_password()
-            else:
-                flash('This account already exists.')
-                return redirect(url_for('.forgot'))
+    if request.method == "GET":
+        fc = AccountFactory.get_register_formcontext()
+        return fc.render_template()
+    elif request.method == "POST":
+        fc = AccountFactory.get_register_formcontext(request.form)
 
-        if account is None:
-            account = models.Account()
+        if not fc.validate():
+            flash("There was a problem with your form", "error")
+            return fc.render_template()
 
-        account.id = form.email.data
-        account.set_email(form.email.data)
-        account.set_name(form.name.data)
-
-        if form.degree.data:
-            account.set_degree(form.degree.data)
-
-        if form.phone.data:
-            account.set_phone(form.phone.data)
-
-        if form.graduation.data:
-            account.set_graduation(form.graduation.data)
-
-        # automatically set the user role to be "user"
-        account.add_role("user")
-
-        activation_token = uuid.uuid4().hex
-        account.set_activation_token(activation_token, app.config.get("PASSWORD_ACTIVATE_TIMEOUT", 86400))
-        account.save()
-        account.refresh()  # refresh the index
-
-        #sending the email with the activation link
-
-        sep = "/"
-        if request.url_root.endswith("/"):
-            sep = ""
-        activation_url = request.url_root + sep + "account/activate/" + activation_token
-
-        to = [account.data['email'], app.config['FEEDBACK_EMAIL']]
-        fro = app.config['FEEDBACK_EMAIL']
-        subject = app.config.get("SERVICE_NAME", "") + " - new password"
-        text = "Welcome to UniBoard, '" + account.email + "'!\n\n"
-        text += "Please visit " + activation_url + " to set a password for your account.\n\n"
-        text += "Regards, The UniBoard Team"
+        # if the form validates, then check the legality of the submission
         try:
-            mail.send_mail(to=to, fro=fro, subject=subject, text=text)
-            flash('Instructions to set up your password have been sent to you. Please check your emails.', "success")
-            if app.config.get('DEBUG', False):
-                flash('Debug mode - url for activation is ' + activation_url, "error")
-        except Exception as e:
-            magic = str(uuid.uuid1())
-            #util.flash_with_url(
-                #'Hm, sorry - sending the password reset email didn\'t work.' + CONTACT_INSTR + ' It would help us if you also quote this magic number: ' + magic + ' . Thank you!',
-                #'error')
-            if app.config.get('DEBUG', False):
-                flash('Debug mode - url for reset is ' + activation_url, "error")
-            app.logger.error(magic + "\n" + repr(e))
+            fc.legal()
+        except exceptions.AccountException as e:
+            flash(e.message, "error")
+            return fc.render_template()
 
-        return redirect('/account/register')  #TODO should be redirecting somewhere else
-    if request.method == 'POST' and not form.validate():
-        flash('Please correct the errors', 'error')
-    return render_template('account/register.html', form=form)
-"""
+        # if we get to here, then create the user record
+        fc.finalise()
 
-"""
+        # tell the user that everything is good
+        flash("Account created - activation token sent", "success")
+
+        # redirect to the appropriate next page
+        return redirect(url_for(app.config.get("ACCOUNT_REGISTER_REDIECT_ROUTE")))
+
 @blueprint.route("/activate/<activation_token>", methods=["GET", "POST"])
 @ssl_required
 def activate(activation_token):
@@ -336,4 +286,3 @@ def activate(activation_token):
         # log the user in
         _do_login(account)
         return redirect('/')
-"""

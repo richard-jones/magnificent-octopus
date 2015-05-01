@@ -2,7 +2,7 @@ jQuery(document).ready(function($) {
 
     // when the update button is clicked, disable it and show the waiting gif
     $("#update").click(function(event) {
-        event.preventDefault()
+        event.preventDefault();
         $("#update").attr("disabled", "disabled")
                     .html("Updating <img src='/static/images/white-transparent-loader.gif'>");
         $("#user_details").submit();
