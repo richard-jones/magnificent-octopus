@@ -438,3 +438,64 @@ class BasicRegisterFormRenderer(Renderer):
                 ]
             }
         }
+
+######################################################
+
+class ActivateForm(Form):
+    new_password = PasswordField('New Password', [
+        validators.DataRequired(),
+        validators.EqualTo('confirm_new_password', message='Passwords must match')
+    ])
+    confirm_new_password = PasswordField('Repeat Password', [validators.DataRequired()])
+
+class ActivateFormContext(FormContext):
+    def set_template(self):
+        self.template = "account/activate.html"
+
+    def make_renderer(self):
+        self.renderer = ActivateFormRenderer()
+
+    def blank_form(self):
+        self.form = ActivateForm()
+
+    def data2form(self):
+        self.form = ActivateForm(formdata=self.form_data)
+
+    def source2form(self):
+        self.form = ActivateForm()
+
+    def finalise(self):
+        super(ActivateFormContext, self).finalise()
+
+        password = self.form.new_password.data
+        self.source.set_password(password)
+        self.source.remove_activation_token()
+        self.source.save(blocking=True)
+
+    def render_template(self, template=None, **kwargs):
+        return super(ActivateFormContext, self).render_template(template=template, account=self.source, **kwargs)
+
+class ActivateFormRenderer(Renderer):
+    def __init__(self):
+        super(ActivateFormRenderer, self).__init__()
+
+        self.FIELD_GROUPS = {
+            "activate" : {
+                "helper" : "bs3_horizontal",
+                "wrappers" : ["first_error", "container"],
+                "label_width" : 4,
+                "control_width" : 8,
+                "fields" : [
+                    {
+                        "new_password" : {
+                            "attributes" : {}
+                        }
+                    },
+                    {
+                        "confirm_new_password" : {
+                            "attributes" : {}
+                        }
+                    }
+                ]
+            }
+        }

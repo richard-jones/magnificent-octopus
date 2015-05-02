@@ -262,27 +262,27 @@ def register():
 @blueprint.route("/activate/<activation_token>", methods=["GET", "POST"])
 @ssl_required
 def activate(activation_token):
-    account = models.Account.get_by_activation_token(activation_token)
+    account = AccountFactory.get_model().get_by_activation_token(activation_token)
     if account is None:
         abort(404)
-    form = SetPasswordForm()
+
+    if not account.can_log_in():
+        abort(404)
+
     if request.method == "GET":
-        return render_template("account/activate.html", account=account, form=form)
-
+        fc = AccountFactory.get_activate_formcontext(account)
+        return fc.render_template()
     elif request.method == "POST":
-        # check that the passwords match, and bounce if not
-        pw = request.values.get("password")
-        conf = request.values.get("confirm_password")
-        if pw != conf:
-            flash("Passwords do not match - please try again", "error")
-            return render_template("account/activate.html", account=account, form=form)
+        fc = AccountFactory.get_activate_formcontext(account, request.form)
+        if not fc.validate():
+            flash("There was a problem with your form", "error")
+            return fc.render_template()
 
-        # update the user's account
-        account.set_password(pw)
-        account.remove_activation_token()
-        account.save()
-        flash("Password has been set", "success")
+        # if the form is good, finalise the user's password change
+        fc.finalise()
 
         # log the user in
         _do_login(account)
-        return redirect('/')
+        flash("Your account has been activated and you have been logged in", "success")
+        return redirect(url_for(app.config.get("ACCOUNT_LOGIN_REDIRECT_ROUTE", "index")))
+
