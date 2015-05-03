@@ -423,11 +423,19 @@ class UnicodeWriter:
 
 ######################################################################
 
+class SheetValidationException(Exception):
+    def __init__(self, *args, **kwargs):
+        super(SheetValidationException, self).__init__(*args)
+        self.missing_header = kwargs["missing_header"]
 
 class SheetWrapper(object):
     # map from values that will appear in the headers for real (i.e. human readable) to values
     # that should be used to refer to that column internally
     HEADERS = {}
+
+    # list of headers that must be present such that validation of the sheet will succeed - use
+    # the internal reference name, not the human name
+    REQUIRED = []
 
     # order of headers as they should be saved - use the internal reference name, not the human
     # readable name
@@ -482,6 +490,11 @@ class SheetWrapper(object):
                 return v
         return None
 
+    def _header_value_map(self, val):
+        for k, v in self.HEADERS.iteritems():
+            if v.strip().lower() == val.lower():
+                return k
+
     def _value(self, field, value):
         if self.TRIM:
             try:
@@ -496,6 +509,14 @@ class SheetWrapper(object):
                 return None
 
         return value
+
+    def validate(self):
+        ref = [self.HEADERS.get(h) for h in self._sheet.headers() if h in self.HEADERS]
+        for r in self.REQUIRED:
+            if r not in ref:
+                header = self._header_value_map(r)
+                raise SheetValidationException("One or more headings are missing from the sheet", missing_header=header)
+        return True
 
     def objects(self):
         for o in self._sheet.objects():
