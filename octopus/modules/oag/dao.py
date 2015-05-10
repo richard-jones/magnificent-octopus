@@ -59,7 +59,7 @@ class DueJobsQuery(object):
             self.fields = "_source"
 
     def query(self):
-        now = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
         return {
             "query" : {
                 "bool" : {

@@ -64,7 +64,7 @@ class BasicAccount(dataobj.DataObj, dao.BasicAccountDAO, UserMixin):
         if expires is None and timeout is None:
             raise dataobj.DataSchemaException("You must provide a timeout or an expiry date for the reset token")
         if expires is None:
-            expires = datetime.now() + timedelta(0, timeout)
+            expires = datetime.utcnow() + timedelta(0, timeout)
         if not isinstance(expires, basestring):
             expires = expires.strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -84,7 +84,7 @@ class BasicAccount(dataobj.DataObj, dao.BasicAccountDAO, UserMixin):
             return True
 
         ed = datetime.strptime(self.reset_expires, "%Y-%m-%dT%H:%M:%SZ")
-        if ed < datetime.now():
+        if ed < datetime.utcnow():
             return True
 
         return False
@@ -101,7 +101,7 @@ class BasicAccount(dataobj.DataObj, dao.BasicAccountDAO, UserMixin):
         if expires is None and timeout is None:
             raise dataobj.DataSchemaException("You must provide a timeout or an expiry date for the activation token")
         if expires is None:
-            expires = datetime.now() + timedelta(0, timeout)
+            expires = datetime.utcnow() + timedelta(0, timeout)
         if not isinstance(expires, basestring):
             expires = expires.strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -121,7 +121,7 @@ class BasicAccount(dataobj.DataObj, dao.BasicAccountDAO, UserMixin):
             return True
 
         ed = datetime.strptime(self.activation_expires, "%Y-%m-%dT%H:%M:%SZ")
-        if ed < datetime.now():
+        if ed < datetime.utcnow():
             return True
 
         return False

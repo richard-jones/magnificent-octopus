@@ -18,7 +18,7 @@ class RequestState(object):
         self.success_buffer = []
         self.error_buffer = []
 
-        self.start = datetime.now() if start is None else start
+        self.start = datetime.utcnow() if start is None else start
 
         if timeout is None:
             timeout = app.config.get("OAG_STATE_DEFAULT_TIMEOUT")
@@ -62,12 +62,12 @@ class RequestState(object):
         if len(self.pending.keys()) == 0:
             return True
         if self.timeout is not None:
-            if datetime.now() > self.timeout:
+            if datetime.utcnow() > self.timeout:
                 return True
         return False
 
     def get_due(self):
-        now = datetime.now()
+        now = datetime.utcnow()
         return [p for p in self.pending.keys() if self.pending[p].get("due") < now]
 
     def next_due(self):
@@ -94,7 +94,7 @@ class RequestState(object):
 
 
     def record_result(self, result):
-        now = datetime.now()
+        now = datetime.utcnow()
 
         successes = result.get("results", [])
         errors = result.get("errors", [])
@@ -233,7 +233,7 @@ class RequestState(object):
         return data
 
     def _backoff(self, times):
-        now = datetime.now()
+        now = datetime.utcnow()
         seconds = 2**times * self.back_off_factor
         seconds = seconds if seconds < self.max_back_off else self.max_back_off
         return now + timedelta(seconds=seconds)
@@ -320,7 +320,7 @@ def oag_it(lookup_url, identifiers,
     next = state.next_due()
     while True:
         # check whether we're supposed to do anything yet
-        now = datetime.now()
+        now = datetime.utcnow()
         if now < next:
             continue
 
