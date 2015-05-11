@@ -83,6 +83,21 @@ def date_str(in_format=None, out_format=None):
 
     return datify
 
+def to_isolang(input_source=None, output_format=None):
+    """
+    :param input_source: dataset which to use to checck for languages
+    :param output_format: format from input source to putput (e.g. the three letter code)
+    :return:
+    """
+    def isolang(val):
+        # FIXME: implement
+        return val
+    return isolang
+
+def to_url(val):
+    # FIXME: implement
+    return val
+
 ############################################################
 
 ############################################################
@@ -100,27 +115,31 @@ class DataObj(object):
 
     SCHEMA = None
 
-    STRUCT = None
-
     DEFAULT_COERCE = {
         "unicode" : to_unicode(),
         "utcdatetime" : date_str(),
         "integer" : to_int(),
-        "float" : to_float()
+        "float" : to_float(),
+        "isolang" : to_isolang(),
+        "url" : to_url
     }
 
-    def __init__(self, raw=None, coerce=None):
-        # prep the coersion routine
-        self.coerce = deepcopy(self.DEFAULT_COERCE)
-        if coerce is not None:
-            self.coerce.update(coerce)
+    def __init__(self, raw=None):
+        # if no subclass has set the coerce, then set it from default
+        if not hasattr(self, "coerce"):
+            self.coerce = deepcopy(self.DEFAULT_COERCE)
 
-        # restructure the object based on the struct
-        if self.STRUCT is not None:
-            raw = construct(raw, self.STRUCT, self.coerce)
+        # if no subclass has set the struct, initialise it
+        if not hasattr(self, "struct"):
+            self.struct = None
 
-        # assign the data
-        self.data = {} if raw is None else raw
+        # assign the data if not already assigned by subclass
+        if not hasattr(self, "data"):
+            self.data = {} if raw is None else raw
+
+        # restructure the object based on the struct if requried
+        if self.struct is not None:
+            self.data = construct(self.data, self.struct, self.coerce)
 
         # run against the old validation routine
         # (now deprecated)
@@ -544,7 +563,40 @@ def construct(obj, struct, coerce, context=""):
 
     return constructed
 
+def construct_merge(target, source):
+    merged = deepcopy(target)
 
+    for field, instructions in source.get("fields", {}).iteritems():
+        if "fields" not in merged:
+            merged["fields"] = {}
+        if field not in merged["fields"]:
+            merged["fields"][field] = deepcopy(instructions)
+
+    for obj in source.get("objects", []):
+        if "objects" not in merged:
+            merged["objects"] = []
+        if obj not in merged["objects"]:
+            merged["objects"].append(obj)
+
+    for field, instructions in source.get("lists", {}).iteritems():
+        if "lists" not in merged:
+            merged["lists"] = {}
+        if field not in merged["lists"]:
+            merged["lists"][field] = deepcopy(instructions)
+
+    for r in source.get("required", []):
+        if "required" not in merged:
+            merged["required"] = []
+        if r not in merged["required"]:
+            merged["required"].append(r)
+
+    for field, struct in source.get("structs", {}).iteritems():
+        if "structs" not in merged:
+            merged["structs"] = {}
+        if field not in merged["structs"]:
+            merged["structs"][field] = deepcopy(struct)
+
+    return merged
 
 
 ############################################################
