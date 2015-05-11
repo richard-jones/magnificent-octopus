@@ -160,6 +160,12 @@ class DataObj(object):
     def json(self):
         return json.dumps(self.data)
 
+    def _add_struct(self, struct):
+        if hasattr(self, "struct"):
+            self.struct = construct_merge(self.struct, struct)
+        else:
+            self.struct = struct
+
     def _get_path(self, path, default):
         parts = path.split(".")
         context = self.data
