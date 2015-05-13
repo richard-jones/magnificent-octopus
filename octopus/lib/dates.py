@@ -27,3 +27,6 @@ def format(d, format=None):
 
 def reformat(s, in_format=None, out_format=None):
     return format(parse(s, format=in_format), format=out_format)
+
+def now():
+    return format(datetime.utcnow())
