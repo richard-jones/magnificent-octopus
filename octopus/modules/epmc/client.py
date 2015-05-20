@@ -1,7 +1,8 @@
 from octopus.core import app
-from octopus.lib import dataobj, http
+from octopus.lib import http
 import urllib, string
 from lxml import etree
+from octopus.modules.epmc import models
 
 def quote(s, **kwargs):
     try:
@@ -30,11 +31,6 @@ class EuropePMCException(Exception):
     def __init__(self, httpresponse=None, *args, **kwargs):
         super(EuropePMCException, self).__init__(*args, **kwargs)
         self.response = httpresponse
-
-class EPMCFullTextException(Exception):
-    def __init__(self, message, rawstring, *args, **kwargs):
-        super(EPMCFullTextException, self).__init__(message, *args, **kwargs)
-        self.raw = rawstring
 
 class EuropePMC(object):
     @classmethod
@@ -81,7 +77,7 @@ class EuropePMC(object):
         except:
             raise EuropePMCException(message="could not decode JSON from EPMC response")
 
-        results = [EPMCMetadata(r) for r in j.get("resultList", {}).get("result", [])]
+        results = [models.EPMCMetadata(r) for r in j.get("resultList", {}).get("result", [])]
         return results
 
     @classmethod
@@ -95,87 +91,8 @@ class EuropePMC(object):
             raise EuropePMCException(resp)
         return EPMCFullText(resp.text)
 
-class EPMCMetadata(dataobj.DataObj):
-    def __init__(self, raw):
-        super(EPMCMetadata, self).__init__(raw)
-
-    @property
-    def pmcid(self):
-        return self._get_single("pmcid", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def pmid(self):
-        return self._get_single("pmid", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def doi(self):
-        return self._get_single("doi", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def in_epmc(self):
-        return self._get_single("inEPMC", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def is_oa(self):
-        return self._get_single("isOpenAccess", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def issn(self):
-        return self._get_single("journalInfo.journal.issn", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def journal(self):
-        return self._get_single("journalInfo.journal.title", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def essn(self):
-        return self._get_single("journalInfo.journal.essn", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def title(self):
-        return self._get_single("title", self._utf8_unicode(), allow_coerce_failure=False)
-
-class EPMCFullText(object):
-    def __init__(self, raw):
-        self.raw = raw
-        try:
-            self.xml = etree.fromstring(self.raw)
-        except:
-            raise EPMCFullTextException("Unable to parse XML", self.raw)
-
-    @property
-    def title(self):
-        title_elements = self.xml.xpath("//title-group/article-title")
-        if len(title_elements) > 0:
-            return title_elements[0].text
-        return None
-
-    @property
-    def is_aam(self):
-        manuscripts = self.xml.xpath("//article-id[@pub-id-type='manuscript']")
-        return len(manuscripts) > 0
-
-    def get_licence_details(self):
-        # get the licence type
-        l = self.xml.xpath("//license")
-        if len(l) > 0:
-            l = l[0]
-        else:
-            return None, None, None
-        type = l.get("license-type")
-        url = l.get("{http://www.w3.org/1999/xlink}href")
-
-        # get the paragraph(s) describing the licence
-        para = self.xml.xpath("//license/license-p")
-        out = ""
-        for p in para:
-            out += etree.tostring(p)
-
-        return type, url, out
-
-    @property
-    def copyright_statement(self):
-        cs = self.xml.xpath("//copyright-statement")
-        if len(cs) > 0:
-            return cs[0].text
-        return None
+class EPMCFullText(models.JATS):
+    """
+    For backwards compatibility - don't add any methods here
+    """
+    pass
