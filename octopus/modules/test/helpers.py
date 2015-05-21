@@ -16,7 +16,7 @@ class FunctionalTestServer(TestCase):
         super(FunctionalTestServer, self).setUp()
         if self.config and self.cfg_file and self.flask_app:
             mod = plugin.load_module(self.flask_app)
-            make_test_config(self.config, self.cfg_file)
+            make_config(self.config, self.cfg_file)
             self.test_server = TestServer(port=None, index=None, python_app_module_path=os.path.abspath(mod.__file__), cfg_file=self.cfg_file)
             self.test_server.spawn_with_config()
 
@@ -25,7 +25,7 @@ class FunctionalTestServer(TestCase):
         self.test_server.terminate()
         os.remove(self.cfg_file)
 
-def make_test_config(cfg, filepath):
+def make_config(cfg, filepath):
     with codecs.open(filepath, "wb") as out:
         for k, v in cfg.iteritems():
             if isinstance(v, basestring):
