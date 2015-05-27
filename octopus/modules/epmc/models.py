@@ -241,7 +241,7 @@ class JATS(object):
             for x in xrefs:
                 if x.get("ref-type") == "aff":
                     affid = x.get("rid")
-                    xp = "//contrib-group/aff[@id='" + affid + "']"
+                    xp = "//aff[@id='" + affid + "']"
                     aff_elements = self.xml.xpath(xp)
                     for ae in aff_elements:
                         contents = ae.xpath("string()")
