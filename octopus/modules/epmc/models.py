@@ -1,4 +1,5 @@
 from octopus.lib import dataobj
+from octopus.lib import xml as xutil
 from lxml import etree
 
 class JATSException(Exception):
@@ -37,11 +38,58 @@ class EPMCMetadataXML(object):
             return etree.tostring(self.xml)
 
     @property
+    def title(self):
+        return xutil.xp_first_text(self.xml, "title")
+
+    @property
+    def publication_type(self):
+        return xutil.xp_first_text(self.xml, "//pubTypeList/pubType")
+
+    @property
+    def language(self):
+        return xutil.xp_first_text(self.xml, "language")
+
+    @property
+    def publication_date(self):
+        pd = xutil.xp_first_text(self.xml, "firstPublicationDate")
+        if pd is not None:
+            return pd
+        pd = xutil.xp_first_text(self.xml, "electronicPublicationDate")
+        if pd is not None:
+            return pd
+        pd = xutil.xp_first_text(self.xml, "//journalInfo/printPublicationDate")
+        return pd
+
+    @property
+    def pmid(self):
+        return xutil.xp_first_text(self.xml, "pmid")
+
+    @property
+    def pmcid(self):
+        return xutil.xp_first_text(self.xml, "pmcid")
+
+    @property
+    def doi(self):
+        return xutil.xp_first_text(self.xml, "DOI")
+
+    @property
+    def issns(self):
+        issn = xutil.xp_first_text(self.xml, "//journalInfo/journal/ISSN")
+        essn = xutil.xp_first_text(self.xml, "//journalInfo/journal/ESSN")
+        issns = []
+        if issn is not None:
+            issns.append(issn)
+        if essn is not None:
+            issns.append(essn)
+        return issns
+
+    @property
+    def keywords(self):
+        return xutil.xp_texts(self.xml, "//keywordList/keyword")
+
+    @property
     def author_string(self):
-        author_string = self.xml.xpath("//authorString")
-        if len(author_string) > 0:
-            return author_string[0].text
-        return None
+        return xutil.xp_first_text(self.xml, "//authorString")
 
     @property
     def authors(self):
@@ -104,9 +152,7 @@ class EPMCMetadataXML(object):
 
     @property
     def mesh_descriptors(self):
-        mesh_elements = self.xml.xpath("//meshHeadingList/meshHeading/descriptorName")
-        return [e.text for e in mesh_elements]
-
+        return xutil.xp_texts(self.xml, "//meshHeadingList/meshHeading/descriptorName")
 
 
 class EPMCMetadata(dataobj.DataObj):
