@@ -83,15 +83,34 @@ def date_str(in_format=None, out_format=None):
 
     return datify
 
-def to_isolang(input_source=None, output_format=None):
+def to_isolang(output_format=None):
     """
-    :param input_source: dataset which to use to checck for languages
-    :param output_format: format from input source to putput (e.g. the three letter code)
+    :param output_format: format from input source to putput.  Must be one of:
+        * alpha3
+        * alt3
+        * alpha2
+        * name
+        * fr
+    Can be a list in order of preference, too
     :return:
     """
+    # delayed import, since we may not always want to load the whole dataset for a dataobj
+    from octopus.lib import isolang as dataset
+
+    # sort out the output format list
+    if output_format is None:
+        output_format = ["alpha3"]
+    if not isinstance(output_format, list):
+        output_format = [output_format]
+
     def isolang(val):
-        # FIXME: implement
-        return val
+        l = dataset.find(val)
+        for f in output_format:
+            v = l.get(f)
+            if v is None or v == "":
+                continue
+            return v
+
     return isolang
 
 def to_url(val):
