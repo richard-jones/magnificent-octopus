@@ -347,7 +347,7 @@ class DataObj(object):
         # now set it on the path
         self._set_path(path, val)
 
-    def _add_to_list(self, path, val, coerce=None, allow_coerce_failure=False, allow_none=False, ignore_none=True):
+    def _add_to_list(self, path, val, coerce=None, allow_coerce_failure=False, allow_none=False, ignore_none=True, unique=False):
         if val is None and ignore_none:
             return
 
@@ -358,6 +358,13 @@ class DataObj(object):
         if coerce is not None:
             val = self._coerce(val, coerce, accept_failure=allow_coerce_failure)
         current = self._get_list(path, by_reference=True)
+
+        # if we require the list to be unique, check for the value first
+        if unique:
+            if val in current:
+                return
+
+        # otherwise, append
         current.append(val)
 
     def _utf8_unicode(self):
