@@ -210,10 +210,7 @@ class JATS(object):
 
     @property
     def title(self):
-        title_elements = self.xml.xpath("//title-group/article-title")
-        if len(title_elements) > 0:
-            return title_elements[0].text
-        return None
+        return xutil.xp_first_text(self.xml, "//title-group/article-title")
 
     @property
     def is_aam(self):
@@ -240,22 +237,93 @@ class JATS(object):
 
     @property
     def copyright_statement(self):
-        cs = self.xml.xpath("//copyright-statement")
-        if len(cs) > 0:
-            return cs[0].text
-        return None
+        return xutil.xp_first_text(self.xml, "//copyright-statement")
 
     @property
     def categories(self):
-        cs = self.xml.xpath("//article-categories/subj-group/subject")
-        return [c.text for c in cs]
+        return xutil.xp_texts(self.xml, "//article-categories/subj-group/subject")
+
+    @property
+    def authors(self):
+        aels = self.xml.xpath("//contrib-group/contrib[@contrib-type='author']")
+        return self._make_contribs(aels)
 
     @property
     def contribs(self):
         cs = self.xml.xpath("//contrib-group/contrib")
+        return self._make_contribs(cs)
+
+    @property
+    def emails(self):
+        return xutil.xp_texts(self.xml, "//email")
+
+    @property
+    def keywords(self):
+        return xutil.xp_texts(self.xml, "//kwd-group/kwd")
+
+    @property
+    def publisher(self):
+        return xutil.xp_first_text(self.xml, "//publisher/publisher-name")
+
+    @property
+    def publication_date(self):
+        # first look for an explicit publication date
+        pds = self.xml.xpath("//article-meta/pub-date[@date-type='pub']")
+        if len(pds) > 0:
+            return self._make_date(pds[0])
+
+        # if not, look for exactly one pub-date and use that
+        pds = self.xml.xpath("//article-meta/pub-date")
+        if len(pds) == 1:
+            return self._make_date(pds[0])
+
+        # otherwise, insufficient information
+        return None
+
+    @property
+    def date_accepted(self):
+        das = self.xml.xpath("//history/date[@date-type='accepted']")
+        if len(das) > 0:
+            return self._make_date(das[0])
+
+    @property
+    def date_submitted(self):
+        rcs = self.xml.xpath("//history/date[@date-type='received']")
+        if len(rcs) > 0:
+            return self._make_date(rcs[0])
+
+    @property
+    def issn(self):
+        return xutil.xp_texts(self.xml, "//journal-meta/issn")
+
+    @property
+    def pmcid(self):
+        id = xutil.xp_first_text(self.xml, "//article-meta/article-id[@pub-id-type='pmcid']")
+        if not id.startswith("PMC"):
+            id = "PMC" + id
+        return id
+
+    @property
+    def doi(self):
+        return xutil.xp_first_text(self.xml, "//article-meta/article-id[@pub-id-type='doi']")
+
+    def _make_date(self, element):
+        ob = xutil.objectify(element)
+        year = ob.get("year")
+        month = ob.get("month", "01")
+        day = ob.get("day", "01")
+        if len(month) < 2:
+            month = "0" + month
+        if len(day) < 2:
+            day = "0" + day
+        if year is None or len(year) != 4:
+            return None
+        return year + "-" + month + "-" + day
+
+    def _make_contribs(self, elements):
         obs = []
 
-        for c in cs:
+        for c in elements:
             con = {}
 
             # first see if there is a name we can pull out
@@ -301,16 +369,6 @@ class JATS(object):
                 obs.append(con)
 
         return obs
-
-    @property
-    def emails(self):
-        emails = self.xml.xpath("//email")
-        return [e.text for e in emails]
-
-    @property
-    def keywords(self):
-        kws = self.xml.xpath("//kwd-group/kwd")
-        return [k.text for k in kws]
 
     def tostring(self):
         if self.raw is not None:
