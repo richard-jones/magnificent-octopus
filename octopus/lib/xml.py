@@ -51,3 +51,15 @@ def xp_first_text(element, xpath, default=None):
 def xp_texts(element, xpath):
     els = element.xpath(xpath)
     return [e.text for e in els if e.text is not None]
+
+def objectify(element):
+    obj = {}
+    for c in element.getchildren():
+        # FIXME: does not currently handle attributes
+        #for attr in c.keys():
+        #    obj["@" + attr] = c.get(attr)
+        if len(c.getchildren()) > 0:
+            obj[c.tag] = objectify(c)
+        else:
+            obj[c.tag] = c.text
+    return obj
