@@ -299,7 +299,7 @@ class JATS(object):
     @property
     def pmcid(self):
         id = xutil.xp_first_text(self.xml, "//article-meta/article-id[@pub-id-type='pmcid']")
-        if not id.startswith("PMC"):
+        if id is not None and not id.startswith("PMC"):
             id = "PMC" + id
         return id
 
