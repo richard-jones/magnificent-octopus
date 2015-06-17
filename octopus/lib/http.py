@@ -1,6 +1,9 @@
 from octopus.core import app
 import requests, time, urllib
 
+class SizeExceededException(Exception):
+    pass
+
 def quote(s, **kwargs):
     try:
         return urllib.quote_plus(s, **kwargs)
@@ -100,6 +103,66 @@ def get(url, retries=None, back_off_factor=None, max_back_off=None, timeout=None
                          retry_on_timeout=retry_on_timeout,
                          retry_codes=retry_codes,
                          **kwargs)
+
+def get_stream(url, retries=None, back_off_factor=None, max_back_off=None, timeout=None, response_encoding=None,
+        retry_on_timeout=None, retry_codes=None, size_limit=None, chunk_size=None, cut_off=None, **kwargs):
+
+    # set the defaults where necessary from configuration
+
+    if size_limit is None:
+        size_limit = app.config.get("HTTP_STREAM_MAX_SIZE", 0)  # size of 0 means no limit
+
+    if cut_off is None:
+        cut_off = app.config.get("HTTP_STREAM_CUT_OFF", 0)  # size of 0 means no limit
+
+    if chunk_size is None:
+        chunk_size = app.config.get("HTTP_STREAM_CHUNK_SIZE", 262144)   # 250Kb
+
+    # actually make the request (note that we pass stream=True)
+    resp = _make_request("GET", url,
+             retries=retries, back_off_factor=back_off_factor,
+             max_back_off=max_back_off,
+             timeout=timeout,
+             response_encoding=response_encoding,
+             retry_on_timeout=retry_on_timeout,
+             retry_codes=retry_codes,
+             stream=True,
+             **kwargs)
+
+    # check that content length header for an early view on whether the resource
+    # is too large
+    if size_limit > 0:
+        header_reported_size = resp.headers.get("content-length")
+        try:
+            header_reported_size = int(header_reported_size)
+        except Exception as e:
+            header_reported_size = 0
+
+        if header_reported_size > size_limit:
+            resp.connection.close()
+            raise SizeExceededException("Size as announced by Content-Type header is larger than maximum allowed size")
+
+    downloaded_bytes = 0
+    content = ''
+    chunk_no = 0
+
+    for chunk in resp.iter_content(chunk_size=chunk_size):
+        chunk_no += 1
+        downloaded_bytes += len(bytes(chunk))
+
+        # check the size limit again
+        if size_limit > 0 and downloaded_bytes > size_limit:
+            resp.connection.close()
+            raise SizeExceededException("Size limit exceeded during download")
+        if chunk:  # filter out keep-alive new chunks
+            content += chunk
+
+        # now check to see if we have exceeded the cut off point
+        if cut_off > 0 and downloaded_bytes >= cut_off:
+            break
+
+    resp.connection.close()
+    return resp, content, downloaded_bytes
 
 """
 we don't have immediate use for this, but it will be helpful in the future, so preserving in this block comment
