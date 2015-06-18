@@ -129,6 +129,9 @@ def get_stream(url, retries=None, back_off_factor=None, max_back_off=None, timeo
              stream=True,
              **kwargs)
 
+    if resp is None:
+        return None, "", 0
+
     # check that content length header for an early view on whether the resource
     # is too large
     if size_limit > 0:

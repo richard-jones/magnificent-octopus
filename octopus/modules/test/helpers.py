@@ -72,7 +72,7 @@ class TestServer(object):
         self._process = subprocess.Popen([sys.executable, self.python_app_module_path, "--config", self.cfg_file])
 
         # we must wait for the server to start listening
-        time.sleep(1)
+        time.sleep(3)
 
     def terminate(self):
         if self._process:
