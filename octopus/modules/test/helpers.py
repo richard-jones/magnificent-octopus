@@ -77,6 +77,7 @@ class TestServer(object):
     def terminate(self):
         if self._process:
             self._process.terminate()
+        time.sleep(1)
 
 
 def diff_dicts(d1, d2, d1_label='d1', d2_label='d2', print_unchanged=False):
