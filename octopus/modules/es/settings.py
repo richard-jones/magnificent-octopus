@@ -26,6 +26,21 @@ ELASTIC_SEARCH_MAPPINGS = [
 ]
 
 ##############################################################
+# Special DAO configuration
+##############################################################
+
+# The default time period to use for dynamically set index types
+# allowed: second, minute, hour, day, month, year
+ESDAO_DEFAULT_TIME_BOX = "month"
+# You can also set the time box on a per-type basis with
+# ESDAO_TIME_BOX_<UPPER CASE TYPE NAME> = "<period>"
+
+# How many time boxes to look back on during READ operations
+ESDAO_DEFAULT_TIME_BOX_LOOKBACK = 0
+# You can also set the look back on a per-type basis with
+# ESDAO_TIME_BOX_LOOKBACK_<UPPER CASE TYPE NAME> = <number of boxes>
+
+##############################################################
 # Query Endpoint Configuration
 ##############################################################
 
