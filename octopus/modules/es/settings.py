@@ -18,10 +18,50 @@ ELASTIC_SEARCH_TEST_INDEX = "test"
 # should the initialise routing initialise the index automatically?
 INITIALISE_INDEX = True
 
-# an array of DAO classes from which to retrieve the ES mappings to be
-# loaded into the index during initialisation.  You should override this
+# mapping that will be pushed into the _default_ field of the index
+# itself, and be applied to all types that are subsequently created
+ELASTIC_SEARCH_DEFAULT_MAPPING = {
+    'dynamic_templates': [
+        {
+            'default': {
+                'mapping': {
+                    'fields': {
+                        'exact': {
+                            'index': 'not_analyzed',
+                            'store': 'yes',
+                            'type': '{dynamic_type}'
+                        },
+                        '{name}': {
+                            'index': 'analyzed',
+                            'store': 'no',
+                            'type': '{dynamic_type}'
+                        }
+                    },
+                    'type': 'multi_field'
+                },
+                'match': '*',
+                'match_mapping_type': 'string'
+            }
+        }
+    ],
+    'properties': {
+        'location': {'type': 'geo_point'}
+    }
+}
+
+# an array of DAO classes from which to retrieve the type-specific ES mappings
+# to be loaded into the index during initialisation.  You should override this
 # in service.py
+# If none of your types require mappings different from the ELASTIC_SEARCH_DEFAULT_MAPPING
+# above then you can leave this list empty
 ELASTIC_SEARCH_MAPPINGS = [
+    # service.dao.MyDAO
+]
+
+# an array of DAO classes from which to retrieve example documents that will
+# be pushed into the index and then deleted during startup in order to initialise
+# the type/mappings.  You should override this in service.py
+ELASTIC_SEARCH_EXAMPLE_DOCS = [
     # service.dao.MyDAO
 ]
 

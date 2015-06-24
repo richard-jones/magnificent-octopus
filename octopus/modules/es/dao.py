@@ -41,6 +41,10 @@ class ESDAO(esprit.dao.DomainObject):
             )
         }
 
+    @classmethod
+    def example(cls):
+        return cls()
+
     def json(self):
         return jsonlib.dumps(self.data)
 
@@ -48,6 +52,11 @@ class ESDAO(esprit.dao.DomainObject):
         pass
 
 class TimeBoxedTypeESDAO(ESDAO):
+
+    # FIXME: this is just a placeholder, we're not doing a proper impl of this yet
+    # should the dynamic type be checked for existance, and initialised
+    # with a mapping or an example document
+    __init_dynamic_type__ = False
 
     FORMAT_MAP = {
         "year" : "%Y",
@@ -62,6 +71,34 @@ class TimeBoxedTypeESDAO(ESDAO):
     ## overrides on Domain Object
 
     @classmethod
+    def dynamic_read_types(cls):
+        gran = cls._get_time_granularity()
+        ts = cls._boundary_timestamp(gran)
+        lookback = cls._get_lookback()
+        tss = cls._lookback_timestamps(lookback, gran, ts)
+        return [cls._format_type(gran, ts) for ts in tss]
+
+    @classmethod
+    def dynamic_write_type(cls):
+        # first generate the type name
+        gran = cls._get_time_granularity()
+        ts = cls._boundary_timestamp(gran)
+        wt = cls._format_type(gran, ts)
+
+        # if might be that the type does not yet exist, in which case we
+        # may need to create it
+        if cls.__init_dynamic_type__:
+            # FIXME: we don't have the use case for this yet, so it's just a placeholder
+            # ultimately we'll probably want to factor the type initialisation stuff out of
+            # octopus.modules.es.initialise so that we can re-use it here
+            pass
+
+        return wt
+
+    ######################################################
+    ## Private methods for handling time boxing
+
+    @classmethod
     def _get_time_granularity(cls):
         cfarg = "ESDAO_TIME_BOX_" + cls.__type__.upper()
         period = app.config.get(cfarg)
@@ -71,7 +108,7 @@ class TimeBoxedTypeESDAO(ESDAO):
 
     @classmethod
     def _get_lookback(cls):
-        cfarg = "ESDAO_TIME_BOX_LOOKBACK" + cls.__type__.upper()
+        cfarg = "ESDAO_TIME_BOX_LOOKBACK_" + cls.__type__.upper()
         lookback = app.config.get(cfarg)
         if lookback is None:
             lookback = app.config.get("ESDAO_DEFAULT_TIME_BOX_LOOKBACK", 0)
@@ -138,21 +175,8 @@ class TimeBoxedTypeESDAO(ESDAO):
         fmt = cls.FORMAT_MAP.get(granularity)
         return cls.__type__ + timestamp.strftime(fmt)
 
-    @classmethod
-    def dynamic_read_types(cls):
-        gran = cls._get_time_granularity()
-        ts = cls._boundary_timestamp(gran)
-        lookback = cls._get_lookback()
-        tss = cls._lookback_timestamps(lookback, gran, ts)
-        return [cls._format_type(gran, ts) for ts in tss]
 
-    @classmethod
-    def dynamic_write_type(cls):
-        # first generate the type name
-        gran = cls._get_time_granularity()
-        ts = cls._boundary_timestamp(gran)
-        return cls._format_type(gran, ts)
-        
+
 class QueryStringQuery(object):
     def __init__(self, qs, fro, psize):
         self.qs = qs
