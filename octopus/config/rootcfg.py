@@ -22,6 +22,7 @@ CONFIG_FILES = [
     "magnificent-octopus/octopus/modules/oag/settings.py",
     "magnificent-octopus/octopus/modules/romeo/settings.py",
     "magnificent-octopus/octopus/modules/sherpafact/settings.py",
+    "magnificent-octopus/octopus/modules/store/settings.py",
 
     # local service configuration
     "config/service.py",
