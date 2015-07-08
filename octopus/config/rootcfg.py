@@ -23,6 +23,7 @@ CONFIG_FILES = [
     "magnificent-octopus/octopus/modules/romeo/settings.py",
     "magnificent-octopus/octopus/modules/sherpafact/settings.py",
     "magnificent-octopus/octopus/modules/store/settings.py",
+    "magnificent-octopus/octopus/modules/swordv2/settings.py",
 
     # local service configuration
     "config/service.py",
