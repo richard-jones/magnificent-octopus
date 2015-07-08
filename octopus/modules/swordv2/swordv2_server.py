@@ -14,9 +14,6 @@ config = Configuration(config_obj=app.config.get("SWORDV2_SERVER_CONFIG"))
 Authenticator = config.get_authenticator_implementation()
 SwordServer = config.get_server_implementation()
 
-from sss.sss_logging import logging
-ssslog = logging.getLogger(__name__)
-
 blueprint = Blueprint('swordv2_server', __name__)
 
 HEADER_MAP = {
@@ -83,8 +80,6 @@ def service_document():
     GET the service document - returns an XML document
     - sub_path - the path provided for the sub-service document
     """
-    ssslog.debug("GET on Service Document (retrieve service document)")
-
     try:
         auth = basic_auth()
     except SwordError as e:
