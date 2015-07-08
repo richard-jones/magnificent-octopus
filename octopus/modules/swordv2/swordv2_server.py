@@ -71,6 +71,33 @@ def basic_auth():
     return authobj
 
 ###################################################
+# Data extraction functions
+
+def get_deposit(auth):
+    d = DepositRequest()
+
+    mapped_headers = request.headers
+
+    h = HttpHeaders()
+    d.set_from_headers(h.get_sword_headers(mapped_headers))
+
+    if d.content_length > config.max_upload_size:
+        raise SwordError(error_uri=Errors.max_upload_size_exceeded,
+                        msg="Max upload size is " + str(config.max_upload_size) +
+                        "; incoming content length was " + str(d.content_length))
+
+    # get the body as a stream (which should be available as the mimetype
+    # is not handled by default by Flask, we hope!)
+    d.content_file = request.stream
+
+    # set the filename
+    d.filename = h.extract_filename(mapped_headers)
+
+    # now just attach the authentication data and return
+    d.auth = auth
+    return d
+
+###################################################
 ## Protocol operations
 
 @blueprint.route('/service-document', methods=['GET'])
@@ -93,22 +120,58 @@ def service_document():
     resp.mimetype = "application/atomsvc+xml"
     return resp
 
-@blueprint.route("/collection/{collection_id}", methods=["POST"])
+@blueprint.route("/collection/<collection_id>", methods=["POST"])
 @ssl_required
 def collection(collection_id):
-    pass
+    """
+    POST either an Atom Multipart request, or a simple package into the specified collection
+    Args:
+    - collection_id:   The ID of the collection as specified in the requested URL
+    Returns a Deposit Receipt
+    """
 
-@blueprint.route("/entry/{entry_id}", methods=["GET"])
+    try:
+        # authenticate
+        auth = basic_auth()
+
+        # FIXME: this is not a full implementation yet, so probably we won't do this until later
+        # check the validity of the request
+        # self.validate_deposit_request(web, "6.3.3", "6.3.1", "6.3.2")
+
+        # take the HTTP request and extract a Deposit object from it
+        deposit = get_deposit(auth)
+
+        # go ahead and process the deposit.  Anything other than a success
+        # will be raised as a sword error
+        ss = SwordServer(config, auth)
+        result = ss.deposit_new(collection_id, deposit)
+
+        # created
+        content = ""
+        if config.return_deposit_receipt:
+            content = result.receipt
+
+        resp = make_response(content)
+        resp.mimetype = "application/atom+xml;type=entry"
+        resp.headers["Location"] = result.location
+        resp.status_code = 201
+
+        return resp
+
+    except SwordError as e:
+        return raise_error(e)
+
+@blueprint.route("/entry/<entry_id>", methods=["GET"])
 @ssl_required
 def entry(entry_id):
     pass
 
-@blueprint.route("/entry/{entry_id}/content", methods=["GET"])
+@blueprint.route("/entry/<entry_id>/content", methods=["GET"])
 @ssl_required
 def content(entry_id):
     pass
 
-@blueprint.route("/entry/{entry_id}/statement/{type}", methods=["GET"])
+@blueprint.route("/entry/<entry_id>/statement/<type>", methods=["GET"])
 @ssl_required
 def statement(entry_id):
     pass
