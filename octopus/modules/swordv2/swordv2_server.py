@@ -43,7 +43,7 @@ def check_auth(username, password, obo=None):
         if e.authentication_failed:
             raise SwordError(status=401, empty=True)
         elif e.target_owner_unknown:
-            raise SwordError(error_uri=Errors.target_owner_unknown, msg="unknown user " + str(obo) + " as on behalf of user")
+            raise SwordError(error_uri=Errors.target_owner_unknown, msg="unknown user " + str(obo) + " as on behalf of user", author="JPER")
 
     return auth
 
@@ -70,7 +70,8 @@ def get_deposit(auth):
     if d.content_length > config.max_upload_size:
         raise SwordError(error_uri=Errors.max_upload_size_exceeded,
                         msg="Max upload size is " + str(config.max_upload_size) +
-                        "; incoming content length was " + str(d.content_length))
+                        "; incoming content length was " + str(d.content_length),
+                        author="JPER")
 
     # get the body as a stream (which should be available as the mimetype
     # is not handled by default by Flask, we hope!)
@@ -133,14 +134,21 @@ def collection(collection_id):
         result = ss.deposit_new(collection_id, deposit)
 
         # created
-        content = ""
-        if config.return_deposit_receipt:
-            content = result.receipt
+        body = ""
+        if config.return_deposit_receipt and result.receipt is not None:
+            body = result.receipt
 
-        resp = make_response(content)
-        resp.mimetype = "application/atom+xml;type=entry"
-        resp.headers["Location"] = result.location
-        resp.status_code = 201
+        resp = make_response(body)
+        if body != "":
+            resp.mimetype = "application/atom+xml;type=entry"
+
+        if result.location is not None:
+            resp.headers["Location"] = result.location
+
+        if result.created:
+            resp.status_code = 201
+        elif result.accepted:
+            resp.status_code = 202
 
         return resp
 

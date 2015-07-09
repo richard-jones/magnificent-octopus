@@ -35,6 +35,8 @@ SWORDV2_SERVER_CONFIG = {
     # we can turn off deposit receipts, which is allowed by the specification
     "return_deposit_receipt" : True,
 
+    "generator" : ("http://www.swordapp.org/sss", "2.0"),
+
     ##############################################
     # Default configuration for SSS repository impl
 
