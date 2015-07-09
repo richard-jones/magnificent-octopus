@@ -1,9 +1,10 @@
-from flask import Blueprint, Response, request, url_for, make_response
+from flask import Blueprint, Response, request, url_for, make_response, abort, redirect, send_file
 
 from functools import wraps
 
 from octopus.core import app
 from octopus.lib.webapp import ssl_required
+from octopus.lib.negotiator import ContentNegotiator
 
 from sss.spec import Errors, HttpHeaders, ValidationException
 from sss.core import Auth, SwordError, AuthException, DepositRequest, DeleteRequest
@@ -16,24 +17,9 @@ SwordServer = config.get_server_implementation()
 
 blueprint = Blueprint('swordv2_server', __name__)
 
-HEADER_MAP = {
-    HttpHeaders.in_progress : "in_progress",
-    HttpHeaders.metadata_relevant : "metadata_relevant",
-    HttpHeaders.on_behalf_of : "on_behalf_of"
-}
 
-STATUS_MAP = {
-    400 : "400 Bad Request",
-    401 : "401 Unauthorized",
-    402 : "402 Payment Required",
-    403 : "403 Forbidden",
-    404 : "404 Not Found",
-    405 : "405 Method Not Allowed",
-    406 : "406 Not Acceptable",
-    412 : "412 Precodition Failed",
-    413 : "412 Request Entity Too Large",
-    415 : "415 Unsupported Media Type"
-}
+#################################################
+## Error handling
 
 def raise_error(sword_error, additional_headers=None):
     body = sword_error.error_document if not sword_error.empty else ""
@@ -161,17 +147,124 @@ def collection(collection_id):
     except SwordError as e:
         return raise_error(e)
 
-@blueprint.route("/entry/<entry_id>", methods=["GET"])
+@blueprint.route("/entry/<path:entry_id>", methods=["GET"])
 @ssl_required
 def entry(entry_id):
-    pass
+    """
+    GET a representation of the container in the appropriate (content negotiated) format as identified by
+    the supplied id
+    Args:
+    - entry_id:   The ID of the container as supplied in the request URL
+    Returns a representation of the container: SSS will return either the Atom Entry identical to the one supplied
+    as a deposit receipt or the pure RDF/XML Statement depending on the Accept header
+    """
+    # authenticate
+    try:
+        auth = basic_auth()
+        ss = SwordServer(config, auth)
 
-@blueprint.route("/entry/<entry_id>/content", methods=["GET"])
+        # first thing we need to do is check that there is an object to return, because otherwise we may throw a
+        # 415 Unsupported Media Type without looking first to see if there is even any media to content negotiate for
+        # which would be weird from a client perspective
+        if not ss.container_exists(entry_id):
+            abort(404)
+
+        # get the content negotiation headers
+        accept_header = request.headers.get("Accept")
+        accept_packaging_header = request.headers.get("Accept-Packaging")
+
+        # do the negotiation
+        default_accept_parameters, acceptable = config.get_container_formats()
+        cn = ContentNegotiator(default_accept_parameters, acceptable)
+        accept_parameters = cn.negotiate(accept=accept_header)
+        app.logger.info("Container requested in format: " + str(accept_parameters))
+
+        # did we successfully negotiate a content type?
+        if accept_parameters is None:
+            raise SwordError(error_uri=Errors.content, status=415, empty=True)
+
+        # now actually get hold of the representation of the container and send it to the client
+        cont = ss.get_container(entry_id, accept_parameters)
+
+        resp = make_response(cont)
+        if cont is not None:
+            resp.mimetype = accept_parameters.content_type.mimetype()
+
+        return resp
+
+    except SwordError as e:
+        return raise_error(e)
+
+@blueprint.route("/entry/<path:entry_id>/content", methods=["GET"])
 @ssl_required
 def content(entry_id):
-    pass
+    """
+    GET the media resource content in the requested format (web request will include content negotiation via
+    Accept header)
+    Args:
+    - entry_id:   the ID of the object in the store
+    Returns the content in the requested format
+    """
 
-@blueprint.route("/entry/<entry_id>/statement/<type>", methods=["GET"])
+    auth = basic_auth()
+    ss = SwordServer(config, auth)
+
+    # first thing we need to do is check that there is an object to return, because otherwise we may throw a
+    # 406 Not Acceptable without looking first to see if there is even any media to content negotiate for
+    # which would be weird from a client perspective
+    if not ss.media_resource_exists(entry_id):
+        abort(404)
+
+    # get the content negotiation headers
+    accept_header = request.headers.get("Accept")
+    accept_packaging_header = request.headers.get("Accept-Packaging")
+
+    # do the negotiation
+    default_accept_parameters, acceptable = config.get_media_resource_formats()
+    cn = ContentNegotiator(default_accept_parameters, acceptable)
+    accept_parameters = cn.negotiate(accept=accept_header, accept_packaging=accept_packaging_header)
+
+    try:
+        # can get hold of the media resource
+        media_resource = ss.get_media_resource(entry_id, accept_parameters)
+    except SwordError as e:
+        return raise_error(e)
+
+    # either send the client a redirect, or stream the content out
+    if media_resource.redirect:
+        return redirect(media_resource.url)
+    else:
+        resp = send_file(media_resource.filepath, mimetype=media_resource.content_type)
+        resp.headers["Packaging"] = media_resource.packaging
+        return resp
+
+@blueprint.route("/entry/<path:entry_id>/statement/<type>", methods=["GET"])
 @ssl_required
-def statement(entry_id):
-    pass
+def statement(entry_id, type):
+    try:
+        # authenticate
+        auth = basic_auth()
+        ss = SwordServer(config, auth)
+
+        # first thing we need to do is check that there is an object to return, because otherwise we may throw a
+        # 415 Unsupported Media Type without looking first to see if there is even any media to content negotiate for
+        # which would be weird from a client perspective
+        if not ss.container_exists(entry_id):
+            abort(404)
+
+        if type == "atom":
+            type = "application/atom+xml;type=feed"
+        elif type == "rdf":
+            type = "application/rdf+xml"
+        else:
+            type = "application/atom+xml;type=feed"
+
+        # now actually get hold of the representation of the statement and send it to the client
+        cont = ss.get_statement(entry_id, type)
+
+        resp = make_response(cont)
+        resp.mimetype = type
+        return resp
+
+    except SwordError as e:
+        return raise_error(e)
