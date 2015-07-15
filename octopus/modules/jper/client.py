@@ -6,6 +6,9 @@ import json
 class JPERException(Exception):
     pass
 
+class JPERAuthException(Exception):
+    pass
+
 class ValidationException(Exception):
     pass
 
@@ -60,7 +63,7 @@ class JPER(object):
             raise JPERException("Unable to communicate with the JPER API")
 
         if resp.status_code == 401:
-            raise JPERException("Could not authenticate with JPER with your API key")
+            raise JPERAuthException("Could not authenticate with JPER with your API key")
 
         if resp.status_code == 400:
             raise ValidationException(resp.json().get("error"))
@@ -94,7 +97,7 @@ class JPER(object):
             raise JPERException("Unable to communicate with the JPER API")
 
         if resp.status_code == 401:
-            raise JPERException("Could not authenticate with JPER with your API key")
+            raise JPERAuthException("Could not authenticate with JPER with your API key")
 
         if resp.status_code == 400:
             raise ValidationException(resp.json().get("error"))
