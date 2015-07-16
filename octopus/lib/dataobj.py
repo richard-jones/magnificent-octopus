@@ -83,6 +83,12 @@ def date_str(in_format=None, out_format=None):
 
     return datify
 
+def to_datestamp(in_format=None):
+    def stampify(val):
+        return dates.parse(val, format=in_format)
+
+    return stampify
+
 def to_isolang(output_format=None):
     """
     :param output_format: format from input source to putput.  Must be one of:

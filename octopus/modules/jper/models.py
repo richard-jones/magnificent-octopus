@@ -474,6 +474,36 @@ class OutgoingNotification(NotificationMetadata):
         self._add_struct(struct)
         super(OutgoingNotification, self).__init__(raw=raw)
 
+    @property
+    def id(self):
+        return self._get_single("id", coerce=dataobj.to_unicode())
+
+    @property
+    def created_datestamp(self):
+        return self._get_single("created_date", coerce=dataobj.to_datestamp())
+
+    @property
+    def links(self):
+        return self._get_list("links")
+
+    def get_urls(self, type=None, format=None):
+        urls = []
+        for l in self.links:
+            if type is not None and l.get("type") != type:
+                continue
+            if format is not None and l.get("format") != format:
+                continue
+            urls.append(l.get("url"))
+        return urls
+
+    @property
+    def packaging_format(self):
+        return self._get_single("content.packaging_format", dataobj.to_unicode())
+
+    @property
+    def analysis_date(self):
+        return self._get_single("analysis_date", dataobj.date_str())
+
 class ProviderOutgoingNotification(OutgoingNotification):
     """
     In addition to OutgoingNotification...
