@@ -34,6 +34,9 @@ class Store(object):
     def store(self, container_id, target_name, source_path=None, source_stream=None):
         pass
 
+    def exists(self, container_id):
+        return False
+
     def list(self, container_id):
         pass
 
@@ -64,6 +67,10 @@ class StoreLocal(Store):
             with codecs.open(tpath, "wb") as f:
                 f.write(source_stream.read())
 
+    def exists(self, container_id):
+        cpath = os.path.join(self.dir, container_id)
+        return os.path.exists(cpath) and os.path.isdir(cpath)
+
     def list(self, container_id):
         cpath = os.path.join(self.dir, container_id)
         return os.listdir(cpath)
@@ -83,50 +90,54 @@ class StoreLocal(Store):
                 os.remove(cpath)
             else:
                 shutil.rmtree(cpath)
-				
-				
+
+
 class StoreJper(Store):
-	def __init__(self):
-		self.url = app.config.get("STORE_JPER_URL")
-		if self.url is None:
-			raise StoreException("STORE_JPER_URL is not defined in config")
-	
-	def store(self, container_id, target_name, source_path=None, source_stream=None):
-		cpath = os.path.join(self.url, container_id)
-		r = requests.get(cpath)
-		if r.status_code != 200:
-			requests.put(cpath)
-			
-		tpath = os.path.join(cpath, target_name)
-		
-		if source_path:
-			with open('data','rb') as payload:
-				#headers = {'content-type': 'application/x-www-form-urlencoded'}
-				#r = requests.post(tpath, data=payload, verify=False, headers=headers)
-				r = requests.post(tpath, files={'file': payload})
-		elif source_stream:
-			#headers = {'content-type': 'application/x-www-form-urlencoded'}
-			#r = requests.post(tpath, data=source_stream, verify=False, headers=headers)
-			r = requests.post(tpath, files={'file': source_stream})
-			
-	def list(self, container_id):
-		cpath = os.path.join(self.url, container_id)
-		r = requests.get(cpath)
-		return r.json()
-	
-	def get(self, container_id, target_name):
-		cpath = os.path.join(self.url, container_id, target_name)
-		r = requests.get(cpath)
-		if r.status_code == 200:
-			return r.raw
-		else:
-			return False
-		
-	def delete(self, container_id, target_name=None):
-		cpath = os.path.join(self.url, container_id)
-		if target_name is not None:
-			cpath = os.path.join(cpath, target_name)
-		requests.delete(cpath)
+    def __init__(self):
+        self.url = app.config.get("STORE_JPER_URL")
+        if self.url is None:
+            raise StoreException("STORE_JPER_URL is not defined in config")
+
+    def store(self, container_id, target_name, source_path=None, source_stream=None):
+        cpath = os.path.join(self.url, container_id)
+        r = requests.get(cpath)
+        if r.status_code != 200:
+            requests.put(cpath)
+
+        tpath = os.path.join(cpath, target_name)
+
+        if source_path:
+            with open('data','rb') as payload:
+                #headers = {'content-type': 'application/x-www-form-urlencoded'}
+                #r = requests.post(tpath, data=payload, verify=False, headers=headers)
+                r = requests.post(tpath, files={'file': payload})
+        elif source_stream:
+            #headers = {'content-type': 'application/x-www-form-urlencoded'}
+            #r = requests.post(tpath, data=source_stream, verify=False, headers=headers)
+            r = requests.post(tpath, files={'file': source_stream})
+
+    def exists(self, container_id):
+        # FIXME: implement
+        return False
+
+    def list(self, container_id):
+        cpath = os.path.join(self.url, container_id)
+        r = requests.get(cpath)
+        return r.json()
+
+    def get(self, container_id, target_name):
+        cpath = os.path.join(self.url, container_id, target_name)
+        r = requests.get(cpath)
+        if r.status_code == 200:
+            return r.raw
+        else:
+            return False
+
+    def delete(self, container_id, target_name=None):
+        cpath = os.path.join(self.url, container_id)
+        if target_name is not None:
+            cpath = os.path.join(cpath, target_name)
+        requests.delete(cpath)
 
 
 class TempStore(StoreLocal):
