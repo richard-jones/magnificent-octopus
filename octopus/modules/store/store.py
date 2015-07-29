@@ -146,9 +146,9 @@ class TempStore(StoreLocal):
         if self.dir is None:
             raise StoreException("STORE_TMP_DIR is not defined in config")
 
-    def path(self, container_id, filename):
+    def path(self, container_id, filename, must_exist=True):
         fpath = os.path.join(self.dir, container_id, filename)
-        if not os.path.exists(fpath):
+        if not os.path.exists(fpath) and must_exist:
             raise StoreException("Unable to create path for container {x}, file {y}".format(x=container_id, y=filename))
         return fpath
 
