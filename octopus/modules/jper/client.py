@@ -1,7 +1,10 @@
 from octopus.core import app
 from octopus.modules.jper import models
-from octopus.lib import http
+from octopus.lib import http, dates
 import json
+
+class JPERConnectionException(Exception):
+    pass
 
 class JPERException(Exception):
     pass
@@ -20,19 +23,29 @@ class JPER(object):
         self.api_key = api_key if api_key is not None else app.config.get("JPER_API_KEY")
         self.base_url = base_url if base_url is not None else app.config.get("JPER_BASE_URL")
 
-    def _url(self, endpoint=None, id=None, auth=True):
-        url = self.base_url
-        if not url.endswith("/"):
-            url += "/"
+    def _url(self, endpoint=None, id=None, auth=True, params=None, url=None):
+        if url is None:
+            url = self.base_url
+
+        if url.endswith("/"):
+            url += url[:-1]
 
         if endpoint is not None:
-            url += endpoint
+            url += "/" + endpoint
 
         if id is not None:
             url += "/" + http.quote(id)
 
         if auth:
-            url += "?api_key=" + http.quote(self.api_key)
+            if params is None:
+                params = {}
+            params["api_key"] = self.api_key
+
+        args = []
+        for k, v in params.iteritems():
+            args.append(k + "=" + http.quote(v))
+        qs = "?" + "&".join(args)
+        url += qs
 
         return url
 
@@ -60,7 +73,7 @@ class JPER(object):
             resp = http.post(url, files=files)
 
         if resp is None:
-            raise JPERException("Unable to communicate with the JPER API")
+            raise JPERConnectionException("Unable to communicate with the JPER API")
 
         if resp.status_code == 401:
             raise JPERAuthException("Could not authenticate with JPER with your API key")
@@ -94,7 +107,7 @@ class JPER(object):
             resp = http.post(url, files=files)
 
         if resp is None:
-            raise JPERException("Unable to communicate with the JPER API")
+            raise JPERConnectionException("Unable to communicate with the JPER API")
 
         if resp.status_code == 401:
             raise JPERAuthException("Could not authenticate with JPER with your API key")
@@ -121,6 +134,12 @@ class JPER(object):
         # get the response object
         resp = http.get(url)
 
+        if resp is None:
+            raise JPERConnectionException("Unable to communicate with the JPER API")
+
+        if resp.status_code == 404:
+            return None
+
         if resp.status_code != 200:
             raise JPERException("Received unexpected status code: {x}".format(x=resp.status_code))
 
@@ -130,11 +149,69 @@ class JPER(object):
         else:
             return models.OutgoingNotification(j)
 
-    def get_content(self, notification_id):
-        pass
+    def get_content(self, url):
+        # just sort out the api_key
+        url = self._url(url=url)
+
+        # get the response object
+        resp = http.get(url)
+
+        # check for errors or problems with the response
+        if resp is None:
+            raise JPERConnectionException("Unable to communicate with the JPER API")
+
+        if resp.status_code == 401:
+            raise JPERAuthException("Could not authenticate with JPER with your API key")
+
+        if resp.status_code != 200:
+            raise JPERException("Received unexpected status code: {x}".format(x=resp.status_code))
+
+        # return the response object, in case the caller wants access to headers, etc.
+        return resp
 
     def list_notifications(self, since, page=None, page_size=None, repository_id=None):
-        return None
+        # check that the since date is valid, and get it into the right format
+        if not hasattr(since, "strftime"):
+            since = dates.parse(since)
+        since = since.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        # make the url params into an object
+        params = {"since" : since}
+        if page is not None:
+            try:
+                params["page"] = str(page)
+            except:
+                raise JPERException("Unable to convert page argument to string")
+        if page_size is not None:
+            try:
+                params["pageSize"] = str(page_size)
+            except:
+                raise JPERException("Unable to convert page_size argument to string")
+
+        # get the url, which may contain the repository id if it is not None
+        url = self._url("routed", id=repository_id, params=params)
+
+        # get the response object
+        resp = http.get(url)
+
+        # check for errors or problems with the response
+        if resp is None:
+            raise JPERConnectionException("Unable to communicate with the JPER API")
+
+        if resp.status_code == 401:
+            raise JPERAuthException("Could not authenticate with JPER with your API key")
+
+        if resp.status_code == 400:
+            raise JPERException(resp.json().get("error"))
+
+        if resp.status_code != 200:
+            raise JPERException("Received unexpected status code: {x}".format(x=resp.status_code))
+
+        # create the notification list object
+        j = resp.json()
+        return models.NotificationList(j)
 
     def record_retrieval(self, notification_id, content_id=None):
+        # FIXME: not yet implemented, while waiting to see how retrieval finally
+        # works
         pass
