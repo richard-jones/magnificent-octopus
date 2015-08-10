@@ -162,6 +162,14 @@ class NotificationMetadata(dataobj.DataObj):
         self._set_single("metadata.title", val, coerce=dataobj.to_unicode(), allow_none=False, ignore_none=True)
 
     @property
+    def version(self):
+        return self._get_single("metadata.version", coerce=dataobj.to_unicode())
+
+    @version.setter
+    def version(self, val):
+        self._set_single("metadata.version", val, coerce=dataobj.to_unicode())
+
+    @property
     def type(self):
         return self._get_single("metadata.type", coerce=dataobj.to_unicode())
 
@@ -176,6 +184,18 @@ class NotificationMetadata(dataobj.DataObj):
     @publisher.setter
     def publisher(self, val):
         self._set_single("metadata.publisher", val, coerce=dataobj.to_unicode(), allow_none=False, ignore_none=True)
+
+    @property
+    def source_name(self):
+        return self._get_single("metadata.source.name", coerce=dataobj.to_unicode())
+
+    @source_name.setter
+    def source_name(self, val):
+        self._set_single("metadata.source.name", val, coerce=dataobj.to_unicode())
+
+    @property
+    def source_identifiers(self):
+        return self._get_list("metadata.source.identifier")
 
     @property
     def language(self):
@@ -503,6 +523,10 @@ class OutgoingNotification(NotificationMetadata):
     @property
     def analysis_date(self):
         return self._get_single("analysis_date", dataobj.date_str())
+
+    @property
+    def embargo_end(self):
+        return self._get_single("embargo.end", dataobj.date_str())
 
 class ProviderOutgoingNotification(OutgoingNotification):
     """

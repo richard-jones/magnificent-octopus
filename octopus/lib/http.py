@@ -57,6 +57,10 @@ def _make_request(method, url,
                 r = requests.get(url, timeout=timeout, **kwargs)
             elif method == "POST":
                 r = requests.post(url, timeout=timeout, **kwargs)
+            elif method == "PUT":
+                r = requests.put(url, timeout=timeout, **kwargs)
+            elif method == "DELETE":
+                r = requests.delete(url, timeout=timeout, **kwargs)
             else:
                 # FIXME: is this right?  Maybe raising an exception would be better
                 app.logger.debug("Method {method} not allowed".format(method=method))
@@ -81,6 +85,28 @@ def _make_request(method, url,
         r.encoding = 'utf-8'
 
     return r
+
+def put(url, retries=None, back_off_factor=None, max_back_off=None, timeout=None, response_encoding=None,
+         retry_on_timeout=None, retry_codes=None, **kwargs):
+    return _make_request("PUT", url,
+                         retries=retries, back_off_factor=back_off_factor,
+                         max_back_off=max_back_off,
+                         timeout=timeout,
+                         response_encoding=response_encoding,
+                         retry_on_timeout=retry_on_timeout,
+                         retry_codes=retry_codes,
+                         **kwargs)
+
+def delete(url, retries=None, back_off_factor=None, max_back_off=None, timeout=None, response_encoding=None,
+         retry_on_timeout=None, retry_codes=None, **kwargs):
+    return _make_request("DELETE", url,
+                         retries=retries, back_off_factor=back_off_factor,
+                         max_back_off=max_back_off,
+                         timeout=timeout,
+                         response_encoding=response_encoding,
+                         retry_on_timeout=retry_on_timeout,
+                         retry_codes=retry_codes,
+                         **kwargs)
 
 def post(url, retries=None, back_off_factor=None, max_back_off=None, timeout=None, response_encoding=None,
          retry_on_timeout=None, retry_codes=None, **kwargs):
