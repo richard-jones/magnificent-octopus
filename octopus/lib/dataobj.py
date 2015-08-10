@@ -485,7 +485,7 @@ def validate(obj, schema):
 class DataStructureException(Exception):
     pass
 
-def construct(obj, struct, coerce, context=""):
+def construct_old(obj, struct, coerce, context=""):
     """
     {
         "fields" : {
@@ -600,6 +600,153 @@ def construct(obj, struct, coerce, context=""):
         constructed[field_name] = nvals
 
     return constructed
+
+def construct(obj, struct, coerce, context=""):
+    """
+    {
+        "fields" : {
+            "field_name" : {"coerce" :"coerce_function", **kwargs}
+
+        },
+        "objects" : [
+            "field_name"
+        ],
+        "lists" : {
+            "field_name" : {"contains" : "object|field", "coerce" : "field_coerce_function, **kwargs}
+        },
+        "required" : ["field_name"],
+        "structs" : {
+            "field_name" : {
+                <construct>
+            }
+        }
+    }
+
+    :param obj:
+    :param struct:
+    :param coerce:
+    :return:
+    """
+    if obj is None:
+        return None
+
+    # check that all the required fields are there
+    keys = obj.keys()
+    for r in struct.get("required", []):
+        if r not in keys:
+            c = context if context != "" else "root"
+            raise DataStructureException("Field '{r}' is required but not present at '{c}'".format(r=r, c=c))
+
+    # check that there are no fields that are not allowed
+    allowed = struct.get("fields", {}).keys() + struct.get("objects", []) + struct.get("lists", {}).keys()
+    for k in keys:
+        if k not in allowed:
+            c = context if context != "" else "root"
+            raise DataStructureException("Field '{k}' is not permitted at '{c}'".format(k=k, c=c))
+
+    # this is the new object we'll be creating from the old
+    constructed = DataObj()
+
+    # now check all the fields
+    for field_name, instructions in struct.get("fields", {}).iteritems():
+        val = obj.get(field_name)
+        if val is None:
+            continue
+        coerce_fn = coerce.get(instructions.get("coerce", "unicode"))
+        if coerce_fn is None:
+            raise DataStructureException("No coersion function defined for type '{x}' at '{c}'".format(x=instructions.get("coerce", "unicode"), c=context + field_name))
+
+        kwargs = deepcopy(instructions)
+        if "coerce" in kwargs:
+            del kwargs["coerce"]
+        try:
+            constructed._set_single(field_name, val, coerce=coerce_fn, **kwargs)
+        except DataSchemaException as e:
+            raise DataStructureException(e.message)
+
+    # next check all the objetcs (which will involve a recursive call to this function)
+    for field_name in struct.get("objects", []):
+        val = obj.get(field_name)
+        if val is None:
+            continue
+        if type(val) != dict:
+            raise DataStructureException("Found '{x}' = '{y}' but expected object/dict".format(x=context + field_name, y=val))
+
+        instructions = struct.get("struct", {}).get(field_name)
+
+        if instructions is None:
+            # this is the lowest point at which we have instructions, so just accept the data structure as-is
+            # (taking a deep copy to destroy any references)
+            try:
+                constructed._set_single(field_name, deepcopy(val))
+            except DataSchemaException as e:
+                raise DataStructureException(e.message)
+        else:
+            # we need to recurse further down
+            beneath = construct(val, instructions, coerce=coerce, context=context + field_name + ".")
+
+            # what we get back is the correct sub-data structure, which we can then store
+            try:
+                constructed._set_single(field_name, beneath)
+            except DataSchemaException as e:
+                raise DataStructureException(e.message)
+
+    # now check all the lists
+    for field_name, instructions in struct.get("lists", {}).iteritems():
+        vals = obj.get(field_name)
+        if vals is None:
+            continue
+
+        # prep the keyword arguments for the setters
+        kwargs = deepcopy(instructions)
+        if "coerce" in kwargs:
+            del kwargs["coerce"]
+        if "contains" in kwargs:
+            del kwargs["contains"]
+
+        contains = instructions.get("contains")
+        if contains == "field":
+            # coerce all the values in the list
+            coerce_fn = coerce.get(instructions.get("coerce", "unicode"))
+            if coerce_fn is None:
+                raise DataStructureException("No coersion function defined for type '{x}' at '{c}'".format(x=instructions.get("coerce", "unicode"), c=context + field_name))
+
+            for i in xrange(len(vals)):
+                val = vals[i]
+                try:
+                    constructed._add_to_list(field_name, val, coerce=coerce_fn, **kwargs)
+                except DataSchemaException as e:
+                    raise DataStructureException(e.message)
+
+        elif contains == "object":
+            # for each object in the list, send it for construction
+            for i in range(len(vals)):
+                val = vals[i]
+
+                if type(val) != dict:
+                    raise DataStructureException("Found '{x}[{p}]' = '{y}' but expected object/dict".format(x=context + field_name, y=val, p=i))
+
+                subinst = struct.get("struct", {}).get(field_name)
+                if subinst is None:
+                    try:
+                        constructed._add_to_list(field_name, deepcopy(val))
+                    except DataSchemaException as e:
+                        raise DataStructureException(e.message)
+                else:
+                    # we need to recurse further down
+                    beneath = construct(val, subinst, coerce=coerce, context=context + field_name + "[" + str(i) + "].")
+
+                    # what we get back is the correct sub-data structure, which we can then store
+                    try:
+                        constructed._add_to_list(field_name, beneath)
+                    except DataSchemaException as e:
+                        raise DataStructureException(e.message)
+
+        else:
+            raise DataStructureException("Cannot understand structure where list '{x}' elements contain '{y}'".format(x=context + field_name, y=contains))
+
+    return constructed.data
+
 
 def construct_merge(target, source):
     merged = deepcopy(target)
