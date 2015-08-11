@@ -1,6 +1,53 @@
 from unittest import TestCase
 from octopus.lib import dataobj
 
+class TestDataObj(dataobj.DataObj):
+    def __init__(self, raw=None):
+        self.struct = {
+            "fields" : {
+                "title" : {"coerce" : "unicode"},
+                "name" : {"coerce" : "unicode"}
+            },
+            "objects" : ["objy"],
+            "lists" : {
+                "listy" : {"contains" : "object"}
+            },
+            "structs" : {
+                "objy" : {
+                    "fields" : {
+                        "one" : {"coerce" : "unicode"},
+                        "two" :{"coerce" : "unicode"}
+                    }
+                },
+                "listy" : {
+                    "fields" : {
+                        "three" : {"coerce" : "unicode"},
+                        "four" :{"coerce" : "unicode"}
+                    }
+                }
+            }
+        }
+
+        self.properties = {
+            "the_name" : ("name", None),
+            "wrap_obj" : ("objy", dataobj.DataObj),
+            "raw_obj" : ("objy", None),
+            "wrap_list" : ("listy", dataobj.DataObj),
+            "raw_list" : ("listy", None)
+        }
+
+        super(TestDataObj, self).__init__(raw=raw)
+
+    @property
+    def my_title(self):
+        return self._get_single("title")
+
+    @my_title.setter
+    def my_title(self, val):
+        self._set_single("title", val, coerce=dataobj.to_unicode())
+
+
+
 class TestImport(TestCase):
     def setUp(self):
         pass
@@ -146,3 +193,44 @@ class TestImport(TestCase):
         obj["nine"] = [{"beta" : 9}]
         new = dataobj.construct(obj, struct, coerce)
         assert new["nine"][0]["beta"] == 9
+
+    def test_03_getattribute(self):
+        do = TestDataObj({
+            "title" : "Test Title",
+            "name" : "Test Name",
+            "objy" : {
+                "one" : "first",
+                "two" : "second"
+            },
+            "listy" : [
+                {
+                    "three" : "third",
+                    "four" : "fourth"
+                }
+            ]
+        })
+
+        assert do.my_title == "Test Title"
+        assert do.the_name == "Test Name"
+
+        wo = do.wrap_obj
+        assert isinstance(wo, dataobj.DataObj)
+        assert wo.data.get("one") == "first"
+        assert wo.data.get("two") == "second"
+
+        ro = do.raw_obj
+        assert isinstance(ro, dict)
+        assert ro.get("one") == "first"
+        assert ro.get("two") == "second"
+
+        wl = do.wrap_list
+        assert len(wl) == 1
+        assert isinstance(wl[0], dataobj.DataObj)
+        assert wl[0].data.get("three") == "third"
+        assert wl[0].data.get("four") == "fourth"
+
+        rl = do.raw_list
+        assert len(rl) == 1
+        assert isinstance(rl[0], dict)
+        assert rl[0].get("three") == "third"
+        assert rl[0].get("four") == "fourth"

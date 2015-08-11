@@ -149,26 +149,85 @@ class DataObj(object):
         "url" : to_url
     }
 
-    def __init__(self, raw=None):
+    def __init__(self, raw=None, struct=None, construct_raw=True):
+        # make a shortcut to the object.__getattribute__ function
+        og = object.__getattribute__
+
         # if no subclass has set the coerce, then set it from default
-        if not hasattr(self, "coerce"):
+        try:
+            og(self, "coerce")
+        except:
             self.coerce = deepcopy(self.DEFAULT_COERCE)
 
         # if no subclass has set the struct, initialise it
-        if not hasattr(self, "struct"):
-            self.struct = None
+        try:
+            og(self, "struct")
+        except:
+            self.struct = struct
 
         # assign the data if not already assigned by subclass
-        if not hasattr(self, "data"):
+        try:
+            og(self, "data")
+        except:
             self.data = {} if raw is None else raw
 
+        # properties to allow automatic object API construction
+        # of the form
+        #
+        # {"<public property name>" : ("<path.to.property>", "<data object wrapper>")
+        # e.g
+        # {"identifier" : ("bibjson.identifier", DataObj))}
+        try:
+            og(self, "properties")
+        except:
+            self.properties = {}
+
         # restructure the object based on the struct if requried
-        if self.struct is not None:
+        if self.struct is not None and construct_raw:
             self.data = construct(self.data, self.struct, self.coerce)
 
         # run against the old validation routine
         # (now deprecated)
         self.validate()
+
+    def __getattribute__(self, name):
+        # make a shortcut to the object.__getattribute__ function
+        og = object.__getattribute__
+
+        # unless the attribute is explicitly listed in the "properties" section, just return this object's property
+        props = []
+        try:
+            props = og(self, 'properties')
+        except AttributeError:
+            pass
+        if name not in props:
+            return og(self, name)
+
+        # otherwise, extract the path from the properties list
+        path, wrapper = props.get(name)
+
+        # pull the object from the structure, to find out what kind of retrieve it needs
+        type, substruct, instructions = construct_lookup(path, self.struct)
+
+        if type == "field":
+            return og(self, "_get_single")(path)
+        elif type == "object":
+            d = og(self, "_get_single")(path)
+            if wrapper:
+                return wrapper(d, substruct, construct_raw=False)
+            else:
+                return d
+        elif type == "list":
+            if instructions.get("contains") == "field":
+                return og(self, "_get_list")(path)
+            elif instructions.get("contains") == "object":
+                l = og(self, "_get_list")(path)
+                if wrapper:
+                    return [DataObj(o, substruct, construct_raw=False) for o in l]
+                else:
+                    return l
+
+        return None
 
     def validate(self):
         if self.SCHEMA is not None:
@@ -783,6 +842,35 @@ def construct_merge(target, source):
 
     return merged
 
+def construct_lookup(path, struct):
+    bits = path.split(".")
+
+    # if there's more than one path element, we will need to recurse
+    if len(bits) > 1:
+        # it has to be an object, in order for the path to still have multiple
+        # segments
+        if bits[0] not in struct.get("objects", []):
+            return None, None, None
+        substruct = struct.get("structs", {}).get(bits[0])
+        return construct_lookup(".".join(bits[1:]), substruct)
+    elif len(bits) == 1:
+        # first check the fields
+        instructions = struct.get("fields", {}).get(bits[0])
+        if instructions is not None:
+            return "field", None, instructions
+
+        # then check the lists
+        instructions = struct.get("lists", {}).get(bits[0])
+        if instructions is not None:
+            structure = struct.get("struct", {}).get(bits[0])
+            return "list", structure, instructions
+
+        # then check the objects
+        if bits[0] in struct.get("objects", []):
+            structure = struct.get("struct", {}).get(bits[0])
+            return "object", structure, None
+
+    return None, None, None
 
 ############################################################
 ## Unit test support
