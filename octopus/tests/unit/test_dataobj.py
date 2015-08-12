@@ -9,7 +9,7 @@ class InvalidDO(dataobj.DataObj):
 
 class TestDataObj(dataobj.DataObj):
     def __init__(self, raw=None, expose_data=False):
-        self.struct = {
+        self._struct = {
             "fields" : {
                 "title" : {"coerce" : "unicode"},
                 "name" : {"coerce" : "unicode"},
@@ -49,7 +49,7 @@ class TestDataObj(dataobj.DataObj):
             }
         }
 
-        self.properties = {
+        self._properties = {
             "the_name" : ("name", None),
             "wrap_obj" : ("objy", dataobj.DataObj),
             "raw_obj" : ("objy", None),
@@ -708,3 +708,72 @@ class TestImport(TestCase):
 
         assert do.whatever == "hello"
         assert "whatever" not in do.data
+
+    def test_09_silent_prune(self):
+        data = {
+            "one" : {
+                "two" : "twice",
+                "pruned" : "bye"
+            },
+            "three" : "third",
+            "four" : [
+                {
+                    "five" : 5,
+                    "cut" : -1
+                }
+            ],
+            "nixed" : "outta here"
+        }
+
+        do = dataobj.DataObj(
+            data,
+            struct = {
+                "fields" : {
+                    "three" :{"coerce" : "unicode"}
+                },
+                "lists" : {
+                    "four" : {"contains" : "object"}
+                },
+                "objects" : ["one"],
+
+                "structs" : {
+                    "one" : {
+                        "fields" : {
+                            "two" : {"coerce" : "unicode"}
+                        }
+                    },
+                    "four" : {
+                        "fields" : {
+                            "five" : {"coerce" : "unicode"}
+                        }
+                    }
+                }
+            },
+            construct_silent_prune=True,
+            expose_data=True
+        )
+
+        assert do.one.two == "twice"
+        with self.assertRaises(AttributeError):
+            do.one.pruned
+
+        assert do.three == "third"
+        with self.assertRaises(AttributeError):
+            do.nixed
+
+        assert do.four[0].five == "5"
+        with self.assertRaises(AttributeError):
+            do.four[0].cut
+
+    def test_10_add_struct(self):
+        class A(dataobj.DataObj):
+            def __init__(self):
+                struct = {
+                    "fields" : {
+                        "one" : {"coerce" : "unicode"}
+                    }
+                }
+                self._add_struct(struct)
+                super(A, self).__init__()
+
+        a = A()
