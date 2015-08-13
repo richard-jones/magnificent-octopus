@@ -110,6 +110,8 @@ def to_isolang(output_format=None):
         output_format = [output_format]
 
     def isolang(val):
+        if val is None:
+            return None
         l = dataset.find(val)
         for f in output_format:
             v = l.get(f)
@@ -241,13 +243,12 @@ class DataObj(object):
             path = name
             wrapper = DataObj
 
-        # request the internal property directly
-        p = self._get_internal_property(path, wrapper)
-        if p is not None:
-            return p
-
-        # if we get to here for whatever reason, raise an error
-        raise AttributeError('{name} is not set'.format(name=name))
+        # request the internal property directly (which will in-turn raise the AttributeError if necessary)
+        try:
+            return self._get_internal_property(path, wrapper)
+        except AttributeError:
+            # re-wrap the attribute error with the name, rather than the path
+            raise AttributeError('{name} is not set'.format(name=name))
 
     def __setattr__(self, key, value):
         # first set the attribute on any explicitly defined property
@@ -316,28 +317,34 @@ class DataObj(object):
                 elif isinstance(val, list):
                     return [wrapper(v, expose_data=self._expose_data) for v in val]
 
-            # otherwise, return the raw value
+            # otherwise, return the raw value if it is not None, or raise an AttributeError
+            if val is None:
+                raise AttributeError('{name} is not set'.format(name=path))
+
             return val
 
+        # if the struct contains a reference to the path, always return something, even if it is None - don't raise an AttributeError
+        kwargs = construct_kwargs(type, "get", instructions)
         if type == "field":
-            return self._get_single(path)
+            return self._get_single(path, **kwargs)
         elif type == "object":
-            d = self._get_single(path)
+            d = self._get_single(path, **kwargs)
             if wrapper:
                 return wrapper(d, substruct, construct_raw=False, expose_data=self._expose_data)    # FIXME: this means all substructures are forced to use this classes expose_data policy, whatever it is
             else:
                 return d
         elif type == "list":
             if instructions.get("contains") == "field":
-                return self._get_list(path)
+                return self._get_list(path, **kwargs)
             elif instructions.get("contains") == "object":
-                l = self._get_list(path)
+                l = self._get_list(path, **kwargs)
                 if wrapper:
                     return [wrapper(o, substruct, construct_raw=False, expose_data=self._expose_data) for o in l]    # FIXME: this means all substructures are forced to use this classes expose_data policy, whatever it is
                 else:
                     return l
 
-        return None
+        # if for whatever reason we get here, raise the AttributeError
+        raise AttributeError('{name} is not set'.format(name=path))
 
     def _set_internal_property(self, path, value, wrapper=None):
 
@@ -385,17 +392,15 @@ class DataObj(object):
             else:
                 return False
 
+        kwargs = construct_kwargs(type, "set", instructions)
         if type == "field":
-            kwargs = construct_kwargs(type, instructions)
             self._set_single(path, value, **kwargs)
             return True
         elif type == "object":
             v = _wrap_validate(value, wrapper, substruct)
-            kwargs = construct_kwargs(type, instructions)
             self._set_single(path, v, **kwargs)
             return True
         elif type == "list":
-            kwargs = construct_kwargs(type, instructions)
             if instructions.get("contains") == "field":
                 self._set_list(path, value, **kwargs)
                 return True
@@ -790,7 +795,7 @@ def construct(obj, struct, coerce, context="", silent_prune=False):
         if coerce_fn is None:
             raise DataStructureException("No coersion function defined for type '{x}' at '{c}'".format(x=instructions.get("coerce", "unicode"), c=context + field_name))
 
-        kwargs = construct_kwargs("field", instructions)
+        kwargs = construct_kwargs("field", "set", instructions)
 
         try:
             constructed._set_single(field_name, val, coerce=coerce_fn, **kwargs)
@@ -831,7 +836,7 @@ def construct(obj, struct, coerce, context="", silent_prune=False):
             continue
 
         # prep the keyword arguments for the setters
-        kwargs = construct_kwargs("list", instructions)
+        kwargs = construct_kwargs("list", "set", instructions)
 
         contains = instructions.get("contains")
         if contains == "field":
@@ -942,11 +947,15 @@ def construct_lookup(path, struct):
 
     return None, None, None
 
-def construct_kwargs(type, instructions):
+def construct_kwargs(type, dir, instructions):
+    # if there are no instructions there are no kwargs
     if instructions is None:
         return {}
+
+    # take a copy of the instructions that we can modify
     kwargs = deepcopy(instructions)
 
+    # remove the known arguments for the field type
     if type == "field":
         if "coerce" in kwargs:
             del kwargs["coerce"]
@@ -957,7 +966,21 @@ def construct_kwargs(type, instructions):
         if "contains" in kwargs:
             del kwargs["contains"]
 
-    return kwargs
+    nk = {}
+    if dir == "set":
+        for k, v in kwargs.iteritems():
+            # basically everything is a "set" argument unless explicitly stated to be a "get" argument
+            if not k.startswith("get__"):
+                if k.startswith("set__"):    # if it starts with the set__ prefix, remove it
+                    k = k[5:]
+                nk[k] = v
+    elif dir == "get":
+        for k, v in kwargs.iteritems():
+            # must start with "get" argument
+            if k.startswith("get__"):
+                nk[k[5:]] = v
+
+    return nk
 
 def construct_data_keys(struct):
     return struct.get("fields", {}).keys() + struct.get("objects", []) + struct.get("lists", {}).keys()

@@ -117,7 +117,7 @@ class TestImport(TestCase):
                 "nine" : {"contains" : "object"}
             },
             "required" : ["one"],
-            "struct" : {
+            "structs" : {
                 # Note there's no structure for three, so it can be anything
                 "four" : {
                     "fields" : {
