@@ -222,12 +222,15 @@ class DataObj(object):
             self._expose_data = expose_data
 
         # restructure the object based on the struct if requried
-        if self._struct is not None and construct_raw:
+        if self._struct is not None and raw is not None and construct_raw:
             self.data = construct(self.data, self._struct, self._coerce_map, silent_prune=construct_silent_prune)
 
         # run against the old validation routine
         # (now deprecated)
         self.validate()
+
+        # run the object's native validation routine
+        self.custom_validate()
 
     def __getattr__(self, name):
         props, data_attrs = self._list_dynamic_properties()
@@ -287,6 +290,9 @@ class DataObj(object):
         if self.SCHEMA is not None:
             validate(self.data, self.SCHEMA)
         return True
+
+    def custom_validate(self):
+        pass
 
     def populate(self, fields_and_values):
         for k, v in fields_and_values.iteritems():
