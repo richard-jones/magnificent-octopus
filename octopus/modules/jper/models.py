@@ -440,7 +440,8 @@ class OutgoingNotification(NotificationMetadata):
             {
                 "type" : "<link type: splash|fulltext>",
                 "format" : "<text/html|application/pdf|application/xml|application/zip|...>",
-                "url" : "<provider's splash, fulltext or machine readable page>"
+                "url" : "<provider's splash, fulltext or machine readable page>",
+                "packaging" : "<package format identifier>"
             }
         ],
 
@@ -485,7 +486,8 @@ class OutgoingNotification(NotificationMetadata):
                     "fields" : {
                         "type" : {"coerce" :"unicode"},
                         "format" : {"coerce" :"unicode"},
-                        "url" : {"coerce" :"url"}
+                        "url" : {"coerce" :"url"},
+                        "packaging" : {"coerce" : "unicode"}
                     }
                 }
             }
@@ -505,6 +507,12 @@ class OutgoingNotification(NotificationMetadata):
     @property
     def links(self):
         return self._get_list("links")
+
+    def get_package_link(self, packaging):
+        for l in self.links:
+            if l.get("packaging") is not None and packaging == l.get("packaging"):
+                return l
+        return None
 
     def get_urls(self, type=None, format=None):
         urls = []
@@ -617,7 +625,12 @@ class NotificationList(dataobj.DataObj):
 
     @property
     def notifications(self):
-        return self._get_list("notifications")
+        notes = self._get_list("notifications")
+        if len(notes) > 0:
+            if "provider" in notes[0]:
+                return [ProviderOutgoingNotification(n) for n in self._get_list("notifications")]
+            return [OutgoingNotification(n) for n in self._get_list("notifications")]
+        return []
 
     @notifications.setter
     def notifications(self, val):
