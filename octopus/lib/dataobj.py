@@ -1,6 +1,6 @@
 from octopus.lib import dates
 from copy import deepcopy
-import locale, json
+import locale, json, urlparse
 
 #########################################################
 ## Data coerce functions
@@ -110,6 +110,8 @@ def to_isolang(output_format=None):
         output_format = [output_format]
 
     def isolang(val):
+        if val is None:
+            return None
         l = dataset.find(val)
         for f in output_format:
             v = l.get(f)
@@ -120,8 +122,36 @@ def to_isolang(output_format=None):
     return isolang
 
 def to_url(val):
-    # FIXME: implement
-    return val
+    if val is None:
+        return None
+
+    # parse with urlparse
+    url = urlparse.urlparse(val)
+
+    # now check the url has the minimum properties that we require
+    if url.scheme and url.scheme.startswith("http"):
+        uc = to_unicode()
+        return uc(val)
+    else:
+        raise ValueError(u"Could not convert string {val} to viable URL".format(val=val))
+
+def to_bool(val):
+    """Conservative boolean cast - don't cast lists and objects to True, just existing booleans and strings."""
+    if val is None:
+        return None
+    if val is True or val is False:
+        return val
+
+    if isinstance(val, basestring):
+        if val.lower() == 'true':
+            return True
+        elif val.lower() == 'false':
+            return False
+        raise ValueError(u"Could not convert string {val} to boolean. Expecting string to either say 'true' or 'false' (not case-sensitive).".format(val=val))
+
+    raise ValueError(u"Could not convert {val} to boolean. Expect either boolean or string.".format(val=val))
+
+
 
 ############################################################
 
@@ -141,39 +171,128 @@ class DataObj(object):
     SCHEMA = None
 
     DEFAULT_COERCE = {
-        "unicode" : to_unicode(),
-        "utcdatetime" : date_str(),
-        "integer" : to_int(),
-        "float" : to_float(),
-        "isolang" : to_isolang(),
-        "url" : to_url
+        "unicode": to_unicode(),
+        "utcdatetime": date_str(),
+        "integer": to_int(),
+        "float": to_float(),
+        "isolang": to_isolang(),
+        "url": to_url,
+        "bool": to_bool,
+        "isolang_2letter": to_isolang(output_format="alpha2")
     }
 
-    def __init__(self, raw=None):
+    def __init__(self, raw=None, struct=None, construct_raw=True, expose_data=False, properties=None, coerce_map=None, construct_silent_prune=False):
+        # make a shortcut to the object.__getattribute__ function
+        og = object.__getattribute__
+
         # if no subclass has set the coerce, then set it from default
-        if not hasattr(self, "coerce"):
-            self.coerce = deepcopy(self.DEFAULT_COERCE)
+        try:
+            og(self, "_coerce_map")
+        except:
+            self._coerce_map = coerce_map if coerce_map is not None else deepcopy(self.DEFAULT_COERCE)
 
         # if no subclass has set the struct, initialise it
-        if not hasattr(self, "struct"):
-            self.struct = None
+        try:
+            og(self, "_struct")
+        except:
+            self._struct = struct
 
         # assign the data if not already assigned by subclass
-        if not hasattr(self, "data"):
+        # NOTE: data is not _data deliberately
+        try:
+            og(self, "data")
+        except:
             self.data = {} if raw is None else raw
 
+        # properties to allow automatic object API construction
+        # of the form
+        #
+        # {"<public property name>" : ("<path.to.property>", "<data object wrapper>")
+        # e.g
+        # {"identifier" : ("bibjson.identifier", DataObj))}
+        try:
+            og(self, "_properties")
+        except:
+            self._properties = properties if properties is not None else {}
+
+        # if no subclass has set expose_data, set it
+        try:
+            og(self, "_expose_data")
+        except:
+            self._expose_data = expose_data
+
         # restructure the object based on the struct if requried
-        if self.struct is not None:
-            self.data = construct(self.data, self.struct, self.coerce)
+        if self._struct is not None and raw is not None and construct_raw:
+            self.data = construct(self.data, self._struct, self._coerce_map, silent_prune=construct_silent_prune)
 
         # run against the old validation routine
         # (now deprecated)
         self.validate()
 
+        # run the object's native validation routine
+        self.custom_validate()
+
+    def __getattr__(self, name):
+        props, data_attrs = self._list_dynamic_properties()
+
+        # if the name is not in the dynamic properties, raise an attribute error
+        if name not in props and name not in data_attrs:
+            raise AttributeError('{name} is not set'.format(name=name))
+
+        # otherwise, extract the path from the properties list or the internal data
+        if name in props:
+            path, wrapper = self._properties.get(name)
+        else:
+            path = name
+            wrapper = DataObj
+
+        # request the internal property directly (which will in-turn raise the AttributeError if necessary)
+        try:
+            return self._get_internal_property(path, wrapper)
+        except AttributeError:
+            # re-wrap the attribute error with the name, rather than the path
+            raise AttributeError('{name} is not set'.format(name=name))
+
+    def __setattr__(self, key, value):
+        # first set the attribute on any explicitly defined property
+        try:
+            att = object.__getattribute__(self, key)
+            return object.__setattr__(self, key, value)
+        except AttributeError:
+            pass
+
+        # this could be an internal attribute from the constructor, so we need to make
+        # a special case
+        if key in ["_coerce_map", "_struct", "data", "_properties", "_expose_data"]:
+            return object.__setattr__(self, key, value)
+
+        props, data_attrs = self._list_dynamic_properties()
+
+        # extract the path from the properties list or the internal data
+        path = None
+        wrapper = None
+        if key in props:
+            path, wrapper = self._properties.get(key)
+        elif key in data_attrs:
+            path = key
+            wrapper = DataObj
+
+        # try to set the property on othe internal object
+        if path is not None:
+            wasset = self._set_internal_property(path, value, wrapper)
+            if wasset:
+                return
+
+        # fall back to the default approach of allowing any attribute to be set on the object
+        return object.__setattr__(self, key, value)
+
     def validate(self):
         if self.SCHEMA is not None:
             validate(self.data, self.SCHEMA)
         return True
+
+    def custom_validate(self):
+        pass
 
     def populate(self, fields_and_values):
         for k, v in fields_and_values.iteritems():
@@ -185,11 +304,149 @@ class DataObj(object):
     def json(self):
         return json.dumps(self.data)
 
+    def _get_internal_property(self, path, wrapper=None):
+        # pull the object from the structure, to find out what kind of retrieve it needs
+        # (if there is a struct)
+        type, substruct, instructions = None, None, None
+        if self._struct:
+            type, substruct, instructions = construct_lookup(path, self._struct)
+
+        if type is None:
+            # if there is no struct, or no object mapping was found, try to pull the path
+            # as a single node (may be a field, list or dict, we'll find out in a mo)
+            val = self._get_single(path)
+
+            # if this is a dict or a list and a wrapper is supplied, wrap it
+            if wrapper is not None:
+                if isinstance(val, dict):
+                    return wrapper(val, expose_data=self._expose_data)
+                elif isinstance(val, list):
+                    return [wrapper(v, expose_data=self._expose_data) for v in val]
+
+            # otherwise, return the raw value if it is not None, or raise an AttributeError
+            if val is None:
+                raise AttributeError('{name} is not set'.format(name=path))
+
+            return val
+
+        # if the struct contains a reference to the path, always return something, even if it is None - don't raise an AttributeError
+        kwargs = construct_kwargs(type, "get", instructions)
+        if type == "field":
+            return self._get_single(path, **kwargs)
+        elif type == "object":
+            d = self._get_single(path, **kwargs)
+            if wrapper:
+                return wrapper(d, substruct, construct_raw=False, expose_data=self._expose_data)    # FIXME: this means all substructures are forced to use this classes expose_data policy, whatever it is
+            else:
+                return d
+        elif type == "list":
+            if instructions.get("contains") == "field":
+                return self._get_list(path, **kwargs)
+            elif instructions.get("contains") == "object":
+                l = self._get_list(path, **kwargs)
+                if wrapper:
+                    return [wrapper(o, substruct, construct_raw=False, expose_data=self._expose_data) for o in l]    # FIXME: this means all substructures are forced to use this classes expose_data policy, whatever it is
+                else:
+                    return l
+
+        # if for whatever reason we get here, raise the AttributeError
+        raise AttributeError('{name} is not set'.format(name=path))
+
+    def _set_internal_property(self, path, value, wrapper=None):
+
+        def _wrap_validate(val, wrap, substruct):
+            if wrap is None:
+                if isinstance(val, DataObj):
+                    return val.data
+                else:
+                    return val
+
+            else:
+                if isinstance(val, DataObj):
+                    if isinstance(val, wrap):
+                        return val.data
+                    else:
+                        raise AttributeError("Attempt to set {x} failed; is not of an allowed type.".format(x=path))
+                else:
+                    try:
+                        d = wrap(val, substruct)
+                        return d.data
+                    except DataStructureException as e:
+                        raise AttributeError(e.message)
+
+        # pull the object from the structure, to find out what kind of retrieve it needs
+        # (if there is a struct)
+        type, substruct, instructions = None, None, None
+        if self._struct:
+            type, substruct, instructions = construct_lookup(path, self._struct)
+
+        # if no type is found, then this means that either the struct was undefined, or the
+        # path did not point to a valid point in the struct.  In the case that the struct was
+        # defined, this means the property is trying to set something outside the struct, which
+        # isn't allowed.  So, only set types which are None against objects which don't define
+        # the struct.
+        if type is None:
+            if self._struct is None:
+                if isinstance(value, list):
+                    value = [_wrap_validate(v, wrapper, None) for v in value]
+                    self._set_list(path, value)
+                else:
+                    value = _wrap_validate(value, wrapper, None)
+                    self._set_single(path, value)
+
+                return True
+            else:
+                return False
+
+        kwargs = construct_kwargs(type, "set", instructions)
+        if type == "field":
+            self._set_single(path, value, **kwargs)
+            return True
+        elif type == "object":
+            v = _wrap_validate(value, wrapper, substruct)
+            self._set_single(path, v, **kwargs)
+            return True
+        elif type == "list":
+            if instructions.get("contains") == "field":
+                self._set_list(path, value, **kwargs)
+                return True
+            elif instructions.get("contains") == "object":
+                if not isinstance(value, list):
+                    value = [value]
+                vals = [_wrap_validate(v, wrapper, substruct) for v in value]
+                self._set_list(path, vals, **kwargs)
+                return True
+
+        return False
+
+    def _list_dynamic_properties(self):
+        # list the dynamic properties the object could have
+        props = []
+        try:
+            # props = og(self, 'properties').keys()
+            props = self._properties.keys()
+        except AttributeError:
+            pass
+
+        data_attrs = []
+        try:
+            if self._expose_data:
+                if self._struct:
+                    data_attrs = construct_data_keys(self._struct)
+                else:
+                    data_attrs = self.data.keys()
+        except AttributeError:
+            pass
+
+        return props, data_attrs
+
     def _add_struct(self, struct):
-        if hasattr(self, "struct"):
-            self.struct = construct_merge(self.struct, struct)
-        else:
-            self.struct = struct
+        # if the struct is not yet set, set it
+        try:
+            object.__getattribute__(self, "_struct")
+            self._struct = construct_merge(self._struct, struct)
+        except:
+            self._struct = struct
 
     def _get_path(self, path, default):
         parts = path.split(".")
@@ -485,20 +742,20 @@ def validate(obj, schema):
 class DataStructureException(Exception):
     pass
 
-def construct(obj, struct, coerce, context=""):
+def construct(obj, struct, coerce, context="", silent_prune=False):
     """
     {
         "fields" : {
-            "field_name" : {"coerce" :"coerce_function"}
+            "field_name" : {"coerce" :"coerce_function", **kwargs}
 
         },
         "objects" : [
             "field_name"
         ],
         "lists" : {
-            "field_name" : {"contains" : "object|list|field", "coerce" : "field_coerce_function}
+            "field_name" : {"contains" : "object|field", "coerce" : "field_coerce_function, **kwargs}
         },
-        "reqired" : ["field_name"],
+        "required" : ["field_name"],
         "structs" : {
             "field_name" : {
                 <construct>
@@ -522,14 +779,18 @@ def construct(obj, struct, coerce, context=""):
             raise DataStructureException("Field '{r}' is required but not present at '{c}'".format(r=r, c=c))
 
     # check that there are no fields that are not allowed
-    allowed = struct.get("fields", {}).keys() + struct.get("objects", []) + struct.get("lists", {}).keys()
-    for k in keys:
-        if k not in allowed:
-            c = context if context != "" else "root"
-            raise DataStructureException("Field '{k}' is not permitted at '{c}'".format(k=k, c=c))
+    # Note that since the construct mechanism copies fields explicitly, silent_prune literally just turns off this
+    # check
+    if not silent_prune:
+        allowed = struct.get("fields", {}).keys() + struct.get("objects", []) + struct.get("lists", {}).keys()
+        for k in keys:
+            if k not in allowed:
+                c = context if context != "" else "root"
+                raise DataStructureException("Field '{k}' is not permitted at '{c}'".format(k=k, c=c))
+
 
     # this is the new object we'll be creating from the old
-    constructed = {}
+    constructed = DataObj()
 
     # now check all the fields
     for field_name, instructions in struct.get("fields", {}).iteritems():
@@ -540,12 +801,14 @@ def construct(obj, struct, coerce, context=""):
         if coerce_fn is None:
             raise DataStructureException("No coersion function defined for type '{x}' at '{c}'".format(x=instructions.get("coerce", "unicode"), c=context + field_name))
 
-        try:
-            constructed[field_name] = coerce_fn(val)
-        except ValueError as e:
-            raise DataStructureException("Unable to coerce '{v}' to '{fn}' at '{c}'".format(v=val, fn=instructions.get("coerce", "unicode"), c=context + field_name))
+        kwargs = construct_kwargs("field", "set", instructions)
 
-    # next check all the objetcs (which will involve a recursive call to this function
+        try:
+            constructed._set_single(field_name, val, coerce=coerce_fn, **kwargs)
+        except DataSchemaException as e:
+            raise DataStructureException(e.message)
+
+    # next check all the objetcs (which will involve a recursive call to this function)
     for field_name in struct.get("objects", []):
         val = obj.get(field_name)
         if val is None:
@@ -553,11 +816,24 @@ def construct(obj, struct, coerce, context=""):
         if type(val) != dict:
             raise DataStructureException("Found '{x}' = '{y}' but expected object/dict".format(x=context + field_name, y=val))
 
-        instructions = struct.get("struct", {}).get(field_name)
+        instructions = struct.get("structs", {}).get(field_name)
+
         if instructions is None:
-            constructed[field_name] = deepcopy(val)
+            # this is the lowest point at which we have instructions, so just accept the data structure as-is
+            # (taking a deep copy to destroy any references)
+            try:
+                constructed._set_single(field_name, deepcopy(val))
+            except DataSchemaException as e:
+                raise DataStructureException(e.message)
         else:
-            constructed[field_name] = construct(val, instructions, coerce=coerce, context=context + field_name + ".")
+            # we need to recurse further down
+            beneath = construct(val, instructions, coerce=coerce, context=context + field_name + ".", silent_prune=silent_prune)
+
+            # what we get back is the correct sub-data structure, which we can then store
+            try:
+                constructed._set_single(field_name, beneath)
+            except DataSchemaException as e:
+                raise DataStructureException(e.message)
 
     # now check all the lists
     for field_name, instructions in struct.get("lists", {}).iteritems():
@@ -565,7 +841,9 @@ def construct(obj, struct, coerce, context=""):
         if vals is None:
             continue
 
-        nvals = []
+        # prep the keyword arguments for the setters
+        kwargs = construct_kwargs("list", "set", instructions)
+
         contains = instructions.get("contains")
         if contains == "field":
             # coerce all the values in the list
@@ -576,9 +854,9 @@ def construct(obj, struct, coerce, context=""):
             for i in xrange(len(vals)):
                 val = vals[i]
                 try:
-                    nvals.append(coerce_fn(val))
-                except ValueError as e:
-                    raise DataStructureException("Unable to coerce '{v}' to '{fn}' at '{c}' position '{p}'".format(v=val, fn=instructions.get("coerce", "unicode"), c=context + field_name, p=i))
+                    constructed._add_to_list(field_name, val, coerce=coerce_fn, **kwargs)
+                except DataSchemaException as e:
+                    raise DataStructureException(e.message)
 
         elif contains == "object":
             # for each object in the list, send it for construction
@@ -588,18 +866,27 @@ def construct(obj, struct, coerce, context=""):
                 if type(val) != dict:
                     raise DataStructureException("Found '{x}[{p}]' = '{y}' but expected object/dict".format(x=context + field_name, y=val, p=i))
 
-                subinst = struct.get("struct", {}).get(field_name)
+                subinst = struct.get("structs", {}).get(field_name)
                 if subinst is None:
-                    nvals.append(deepcopy(val))
+                    try:
+                        constructed._add_to_list(field_name, deepcopy(val))
+                    except DataSchemaException as e:
+                        raise DataStructureException(e.message)
                 else:
-                    nvals.append(construct(val, subinst, coerce=coerce, context=context + field_name + "[" + str(i) + "]."))
+                    # we need to recurse further down
+                    beneath = construct(val, subinst, coerce=coerce, context=context + field_name + "[" + str(i) + "].", silent_prune=silent_prune)
+
+                    # what we get back is the correct sub-data structure, which we can then store
+                    try:
+                        constructed._add_to_list(field_name, beneath)
+                    except DataSchemaException as e:
+                        raise DataStructureException(e.message)
 
         else:
             raise DataStructureException("Cannot understand structure where list '{x}' elements contain '{y}'".format(x=context + field_name, y=contains))
 
-        constructed[field_name] = nvals
+    return constructed.data
 
-    return constructed
 
 def construct_merge(target, source):
     merged = deepcopy(target)
@@ -636,6 +923,73 @@ def construct_merge(target, source):
 
     return merged
 
+def construct_lookup(path, struct):
+    bits = path.split(".")
+
+    # if there's more than one path element, we will need to recurse
+    if len(bits) > 1:
+        # it has to be an object, in order for the path to still have multiple
+        # segments
+        if bits[0] not in struct.get("objects", []):
+            return None, None, None
+        substruct = struct.get("structs", {}).get(bits[0])
+        return construct_lookup(".".join(bits[1:]), substruct)
+    elif len(bits) == 1:
+        # first check the fields
+        instructions = struct.get("fields", {}).get(bits[0])
+        if instructions is not None:
+            return "field", None, instructions
+
+        # then check the lists
+        instructions = struct.get("lists", {}).get(bits[0])
+        if instructions is not None:
+            structure = struct.get("structs", {}).get(bits[0])
+            return "list", structure, instructions
+
+        # then check the objects
+        if bits[0] in struct.get("objects", []):
+            structure = struct.get("structs", {}).get(bits[0])
+            return "object", structure, None
+
+    return None, None, None
+
+def construct_kwargs(type, dir, instructions):
+    # if there are no instructions there are no kwargs
+    if instructions is None:
+        return {}
+
+    # take a copy of the instructions that we can modify
+    kwargs = deepcopy(instructions)
+
+    # remove the known arguments for the field type
+    if type == "field":
+        if "coerce" in kwargs:
+            del kwargs["coerce"]
+
+    elif type == "list":
+        if "coerce" in kwargs:
+            del kwargs["coerce"]
+        if "contains" in kwargs:
+            del kwargs["contains"]
+
+    nk = {}
+    if dir == "set":
+        for k, v in kwargs.iteritems():
+            # basically everything is a "set" argument unless explicitly stated to be a "get" argument
+            if not k.startswith("get__"):
+                if k.startswith("set__"):    # if it starts with the set__ prefix, remove it
+                    k = k[5:]
+                nk[k] = v
+    elif dir == "get":
+        for k, v in kwargs.iteritems():
+            # must start with "get" argument
+            if k.startswith("get__"):
+                nk[k[5:]] = v
+
+    return nk
+
+def construct_data_keys(struct):
+    return struct.get("fields", {}).keys() + struct.get("objects", []) + struct.get("lists", {}).keys()
 
 ############################################################
 ## Unit test support
