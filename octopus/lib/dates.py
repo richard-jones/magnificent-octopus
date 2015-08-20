@@ -1,6 +1,6 @@
 from octopus.core import app
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def parse(s, format=None, guess=True):
     s = s.strip()
@@ -30,3 +30,6 @@ def reformat(s, in_format=None, out_format=None):
 
 def now():
     return format(datetime.utcnow())
+
+def before_now(seconds):
+    return datetime.utcnow() - timedelta(seconds=seconds)
