@@ -77,7 +77,7 @@ class NotificationMetadata(dataobj.DataObj):
                         "identifier" : {"contains" : "object"},
                         "author" : {"contains" : "object"},
                         "project" : {"contains" : "object"},
-                        "subject" : {"coerce" : "unicode"}
+                        "subject" : {"contains": "field", "coerce" : "unicode"}
                     },
                     "required" : [],
                     "structs" : {
@@ -398,9 +398,11 @@ class IncomingNotification(NotificationMetadata):
                     "required" : []
                 },
                 "embargo" : {
-                    "end" : {"coerce" : "utcdatetime"},
-                    "start" : {"coerce" : "utcdatetime"},
-                    "duration" : {"coerce" : "integer"}
+                    "fields" : {
+                        "end" : {"coerce" : "utcdatetime"},
+                        "start" : {"coerce" : "utcdatetime"},
+                        "duration" : {"coerce" : "integer"}
+                    }
                 },
                 "links" : {
                     "fields" : {
@@ -478,9 +480,11 @@ class OutgoingNotification(NotificationMetadata):
                     "required" : []
                 },
                 "embargo" : {
-                    "end" : {"coerce" : "utcdatetime"},
-                    "start" : {"coerce" : "utcdatetime"},
-                    "duration" : {"coerce" : "integer"}
+                    "fields" : {
+                        "end" : {"coerce" : "utcdatetime"},
+                        "start" : {"coerce" : "utcdatetime"},
+                        "duration" : {"coerce" : "integer"}
+                    }
                 },
                 "links" : {
                     "fields" : {
