@@ -3,16 +3,16 @@ from octopus.modules.jper import models
 from octopus.lib import http, dates
 import json
 
-class JPERConnectionException(Exception):
-    pass
-
 class JPERException(Exception):
     pass
 
-class JPERAuthException(Exception):
+class JPERConnectionException(JPERException):
     pass
 
-class ValidationException(Exception):
+class JPERAuthException(JPERException):
+    pass
+
+class ValidationException(JPERException):
     pass
 
 class JPER(object):
@@ -154,7 +154,7 @@ class JPER(object):
         url = self._url(url=url)
 
         # get the response object
-        resp = http.get(url)
+        resp = http.get_stream(url)
 
         # check for errors or problems with the response
         if resp is None:
@@ -210,6 +210,19 @@ class JPER(object):
         # create the notification list object
         j = resp.json()
         return models.NotificationList(j)
+
+    def iterate_notifications(self, since, repository_id=None, page_size=100):
+        page = 1
+
+        while True:
+            nl = self.list_notifications(since, page=page, page_size=page_size, repository_id=repository_id)
+            if len(nl.notifications) == 0:
+                break
+            for n in nl.notifications:
+                yield n
+            if page * page_size >= nl.total:
+                break
+            page += 1
 
     def record_retrieval(self, notification_id, content_id=None):
         # FIXME: not yet implemented, while waiting to see how retrieval finally
