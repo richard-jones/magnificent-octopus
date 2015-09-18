@@ -154,7 +154,7 @@ class JPER(object):
         url = self._url(url=url)
 
         # get the response object
-        resp = http.get_stream(url)
+        resp, content, downloaded_bytes = http.get_stream(url, read_stream=False)
 
         # check for errors or problems with the response
         if resp is None:
@@ -167,7 +167,7 @@ class JPER(object):
             raise JPERException("Received unexpected status code: {x}".format(x=resp.status_code))
 
         # return the response object, in case the caller wants access to headers, etc.
-        return resp
+        return resp.raw, resp.headers
 
     def list_notifications(self, since, page=None, page_size=None, repository_id=None):
         # check that the since date is valid, and get it into the right format
