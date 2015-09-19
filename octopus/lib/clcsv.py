@@ -453,6 +453,18 @@ class SheetWrapper(object):
     # check, so can be used to return all whitespace-only strings as None too
     TRIM = True
 
+    # coerce functions to apply to a value when it is read.  Use the internal reference name as the key,
+    # and a function reference as the value
+    COERCE = {}
+
+    # coerce function(s) to apply to a value when it is read if it does not appear in the above COERCE list
+    # executed in order
+    DEFAULT_COERCE = []
+
+    # values that should be treated as the empty string.  Use the internal reference name as the key
+    # and a list of values in an array that should be ignored
+    IGNORE_VALUES = {}
+
     def __init__(self, path=None, writer=None, spec=None):
         if path is not None:
             self._sheet = ClCsv(path, ignore_blank_rows=True)
@@ -496,18 +508,45 @@ class SheetWrapper(object):
                 return k
 
     def _value(self, field, value):
+        # first thing is, do we trim the value
         if self.TRIM:
             try:
                 value = value.strip()
             except AttributeError:
                 # this is a type that can't be stripped
                 pass
+
+        # we have the normalised value, so determine if it is to be ignored now
+        if field in self.IGNORE_VALUES:
+            if value in self.IGNORE_VALUES[field]:
+                # if it's on the ignore list, re-write it to the empty string
+                value = ""
+
+        # now check to see if this is the empty string or None, and therefore if we need to return a default value
         if value is None or value == "":
+            # the value in the cell is empty, so decide what to do
+            #
+            # if there is a default value, return that.
             if field in self.DEFAULT_VALUES:
                 return self.DEFAULT_VALUES.get(field, "")
-            elif self.EMPTY_STRING_AS_NONE:
+
+            # otherwise, if we return empty strings as none, return none
+            if self.EMPTY_STRING_AS_NONE:
                 return None
 
+            # finally, otherwise, return the empty string
+            return value
+
+        # now we have a value which has content that we don't want to ignore, so see if we need to
+        # coerce it at all.  If there's no specific coerce, check the default coerce
+        if field in self.COERCE:
+            fn = self.COERCE[field]
+            value = fn(value)
+        elif len(self.DEFAULT_COERCE) > 0:
+            for fn in self.DEFAULT_COERCE:
+                value = fn(value)
+
+        # finally, return the value in whatever state it is now in
         return value
 
     def validate(self):
