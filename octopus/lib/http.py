@@ -200,9 +200,10 @@ def get_stream(url, retries=None, back_off_factor=None, max_back_off=None, timeo
 # Mock requests Response object - useful for testing
 
 class MockResponse(object):
-    def __init__(self, status, body=None):
+    def __init__(self, status, body=None, headers=None):
         self.status_code = status
         self._body = body
+        self._headers = headers
         self._stream = StringIO(body)
 
     def json(self):
@@ -211,6 +212,14 @@ class MockResponse(object):
     @property
     def data(self):
         return self._body
+
+    @property
+    def raw(self):
+        return self._stream
+
+    @property
+    def headers(self):
+        return self._headers if self._headers is not None else {}
 
     def iter_content(self, num_bytes):
         while True:
