@@ -15,6 +15,7 @@ DATE_FORMATS = [
     "%d %B %Y",             # e.g. 21 June 2014
     "%d-%b-%Y",             # e.g. 31-Jul-13
     "%d-%b-%y",             # e.g. 31-Jul-2013
+    "%d %b, %Y",            # e.g. 01 Dec, 1975
     "%b-%y",                # e.g. Aug-13
     "%B %Y",                # e.g. February 2014
     "%Y"                    # e.g. 1978
