@@ -365,7 +365,10 @@ class UTF8Recoder:
 
     def next(self):
         val = self.reader.next()
-        return val.encode(self.encoding)
+        raw = val.encode("utf-8")
+        if raw.startswith(codecs.BOM_UTF8):
+            raw = raw.replace(codecs.BOM_UTF8, '', 1)
+        return raw
 
 class UnicodeReader:
     """

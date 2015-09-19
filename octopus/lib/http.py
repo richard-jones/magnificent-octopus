@@ -1,5 +1,6 @@
 from octopus.core import app
-import requests, time, urllib
+import requests, time, urllib, json
+from StringIO import StringIO
 
 class SizeExceededException(Exception):
     pass
@@ -131,7 +132,7 @@ def get(url, retries=None, back_off_factor=None, max_back_off=None, timeout=None
                          **kwargs)
 
 def get_stream(url, retries=None, back_off_factor=None, max_back_off=None, timeout=None, response_encoding=None,
-        retry_on_timeout=None, retry_codes=None, size_limit=None, chunk_size=None, cut_off=None, **kwargs):
+        retry_on_timeout=None, retry_codes=None, size_limit=None, chunk_size=None, cut_off=None, read_stream=True, **kwargs):
 
     # set the defaults where necessary from configuration
 
@@ -175,70 +176,56 @@ def get_stream(url, retries=None, back_off_factor=None, max_back_off=None, timeo
     content = ''
     chunk_no = 0
 
-    for chunk in resp.iter_content(chunk_size=chunk_size):
-        chunk_no += 1
-        downloaded_bytes += len(bytes(chunk))
+    if read_stream:
+        for chunk in resp.iter_content(chunk_size=chunk_size):
+            chunk_no += 1
+            downloaded_bytes += len(bytes(chunk))
 
-        # check the size limit again
-        if size_limit > 0 and downloaded_bytes > size_limit:
-            resp.connection.close()
-            raise SizeExceededException("Size limit exceeded during download")
-        if chunk:  # filter out keep-alive new chunks
-            content += chunk
+            # check the size limit again
+            if size_limit > 0 and downloaded_bytes > size_limit:
+                resp.connection.close()
+                raise SizeExceededException("Size limit exceeded during download")
+            if chunk:  # filter out keep-alive new chunks
+                content += chunk
 
-        # now check to see if we have exceeded the cut off point
-        if cut_off > 0 and downloaded_bytes >= cut_off:
-            break
+            # now check to see if we have exceeded the cut off point
+            if cut_off > 0 and downloaded_bytes >= cut_off:
+                break
 
-    resp.connection.close()
+        resp.connection.close()
+
     return resp, content, downloaded_bytes
 
-"""
-we don't have immediate use for this, but it will be helpful in the future, so preserving in this block comment
-needs to be refactored as per the above method
+######################################################
+# Mock requests Response object - useful for testing
 
-def get_stream(url):
-    r = requests.get(url, stream=True, timeout=config.CONN_TIMEOUT)
-    r.encoding = 'utf-8'
+class MockResponse(object):
+    def __init__(self, status, body=None, headers=None):
+        self.status_code = status
+        self._body = body
+        self._headers = headers
+        self._stream = StringIO(body)
 
-    size_limit = config.MAX_REMOTE_FILE_SIZE
-    header_reported_size = r.headers.get("content-length")
-    try:
-        header_reported_size = int(header_reported_size)
-    except Exception as e:
-        header_reported_size = 0
+    def json(self):
+        return json.loads(self._body)
 
-    if header_reported_size > size_limit:
-        return ''
+    @property
+    def data(self):
+        return self._body
 
-    downloaded_bytes = 0
-    content = ''
-    chunk_no = 0
-    attempt = 0
-    retries = config.MAX_CONN_RETRIES
-    while attempt <= retries:
-        try:
-            for chunk in r.iter_content(chunk_size=config.HTTP_CHUNK_SIZE):
-                chunk_no += 1
-                downloaded_bytes += len(bytes(chunk))
+    @property
+    def raw(self):
+        return self._stream
 
-                if chunk_no == 1:
-                    if magic.from_buffer(chunk).startswith('PDF'):
-                        raise models.LookupException('File at {0} is a PDF according to the python-magic library. Not allowed!'.format(url))
+    @property
+    def headers(self):
+        return self._headers if self._headers is not None else {}
 
-                # check the size limit again
-                if downloaded_bytes > size_limit:
-                    raise models.LookupException('File at {0} is larger than limit of {1}'.format(url, size_limit))
-                if chunk:  # filter out keep-alive new chunks
-                    content += chunk
-            break
-
-        except socket.timeout:
-            attempt += 1
-            log.debug('Request to {url} timeout, attempt {attempt}'.format(url=url, attempt=attempt))
-
-        sleep(2 ** attempt)
-
-    r.connection.close()
-    return r, content, downloaded_bytes
-"""
+    def iter_content(self, num_bytes):
+        while True:
+            b = self._stream.read(num_bytes)
+            if b == "":
+                # we have reached the end of the file
+                break
+            yield b
+        yield ""
