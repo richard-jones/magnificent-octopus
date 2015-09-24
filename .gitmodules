@@ -1,3 +1,6 @@
 [submodule "octopus/static/vendor/facetview2"]
 	path = octopus/static/vendor/facetview2
 	url = https://github.com/CottageLabs/facetview2.git
+[submodule "octopus/static/vendor/edges"]
+	path = octopus/static/vendor/edges
+	url = https://github.com/CottageLabs/edges.git
