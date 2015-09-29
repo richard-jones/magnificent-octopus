@@ -15,7 +15,8 @@ setup(
         "Flask-WTF==0.8.3",
         "nose",
         "Flask-Mail==0.9.1",
-        "python-dateutil"
+        "python-dateutil",
+        "unidecode"
     ],
     url = 'http://cottagelabs.com/',
     author = 'Cottage Labs',

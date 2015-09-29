@@ -178,7 +178,8 @@ class DataObj(object):
         "isolang": to_isolang(),
         "url": to_url,
         "bool": to_bool,
-        "isolang_2letter": to_isolang(output_format="alpha2")
+        "isolang_2letter": to_isolang(output_format="alpha2"),
+        "bigenddate" : date_str(out_format="%Y-%m-%d")
     }
 
     def __init__(self, raw=None, struct=None, construct_raw=True, expose_data=False, properties=None, coerce_map=None, construct_silent_prune=False):
@@ -233,6 +234,9 @@ class DataObj(object):
         self.custom_validate()
 
     def __getattr__(self, name):
+        if hasattr(self.__class__, name):
+            return object.__getattribute__(self, name)
+
         props, data_attrs = self._list_dynamic_properties()
 
         # if the name is not in the dynamic properties, raise an attribute error
@@ -256,8 +260,9 @@ class DataObj(object):
     def __setattr__(self, key, value):
         # first set the attribute on any explicitly defined property
         try:
-            att = object.__getattribute__(self, key)
-            return object.__setattr__(self, key, value)
+            if hasattr(self.__class__, key):
+                # att = object.__getattribute__(self, key)
+                return object.__setattr__(self, key, value)
         except AttributeError:
             pass
 
@@ -331,6 +336,10 @@ class DataObj(object):
 
         # if the struct contains a reference to the path, always return something, even if it is None - don't raise an AttributeError
         kwargs = construct_kwargs(type, "get", instructions)
+        coerce_fn = self._coerce_map.get(instructions.get("coerce"))
+        if coerce_fn is not None:
+            kwargs["coerce"] = coerce_fn
+
         if type == "field":
             return self._get_single(path, **kwargs)
         elif type == "object":
@@ -399,6 +408,10 @@ class DataObj(object):
                 return False
 
         kwargs = construct_kwargs(type, "set", instructions)
+        coerce_fn = self._coerce_map.get(instructions.get("coerce"))
+        if coerce_fn is not None:
+            kwargs["coerce"] = coerce_fn
+
         if type == "field":
             self._set_single(path, value, **kwargs)
             return True
