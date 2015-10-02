@@ -2,6 +2,9 @@ import string
 from unidecode import unidecode
 
 def normalise(s, ascii=True, unpunc=True, lower=True, spacing=True, strip=True):
+    if s is None:
+        return ""
+
     if unpunc:
         throwlist = string.punctuation + '\n\t'
         s = "".join(c for c in s if c not in throwlist)

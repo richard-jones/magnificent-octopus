@@ -65,6 +65,12 @@ ELASTIC_SEARCH_EXAMPLE_DOCS = [
     # service.dao.MyDAO
 ]
 
+# an array of DAO classes which initialise themselves by having their self_init()
+# method called
+ELASTIC_SEARCH_SELF_INIT = [
+    # service.dao.MyDAO
+]
+
 ##############################################################
 # Special DAO configuration
 ##############################################################
@@ -79,6 +85,15 @@ ESDAO_DEFAULT_TIME_BOX = "month"
 ESDAO_DEFAULT_TIME_BOX_LOOKBACK = 0
 # You can also set the look back on a per-type basis with
 # ESDAO_TIME_BOX_LOOKBACK_<UPPER CASE TYPE NAME> = <number of boxes>
+
+# path to directory where the "next", "prev" and "curr" files for routing
+# requests to the correct type are placed
+from octopus.lib import paths
+ESDAO_ROLLING_DIR = paths.rel2abs(__file__, "..", "..", "..", "..", "indexdir")
+
+# map of type names to DAOs which will have the publish() or rollback()
+# methods called on them
+ESDAO_ROLLING_PLUGINS = {}
 
 ##############################################################
 # Query Endpoint Configuration
