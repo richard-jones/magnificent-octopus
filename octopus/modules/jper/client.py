@@ -43,7 +43,7 @@ class JPER(object):
 
         args = []
         for k, v in params.iteritems():
-            args.append(k + "=" + http.quote(v))
+            args.append(k + "=" + http.quote(unicode(v)))
         qs = "?" + "&".join(args)
         url += qs
 
