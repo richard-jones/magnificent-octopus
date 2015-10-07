@@ -53,7 +53,7 @@ class NotificationMetadata(dataobj.DataObj):
         }
     }
     """
-    def __init__(self, raw=None):
+    def __init__(self, raw=None, **kwargs):
         struct = {
             "objects" : [
                 "metadata"
@@ -151,7 +151,7 @@ class NotificationMetadata(dataobj.DataObj):
         }
 
         self._add_struct(struct)
-        super(NotificationMetadata, self).__init__(raw)
+        super(NotificationMetadata, self).__init__(raw, **kwargs)
 
     @property
     def title(self):
@@ -498,7 +498,7 @@ class OutgoingNotification(NotificationMetadata):
         }
 
         self._add_struct(struct)
-        super(OutgoingNotification, self).__init__(raw=raw)
+        super(OutgoingNotification, self).__init__(raw=raw, construct_silent_prune=True)
 
     @property
     def id(self):
