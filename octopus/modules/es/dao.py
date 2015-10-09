@@ -93,116 +93,89 @@ class RollingTypeESDAO(ESDAO):
         app.config["ESDAO_ROLLING_{x}_{y}".format(x=pos.upper(), y=cls.__type__.upper())] = val
 
     @classmethod
-    def publish(cls, conn=None):
-        # synchronise access
-        with cls._lock:
-            if conn is None:
-                conn = cls.__conn__
-
-            dir = cls._roll_dir()
-            prev = os.path.join(dir, "prev")
-            curr = os.path.join(dir, "curr")
-            next = os.path.join(dir, "next")
-
-            # we only want to continue if next exists
-            if not os.path.exists(next):
-                return
-
-            previous = None
-            current = None
-            n = None
-
-            # read all the types directly out of the files
-            if os.path.exists(prev) and os.path.isfile(prev):
-                with open(prev) as o:
-                    previous = o.read()
-
-            if os.path.exists(curr) and os.path.isfile(curr):
-                with open(curr) as o:
-                    current = o.read()
-
-            if os.path.exists(next) and os.path.isfile(next):
-                with open(next) as o:
-                    n = o.read()
-
-            # write current back to previous
-            if current is not None:
-                with open(prev, "wb") as o:
-                    o.write(current)
-
-            # write next to current
-            if next is not None:
-                with open(curr, "wb") as o:
-                    o.write(n)
-
-            # get rid of the next file
-            if os.path.exists(next) and os.path.isfile(next):
-                os.remove(next)
-
-            # set the app configuration
-            cls._set_cfg("prev", current)
-            cls._set_cfg("curr", n)
-            cls._set_cfg("next", None)
-
-            # delete the old previous index type
-            if previous is not None:
-                esprit.raw.delete(conn, previous)
+    def _get_file(cls, pos):
+        dir = cls._roll_dir()
+        f = os.path.join(dir, pos)
+        if os.path.exists(f) and os.path.isfile(f):
+            with open(f) as o:
+                return o.read()
+        return None
 
     @classmethod
-    def rollback(cls, conn=None):
-         # synchronise access
-        with cls._lock:
-            if conn is None:
-                conn = cls.__conn__
+    def _set_file(cls, pos, val):
+        if val is None:
+            cls._drop_file(pos)
+            return
+        dir = cls._roll_dir()
+        f = os.path.join(dir, pos)
+        with open(f, "wb") as o:
+            o.write(val)
 
-            dir = cls._roll_dir()
-            prev = os.path.join(dir, "prev")
-            curr = os.path.join(dir, "curr")
-            next = os.path.join(dir, "next")
+    @classmethod
+    def _drop_file(cls, pos):
+        dir = cls._roll_dir()
+        f = os.path.join(dir, pos)
+        if os.path.exists(f) and os.path.isfile(f):
+            os.remove(f)
 
-            # we only want to continue if prev exists
-            if not os.path.exists(prev):
-                return
+    @classmethod
+    def _init_type(cls, tname):
+        # there are two ways this might be initialised - by mapping or by example
+        # 1. by mapping
+        if cls.__init_by_mapping__:
+            mps = cls.mappings()
+            put_mappings({tname : {tname : mps[cls.__type__][cls.__type__]}})
+        # 2. by example
+        elif cls.__init_by_example__:
+            ex = cls.example()
+            put_example(tname, ex)
 
-            previous = None
-            current = None
-            n = None
+    @classmethod
+    def _straighten_type(cls, pos, conn=None):
+        if conn is None:
+            conn = cls.__conn__
 
-            # read all the types directly out of the files
-            if os.path.exists(prev) and os.path.isfile(prev):
-                with open(prev) as o:
-                    previous = o.read()
+        # get what we think the current index is for this position
+        i = cls._get_file(pos)
+        # if there's no index at that position, just check the cfg is reset correctly
+        if i is None:
+            cls._set_cfg(pos, None)
+            return
 
-            if os.path.exists(curr) and os.path.isfile(curr):
-                with open(curr) as o:
-                    current = o.read()
+        esv = app.config.get("ELASTIC_SEARCH_VERSION")
 
-            if os.path.exists(next) and os.path.isfile(next):
-                with open(next) as o:
-                    n = o.read()
+        # if there is an index named, we need to check it exists
+        if esprit.raw.type_exists(conn, i, es_version=esv):
+            # if the type does exist, then we just need to check the config is reset correctly
+            cls._set_cfg(pos, i)
+        else:
+            # there is no type corresponding to the file, so reset the config and the file
+            cls._drop_file(pos)
+            cls._set_cfg(pos, None)
 
-            # write current to next
-            if current is not None:
-                with open(next, "wb") as o:
-                    o.write(current)
+    @classmethod
+    def rolling_status(cls):
+        pc = cls._get_cfg("prev")
+        pf = cls._get_file("prev")
 
-            # write previous to current
-            if previous is not None:
-                with open(curr, "wb") as o:
-                    o.write(previous)
+        cc = cls._get_cfg("curr")
+        cf = cls._get_file("curr")
 
-            # get rid of the previous file
-            if os.path.exists(prev) and os.path.isfile(prev):
-                os.remove(prev)
+        nc = cls._get_cfg("next")
+        nf = cls._get_file("next")
 
-            # set the app configuration
-            cls._set_cfg("prev", None)
-            cls._set_cfg("curr", previous)
-            cls._set_cfg("next", current)
+        s = {
+            "prev" : {"cfg" : pc, "file" : pf},
+            "curr" : {"cfg" : cc, "file" : cf},
+            "next" : {"cfg" : nc, "file" : nf}
+        }
+        return s
 
-            # delete the old next index type
-            if next is not None:
-                esprit.raw.delete(conn, next)
+    @classmethod
+    def rolling_refresh(cls):
+        cls._set_cfg("prev", cls._get_file("prev"))
+        cls._set_cfg("curr", cls._get_file("curr"))
+        cls._set_cfg("next", cls._get_file("next"))
 
     @classmethod
     def drop_next(cls, conn=None):
@@ -210,25 +183,69 @@ class RollingTypeESDAO(ESDAO):
             if conn is None:
                 conn = cls.__conn__
 
-            dir = cls._roll_dir()
-            next = os.path.join(dir, "next")
-            if not os.path.exists(next):
+            # get the canonical name for the index
+            n = cls._get_file("next")
+            if n is None:
                 return
-            with open(next) as o:
-                n = o.read()
-            os.remove(next)
+
+            # drop the file, the config and the index type in that order
+            cls._drop_file("next")
             cls._set_cfg("next", None)
             esprit.raw.delete(conn, n)
 
     @classmethod
     def self_init(cls, *args, **kwargs):
-        tname = kwargs.get("type_name")
-        if tname is None:
-            tname = cls._mint_next_type()
+        # determine if we've been given a connection or to use the default
+        conn = kwargs.get("conn")
+        if conn is None:
+            conn = cls.__conn__
 
-        write = kwargs.get("write", True)
+        # first determine if we've been passed any arguments for initialisation
+        rollover = True
+        tname = kwargs.get("type_name")
         write_to = kwargs.get("write_to", "curr")
 
+        rollover = tname is not None
+        esv = app.config.get("ELASTIC_SEARCH_VERSION")
+
+        # FIXME: put the lock in here
+        with cls._lock:
+            # now determine the route we're going to go down
+            if rollover:
+                # check whether the type to write already exists
+                if not esprit.raw.type_exists(conn, tname, es_version=esv):
+                    cls._init_type(tname)
+                # now we know the index exists, we can write the file and the
+                # config
+                cls._set_file(write_to, tname)
+                cls._set_cfg(write_to, tname)
+            else:
+                # this is the raw application init route, and it needs to make sure that all the
+                # indices, files and config line up
+
+                # first ensure that the current index is set
+                curr = cls._get_file("curr")
+                if curr is None:
+                    # if there is no current index, mint a type name for it, then initialise it
+                    curr = cls._mint_next_type()
+                    cls._init_type(curr)
+                else:
+                    # check that the index referenced exists (it should, as straighten_type above should deal with that
+                    if not esprit.raw.type_exists(conn, curr, es_version=esv):
+                        # if it does not, create the one referenced in the file
+                        cls._init_type(curr)
+
+                # synchronise the file and config
+                cls._set_file("curr", curr)
+                cls._set_cfg("curr", curr)
+
+                # finish by ensuring that the other file pointers and the index are in sync
+                cls._straighten_type("prev")
+                cls._straighten_type("next")
+
+
+        ###############################################
+        """
         dir = cls._roll_dir()
         f = os.path.join(dir, write_to)
 
@@ -259,51 +276,101 @@ class RollingTypeESDAO(ESDAO):
                     os.mkdir(dir)
                 with open(f, "wb") as o:
                     o.write(tname)
+        """
 
+    @classmethod
+    def publish(cls, conn=None):
+        # synchronise access
+        with cls._lock:
+            if conn is None:
+                conn = cls.__conn__
+
+            prev = cls._get_file("prev")
+            curr = cls._get_file("curr")
+            next = cls._get_file("next")
+
+            if next is None:
+                return
+
+            # write current to previous
+            cls._set_file("prev", curr)
+
+            # write next to current
+            cls._set_file("curr", next)
+
+            # get rid of the next file
+            cls._drop_file("next")
+
+            # refresh the configuration
+            cls.rolling_refresh()
+
+            # drop the previous index, if it existed
+            if prev is not None:
+                esprit.raw.delete(conn, prev)
+
+    @classmethod
+    def rollback(cls, conn=None):
+         # synchronise access
+        with cls._lock:
+            if conn is None:
+                conn = cls.__conn__
+
+            prev = cls._get_file("prev")
+            curr = cls._get_file("curr")
+            next = cls._get_file("next")
+
+            # only continue if prev exists
+            if prev is None:
+                return
+
+            # write current to next
+            cls._set_file("next", curr)
+
+            # write previous to current
+            cls._set_file("curr", prev)
+
+            # get rid of the previous file
+            cls._drop_file("prev")
+
+            # refresh the configuration
+            cls.rolling_refresh()
+
+            # delete the old next index type
+            if next is not None:
+                esprit.raw.delete(conn, next)
 
     @classmethod
     def dynamic_read_types(cls):
-        dir = cls._roll_dir()
         for pref in cls.__read_preference__:
             # first look to see if it is set in the config
             t = cls._get_cfg(pref)
-            # t = app.config.get("ESDAO_ROLLING_" + pref.upper())
             if t is not None:
                 return t
 
             # if not next check to see if there's a file
-            f = os.path.join(dir, pref)
-            if os.path.exists(f) and os.path.isfile(f):
-                with open(f) as o:
-                    t = o.read()
-                    cls._set_cfg(pref, t)
-                    # app.config["ESDAO_ROLLING_" + pref.upper()] = t
-                    return t
+            t = cls._get_file(pref)
+            if t is not None:
+                cls._set_cfg(pref, t)
+                return t
 
         # if we don't get anything, return the base type
         return cls.__type__
-
 
     @classmethod
     def dynamic_write_type(cls):
         # look to see if the next index is already set, in which case we
         # can return
         next = cls._get_cfg("next")
-        # next = app.config.get("ESDAO_ROLLING_NEXT")
         if next is not None:
             return next
 
         # since there could be several threads trying to do the same thing, lock
         # this thread until the file/index has been sorted out
         with cls._lock:
-            # if not, read it from the directory
-            dir = cls._roll_dir()
-            f = os.path.join(dir, "next")
-            if os.path.exists(f) and os.path.isfile(f):
-                with open(f) as o:
-                    next = o.read()
+            # if not read it from the directory
+            next = cls._get_file("next")
+            if next is not None:
                 cls._set_cfg("next", next)
-                # app.config["ESDAO_ROLLING_NEXT"] = next
                 return next
 
             # if it wasn't in the directory we need to make it
@@ -313,13 +380,14 @@ class RollingTypeESDAO(ESDAO):
                 for cname in app.config.get("ELASTIC_SEARCH_SELF_INIT", []):
                     klazz = plugin.load_class(cname)
                     if issubclass(cls, klazz):
-                        cls.self_init(type_name=tname, write=False)
+                        cls.self_init(type_name=tname, write_to="next")
 
             # now write the file
+            dir = cls._roll_dir()
             if not os.path.exists(dir):
                 os.mkdir(dir)
-            with open(f, "wb") as o:
-                o.write(tname)
+            cls._set_file("next", tname)
+            cls._set_cfg("next", tname)
 
             return tname
 

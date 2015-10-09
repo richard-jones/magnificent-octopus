@@ -1,6 +1,7 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, make_response
 from octopus.core import app
 from octopus.lib import webapp, plugin
+import json
 
 blueprint = Blueprint('rolling', __name__)
 
@@ -14,7 +15,6 @@ def publish():
         klazz.publish()
     return ""
 
-
 @blueprint.route('/rollback', methods=['POST'])
 @webapp.jsonp
 def rollback():
@@ -23,4 +23,25 @@ def rollback():
     for t in types:
         klazz = plugin.load_class(map.get(t))
         klazz.rollback()
+    return ""
+
+@blueprint.route("/status", methods=["GET"])
+@webapp.jsonp
+def status():
+    map = app.config.get("ESDAO_ROLLING_PLUGINS", {})
+    resp = {}
+    for k,v in map.iteritems():
+        klazz = plugin.load_class(v)
+        s = klazz.rolling_status()
+        resp[k] = s
+    r = make_response(json.dumps(resp))
+    r.mimetype = "application/json"
+    return r
+
+@blueprint.route("/refresh", methods=["GET"])
+def refresh():
+    map = app.config.get("ESDAO_ROLLING_PLUGINS", {})
+    for k, v in map.iteritems():
+        klazz = plugin.load_class(v)
+        klazz.rolling_refresh()
     return ""
