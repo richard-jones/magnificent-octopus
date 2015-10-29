@@ -107,12 +107,12 @@ class StoreJper(Store):
         if r.status_code != 200:
             requests.put(cpath)
             try:
-                app.logger.info('Store: ' + cpath + ' container to be created ' + str(r.status_code))
+                app.logger.info('Store - Container:' + container_id + ' ' + cpath + ' container to be created ' + str(r.status_code))
             except:
                 pass
         else:
             try:
-                app.logger.info('Store: ' + cpath + ' container already exists ' + str(r.status_code))
+                app.logger.info('Store - Container:' + container_id + ' ' + cpath + ' container already exists ' + str(r.status_code))
             except:
                 pass
 
@@ -120,7 +120,7 @@ class StoreJper(Store):
 
         if source_path is not None:
             try:
-                app.logger.info('Store: attempting to save source path to ' + tpath)
+                app.logger.info('Store - Container:' + container_id + ' attempting to save source path to ' + tpath)
             except:
                 pass
             with open(source_path,'rb') as payload:
@@ -129,14 +129,14 @@ class StoreJper(Store):
                 r = requests.post(tpath, files={'file': payload})
         elif source_stream is not None:
             try:
-                app.logger.info('Store: attempting to save source stream to ' + tpath)
+                app.logger.info('Store - Container:' + container_id + ' attempting to save source stream to ' + tpath)
             except:
                 pass
             #headers = {'content-type': 'application/x-www-form-urlencoded'}
             #r = requests.post(tpath, data=source_stream, verify=False, headers=headers)
             r = requests.post(tpath, files={'file': source_stream})
         try:
-            app.logger.info('Store: ' + tpath + ' resulted in ' + str(r.status_code))
+            app.logger.info('Store - Container:' + container_id + ' ' + tpath + ' request resulted in ' + str(r.status_code))
         except:
             pass
 
@@ -144,7 +144,7 @@ class StoreJper(Store):
         cpath = os.path.join(self.url, container_id)
         r = requests.get(cpath)
         try:
-            app.logger.info('Store: ' + container_id + ' checking existence ' + str(r.status_code))
+            app.logger.info('Store - Container:' + container_id + ' checking existence ' + str(r.status_code))
         except:
             pass
         if r.status_code == 200:
@@ -161,7 +161,7 @@ class StoreJper(Store):
         cpath = os.path.join(self.url, container_id)
         r = requests.get(cpath)
         try:
-            app.logger.info('Store: ' + container_id + ' returned listing')
+            app.logger.info('Store - Container:' + container_id + ' listing requested and returned')
         except:
             pass
         try:
@@ -174,13 +174,13 @@ class StoreJper(Store):
         r = requests.get(cpath, stream=True)
         if r.status_code == 200:
             try:
-                app.logger.info('Store: ' + cpath + ' retrieved and returning raw')
+                app.logger.info('Store - Container:' + container_id + ' ' + cpath + ' retrieved and returning raw')
             except:
                 pass
             return r.raw
         else:
             try:
-                app.logger.info('Store: ' + cpath + ' could not be retrieved')
+                app.logger.info('Store - Container:' + container_id + ' ' + cpath + ' could not be retrieved')
             except:
                 pass
             return False
@@ -190,7 +190,7 @@ class StoreJper(Store):
         if target_name is not None:
             cpath = os.path.join(cpath, target_name)
         try:
-            app.logger.info('Store: ' + cpath + ' is being deleted')
+            app.logger.info('Store - Container:' + container_id + ' ' + cpath + ' is being deleted')
         except:
             pass
         requests.delete(cpath)
