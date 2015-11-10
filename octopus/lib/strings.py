@@ -1,7 +1,7 @@
 import string
 from unidecode import unidecode
 
-def normalise(s, ascii=True, unpunc=True, lower=True, spacing=True, strip=True):
+def normalise(s, ascii=True, unpunc=True, lower=True, spacing=True, strip=True, space_replace=False):
     if s is None:
         return ""
 
@@ -24,5 +24,8 @@ def normalise(s, ascii=True, unpunc=True, lower=True, spacing=True, strip=True):
 
     if strip:
         s = s.strip()
+
+    if space_replace:
+        s = s.replace(" ", space_replace)
 
     return s
