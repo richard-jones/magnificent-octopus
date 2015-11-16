@@ -17,7 +17,8 @@ class ValidationException(JPERException):
 
 class JPER(object):
 
-    FilesAndJATS = "http://router.jisc.ac.uk/packages/FilesAndJATS"
+    # FilesAndJATS = "http://router.jisc.ac.uk/packages/FilesAndJATS"
+    FilesAndJATS = "https://pubrouter.jisc.ac.uk/FilesAndJATS"
 
     def __init__(self, api_key=None, base_url=None):
         self.api_key = api_key if api_key is not None else app.config.get("JPER_API_KEY")
