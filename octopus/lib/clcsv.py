@@ -436,6 +436,10 @@ class SheetWrapper(object):
     # that should be used to refer to that column internally
     HEADERS = {}
 
+    # Function(s) which are applied to normalise header keys (in order), to be used in the absence of the map
+    # in the HEADERS dictionary
+    HEADER_NORMALISER = []
+
     # list of headers that must be present such that validation of the sheet will succeed - use
     # the internal reference name, not the human name
     REQUIRED = []
@@ -560,13 +564,20 @@ class SheetWrapper(object):
                 raise SheetValidationException("One or more headings are missing from the sheet", missing_header=header)
         return True
 
-    def objects(self):
+    def objects(self, use_headers=True, beyond_headers=False):
         for o in self._sheet.objects():
             no = {}
             for key, val in o.iteritems():
-                k = self._header_key_map(key)
-                if k is not None:
-                    no[k] = self._value(k, val)
+                hk = None
+                if use_headers:
+                    hk = self._header_key_map(key)
+                if hk is None and beyond_headers:
+                    hk = key
+                    if len(self.HEADER_NORMALISER) > 0:
+                        for fn in self.HEADER_NORMALISER:
+                            hk = fn(hk)
+                if hk is not None:
+                    no[hk] = self._value(hk, val)
             yield no
 
     def add_object(self, obj):

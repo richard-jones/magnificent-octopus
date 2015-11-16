@@ -93,6 +93,9 @@ class StoreLocal(Store):
 
 
 class StoreJper(Store):
+    # to update this, it is in octopus so go into octopus then pull. then merge if necessary. 
+    # then push these changes to octopus develop. then go back up to jper and it should show the commit of octopus has changed
+    # so then commit jper again.
     def __init__(self):
         self.url = app.config.get("STORE_JPER_URL")
         if self.url is None:
@@ -103,40 +106,93 @@ class StoreJper(Store):
         r = requests.get(cpath)
         if r.status_code != 200:
             requests.put(cpath)
+            try:
+                app.logger.info('Store - Container:' + container_id + ' ' + cpath + ' container to be created ' + str(r.status_code))
+            except:
+                pass
+        else:
+            try:
+                app.logger.info('Store - Container:' + container_id + ' ' + cpath + ' container already exists ' + str(r.status_code))
+            except:
+                pass
 
         tpath = os.path.join(cpath, target_name)
 
-        if source_path:
-            with open('data','rb') as payload:
+        if source_path is not None:
+            try:
+                app.logger.info('Store - Container:' + container_id + ' attempting to save source path to ' + tpath)
+            except:
+                pass
+            with open(source_path,'rb') as payload:
                 #headers = {'content-type': 'application/x-www-form-urlencoded'}
                 #r = requests.post(tpath, data=payload, verify=False, headers=headers)
                 r = requests.post(tpath, files={'file': payload})
-        elif source_stream:
+        elif source_stream is not None:
+            try:
+                app.logger.info('Store - Container:' + container_id + ' attempting to save source stream to ' + tpath)
+            except:
+                pass
             #headers = {'content-type': 'application/x-www-form-urlencoded'}
             #r = requests.post(tpath, data=source_stream, verify=False, headers=headers)
             r = requests.post(tpath, files={'file': source_stream})
+        try:
+            app.logger.info('Store - Container:' + container_id + ' ' + tpath + ' request resulted in ' + str(r.status_code))
+        except:
+            pass
 
     def exists(self, container_id):
-        # FIXME: implement
-        return False
+        cpath = os.path.join(self.url, container_id)
+        r = requests.get(cpath)
+        try:
+            app.logger.info('Store - Container:' + container_id + ' checking existence ' + str(r.status_code))
+        except:
+            pass
+        if r.status_code == 200:
+            try:
+                listing = r.json()
+                return isinstance(listing,list)
+            except:
+                return False
+            return True
+        else:
+            return False
 
     def list(self, container_id):
         cpath = os.path.join(self.url, container_id)
         r = requests.get(cpath)
-        return r.json()
+        try:
+            app.logger.info('Store - Container:' + container_id + ' listing requested and returned')
+        except:
+            pass
+        try:
+            return r.json()
+        except:
+            return []
 
     def get(self, container_id, target_name):
         cpath = os.path.join(self.url, container_id, target_name)
-        r = requests.get(cpath)
+        r = requests.get(cpath, stream=True)
         if r.status_code == 200:
+            try:
+                app.logger.info('Store - Container:' + container_id + ' ' + cpath + ' retrieved and returning raw')
+            except:
+                pass
             return r.raw
         else:
+            try:
+                app.logger.info('Store - Container:' + container_id + ' ' + cpath + ' could not be retrieved')
+            except:
+                pass
             return False
 
     def delete(self, container_id, target_name=None):
         cpath = os.path.join(self.url, container_id)
         if target_name is not None:
             cpath = os.path.join(cpath, target_name)
+        try:
+            app.logger.info('Store - Container:' + container_id + ' ' + cpath + ' is being deleted')
+        except:
+            pass
         requests.delete(cpath)
 
 

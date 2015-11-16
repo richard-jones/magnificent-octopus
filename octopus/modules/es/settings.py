@@ -93,6 +93,7 @@ ESDAO_ROLLING_DIR = paths.rel2abs(__file__, "..", "..", "..", "..", "indexdir")
 
 # map of type names to DAOs which will have the publish() or rollback()
 # methods called on them
+# {"mytype" : "service.dao.MyDAO"}
 ESDAO_ROLLING_PLUGINS = {}
 
 ##############################################################
