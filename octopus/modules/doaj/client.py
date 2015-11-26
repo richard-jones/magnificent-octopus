@@ -1,6 +1,13 @@
 from octopus.core import app
 from octopus.lib import http, dataobj
-import esprit
+import esprit, json
+
+DOAJ_RETRY_CODES = [
+    408,    # request timeout
+    502,    # bad gateway; retry to see if the gateway can re-establish connection
+    503,    # service unavailable; retry to see if it comes back
+    504     # gateway timeout; retry to see if it responds next time
+]
 
 class DOAJException(Exception):
     pass
@@ -8,6 +15,10 @@ class DOAJException(Exception):
 class Journal(dataobj.DataObj):
     def __init__(self, raw=None):
         super(Journal, self).__init__(raw, expose_data=True)
+
+class Article(dataobj.DataObj):
+    def __init__(self, raw=None):
+        super(Article, self).__init__(raw, expose_data=True)
 
 class DOAJv1API(object):
 
@@ -22,8 +33,9 @@ class DOAJv1API(object):
         "journals"
     ]
 
-    def __init__(self, api_base_url=None):
+    def __init__(self, api_base_url=None, api_key=None):
         self.api_base_url = api_base_url if api_base_url else app.config.get("DOAJ_API_BASE_URL", "https://doaj.org/api/v1/")
+        self.api_key = api_key
 
         if not self.api_base_url.endswith("/"):
             self.api_base_url += "/"
@@ -92,7 +104,7 @@ class DOAJv1API(object):
         url = self.doaj_url("search", type, additional_path=http.quote(query_string), params=params)
         print url
 
-        resp = http.get(url)
+        resp = http.get(url, retry_codes=DOAJ_RETRY_CODES)
         j = resp.json()
 
         klazz = self.CLASSMAP.get(type)
@@ -119,6 +131,28 @@ class DOAJv1API(object):
             for r in results:
                 yield r
             page += 1
+
+    ###################################################
+    ## methods for article CRUD
+
+    def create_article(self, article):
+        # support either the article object or the dict representation
+        article_data = article
+        if isinstance(article, Article):
+            article_data = article.data
+
+        url = self.doaj_url(type="articles", params={"api_key" : self.api_key})
+        resp = http.post(url, data=json.dumps(article_data), headers={"Content-Type" : "application/json"}, retry_codes=DOAJ_RETRY_CODES)
+
+        if resp.status_code == 400:
+            raise DOAJException("Bad request against DOAJ API: '{x}'".format(x=resp.json().get("error", "no error provided")))
+        elif resp.status_code == 403:
+            raise DOAJException("Forbidden action - your API key was incorrect, or you are trying to add an article with an ISSN you don't own")
+        elif resp.status_code == 401:
+            raise DOAJException("Authentication failed, your API key was probably wrong")
+
+        j = resp.json()
+        return j.get("id"), j.get("location")
 
 class ANDQueryBuilder(object):
 
