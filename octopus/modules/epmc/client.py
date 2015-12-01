@@ -3,6 +3,7 @@ from octopus.lib import http
 import urllib, string
 from lxml import etree
 from octopus.modules.epmc import models
+from octopus.modules.epmc.queries import QueryBuilder
 
 def quote(s, **kwargs):
     try:
@@ -55,15 +56,46 @@ class EuropePMC(object):
         return cls.field_search("TITLE", nt, fuzzy=True, page=page)
 
     @classmethod
-    def field_search(cls, field, value, fuzzy=False, page=1):
-        wrap = "\"" if not fuzzy else ""
-        quoted = quote(value, safe="/")
+    def field_search(cls, field, value, fuzzy=False, page=1, page_size=25):
+        qb = QueryBuilder()
+        qb.add_string_field(field, value, fuzzy)
+        return cls.query(qb.to_url_query_param(), page=page, page_size=page_size)
+
+    @classmethod
+    def field_search_iterator(cls, field, value, fuzzy=False, page=1, page_size=25):
+        qb = QueryBuilder()
+        qb.add_string_field(field, value, fuzzy)
+        return cls.iterate(qb.to_url_query_param(), page=page, page_size=page_size)
+
+    @classmethod
+    def complex_search(cls, query_builder, page=1, page_size=25):
+        return cls.query(query_builder.to_url_query_param(), page=page, page_size=page_size)
+
+    @classmethod
+    def complex_search_iterator(cls, query_builder, page_size=1000):
+        return cls.iterate(query_builder.to_url_query_param(), page_size=page_size)
+
+    @classmethod
+    def iterate(cls, query_string, page_size=1000):
+        page = 1
+        while True:
+            results = cls.query(query_string, page=page, page_size=page_size)
+            if len(results) == 0:
+                break
+            for r in results:
+                yield r
+            page += 1
+
+    @classmethod
+    def query(cls, query_string, page=1, page_size=25):
+        quoted = quote(query_string, safe="/")
         qpage = quote(str(page))
-        if quoted is None or qpage is None:
+        qsize = quote(str(page_size))
+        if qsize is None or qpage is None or quoted is None:
             raise EuropePMCException(None, "unable to url escape the string")
 
-        url = app.config.get("EPMC_REST_API") + "search/query=" + field + ":" + wrap + quoted + wrap
-        url += "&resultType=core&format=json&page=" + qpage
+        url = app.config.get("EPMC_REST_API") + "search/query=" + query_string
+        url += "&resultType=core&format=json&page=" + qpage + "&pageSize=" + qsize
         app.logger.debug("Requesting EPMC metadata from " + url)
 
         resp = http.get(url)
@@ -96,3 +128,4 @@ class EPMCFullText(models.JATS):
     For backwards compatibility - don't add any methods here
     """
     pass
+
