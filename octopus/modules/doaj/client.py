@@ -16,6 +16,27 @@ class Journal(dataobj.DataObj):
     def __init__(self, raw=None):
         super(Journal, self).__init__(raw, expose_data=True)
 
+    def all_issns(self):
+        issns = []
+
+        # get the issns from the identifiers record
+        idents = self.bibjson.identifier
+        if idents is not None:
+            for ident in idents:
+                if ident.type in ["pissn", "eissn"]:
+                    issns.append(ident.id)
+
+        hist = self.bibjson.history
+        if hist is not None:
+            for h in hist:
+                idents = h.bibjson.identifier
+                if idents is not None:
+                    for ident in idents:
+                        if ident.type in ["pissn", "eissn"]:
+                            issns.append(ident.id)
+
+        return issns
+
 class Article(dataobj.DataObj):
     def __init__(self, raw=None):
         super(Article, self).__init__(raw, expose_data=True)
