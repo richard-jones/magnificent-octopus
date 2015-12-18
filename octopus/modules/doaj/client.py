@@ -1,6 +1,7 @@
 from octopus.core import app
-from octopus.lib import http, dataobj
+from octopus.lib import http
 import esprit, json
+from octopus.modules.doaj import models
 
 DOAJ_RETRY_CODES = [
     408,    # request timeout
@@ -12,40 +13,11 @@ DOAJ_RETRY_CODES = [
 class DOAJException(Exception):
     pass
 
-class Journal(dataobj.DataObj):
-    def __init__(self, raw=None):
-        super(Journal, self).__init__(raw, expose_data=True)
-
-    def all_issns(self):
-        issns = []
-
-        # get the issns from the identifiers record
-        idents = self.bibjson.identifier
-        if idents is not None:
-            for ident in idents:
-                if ident.type in ["pissn", "eissn"]:
-                    issns.append(ident.id)
-
-        hist = self.bibjson.history
-        if hist is not None:
-            for h in hist:
-                idents = h.bibjson.identifier
-                if idents is not None:
-                    for ident in idents:
-                        if ident.type in ["pissn", "eissn"]:
-                            issns.append(ident.id)
-
-        return issns
-
-class Article(dataobj.DataObj):
-    def __init__(self, raw=None):
-        super(Article, self).__init__(raw, expose_data=True)
-
 class DOAJv1API(object):
 
     CLASSMAP = {
-        "journal" : Journal,
-        "journals" : Journal,
+        "journal" : models.Journal,
+        "journals" : models.Journal,
     }
 
     SEARCH_TYPES = [
