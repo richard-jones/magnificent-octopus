@@ -2,8 +2,41 @@ import socket
 import time
 import sys
 import subprocess
+import codecs
 from octopus.modules import dictdiffer
+from unittest import TestCase
+from octopus.lib import plugin
+import os
 
+class FunctionalTestServer(TestCase):
+    """
+    FIXME: don't use this, it doesn't work.  Leaving it here for later diagnosis.
+    """
+    def setUp(self):
+        super(FunctionalTestServer, self).setUp()
+        if self.config and self.cfg_file and self.flask_app:
+            mod = plugin.load_module(self.flask_app)
+            make_config(self.config, self.cfg_file)
+            self.test_server = TestServer(port=None, index=None, python_app_module_path=os.path.abspath(mod.__file__), cfg_file=self.cfg_file)
+            self.test_server.spawn_with_config()
+
+    def tearDown(self):
+        super(FunctionalTestServer, self).tearDown()
+        self.test_server.terminate()
+        os.remove(self.cfg_file)
+
+def make_config(cfg, filepath):
+    with codecs.open(filepath, "wb") as out:
+        for k, v in cfg.iteritems():
+            if isinstance(v, basestring):
+                # if the value is a string, wrap it in quotes
+                out.write(k + " = '" + v + "'\n")
+            else:
+                # otherwise it's probably an int, float or bool so just stringify it
+                out.write(k + " = " + str(v) + "\n")
+
+            # NOTE: this would not handle dicts and lists, so you might get errors, in which
+            # case you'll need to work out what to do next
 
 def get_first_free_port():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -14,10 +47,11 @@ def get_first_free_port():
 
 
 class TestServer(object):
-    def __init__(self, port, index, python_app_module_path='service/web.py'):
+    def __init__(self, port, index, python_app_module_path='service/web.py', cfg_file=None):
         self.port = port
         self.index = index
         self.python_app_module_path = python_app_module_path
+        self.cfg_file = cfg_file
         self._process = None
 
     def get_server_url(self):
@@ -34,9 +68,16 @@ class TestServer(object):
         # we must wait for the server to start listening
         time.sleep(1)
 
+    def spawn_with_config(self):
+        self._process = subprocess.Popen([sys.executable, self.python_app_module_path, "--config", self.cfg_file])
+
+        # we must wait for the server to start listening
+        time.sleep(3)
+
     def terminate(self):
         if self._process:
             self._process.terminate()
+        time.sleep(1)
 
 
 def diff_dicts(d1, d2, d1_label='d1', d2_label='d2', print_unchanged=False):

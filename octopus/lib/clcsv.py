@@ -365,7 +365,10 @@ class UTF8Recoder:
 
     def next(self):
         val = self.reader.next()
-        return val.encode(self.encoding)
+        raw = val.encode("utf-8")
+        if raw.startswith(codecs.BOM_UTF8):
+            raw = raw.replace(codecs.BOM_UTF8, '', 1)
+        return raw
 
 class UnicodeReader:
     """
@@ -423,11 +426,23 @@ class UnicodeWriter:
 
 ######################################################################
 
+class SheetValidationException(Exception):
+    def __init__(self, *args, **kwargs):
+        super(SheetValidationException, self).__init__(*args)
+        self.missing_header = kwargs["missing_header"]
 
 class SheetWrapper(object):
     # map from values that will appear in the headers for real (i.e. human readable) to values
     # that should be used to refer to that column internally
     HEADERS = {}
+
+    # Function(s) which are applied to normalise header keys (in order), to be used in the absence of the map
+    # in the HEADERS dictionary
+    HEADER_NORMALISER = []
+
+    # list of headers that must be present such that validation of the sheet will succeed - use
+    # the internal reference name, not the human name
+    REQUIRED = []
 
     # order of headers as they should be saved - use the internal reference name, not the human
     # readable name
@@ -444,6 +459,18 @@ class SheetWrapper(object):
     # should values be trimmed before being returned.  This will be applied before the empty string
     # check, so can be used to return all whitespace-only strings as None too
     TRIM = True
+
+    # coerce functions to apply to a value when it is read.  Use the internal reference name as the key,
+    # and a function reference as the value
+    COERCE = {}
+
+    # coerce function(s) to apply to a value when it is read if it does not appear in the above COERCE list
+    # executed in order
+    DEFAULT_COERCE = []
+
+    # values that should be treated as the empty string.  Use the internal reference name as the key
+    # and a list of values in an array that should be ignored
+    IGNORE_VALUES = {}
 
     def __init__(self, path=None, writer=None, spec=None):
         if path is not None:
@@ -482,28 +509,75 @@ class SheetWrapper(object):
                 return v
         return None
 
+    def _header_value_map(self, val):
+        for k, v in self.HEADERS.iteritems():
+            if v.strip().lower() == val.lower():
+                return k
+
     def _value(self, field, value):
+        # first thing is, do we trim the value
         if self.TRIM:
             try:
                 value = value.strip()
             except AttributeError:
                 # this is a type that can't be stripped
                 pass
+
+        # we have the normalised value, so determine if it is to be ignored now
+        if field in self.IGNORE_VALUES:
+            if value in self.IGNORE_VALUES[field]:
+                # if it's on the ignore list, re-write it to the empty string
+                value = ""
+
+        # now check to see if this is the empty string or None, and therefore if we need to return a default value
         if value is None or value == "":
+            # the value in the cell is empty, so decide what to do
+            #
+            # if there is a default value, return that.
             if field in self.DEFAULT_VALUES:
                 return self.DEFAULT_VALUES.get(field, "")
-            elif self.EMPTY_STRING_AS_NONE:
+
+            # otherwise, if we return empty strings as none, return none
+            if self.EMPTY_STRING_AS_NONE:
                 return None
 
+            # finally, otherwise, return the empty string
+            return value
+
+        # now we have a value which has content that we don't want to ignore, so see if we need to
+        # coerce it at all.  If there's no specific coerce, check the default coerce
+        if field in self.COERCE:
+            fn = self.COERCE[field]
+            value = fn(value)
+        elif len(self.DEFAULT_COERCE) > 0:
+            for fn in self.DEFAULT_COERCE:
+                value = fn(value)
+
+        # finally, return the value in whatever state it is now in
         return value
 
-    def objects(self):
+    def validate(self):
+        ref = [self.HEADERS.get(h) for h in self._sheet.headers() if h in self.HEADERS]
+        for r in self.REQUIRED:
+            if r not in ref:
+                header = self._header_value_map(r)
+                raise SheetValidationException("One or more headings are missing from the sheet", missing_header=header)
+        return True
+
+    def objects(self, use_headers=True, beyond_headers=False):
         for o in self._sheet.objects():
             no = {}
             for key, val in o.iteritems():
-                k = self._header_key_map(key)
-                if k is not None:
-                    no[k] = self._value(k, val)
+                hk = None
+                if use_headers:
+                    hk = self._header_key_map(key)
+                if hk is None and beyond_headers:
+                    hk = key
+                    if len(self.HEADER_NORMALISER) > 0:
+                        for fn in self.HEADER_NORMALISER:
+                            hk = fn(hk)
+                if hk is not None:
+                    no[hk] = self._value(hk, val)
             yield no
 
     def add_object(self, obj):

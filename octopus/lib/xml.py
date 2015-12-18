@@ -42,3 +42,24 @@ def fromstring(s):
     clean = encoding_rx.sub("", s).strip()
     return etree.fromstring(clean)
 
+def xp_first_text(element, xpath, default=None):
+    el = element.xpath(xpath)
+    if len(el) > 0:
+        return el[0].text
+    return default
+
+def xp_texts(element, xpath):
+    els = element.xpath(xpath)
+    return [e.text for e in els if e.text is not None]
+
+def objectify(element):
+    obj = {}
+    for c in element.getchildren():
+        # FIXME: does not currently handle attributes
+        #for attr in c.keys():
+        #    obj["@" + attr] = c.get(attr)
+        if len(c.getchildren()) > 0:
+            obj[c.tag] = objectify(c)
+        else:
+            obj[c.tag] = c.text
+    return obj

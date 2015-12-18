@@ -18,9 +18,12 @@ CONFIG_FILES = [
     "magnificent-octopus/octopus/modules/doaj/settings.py",
     "magnificent-octopus/octopus/modules/epmc/settings.py",
     "magnificent-octopus/octopus/modules/es/settings.py",
+    "magnificent-octopus/octopus/modules/jper/settings.py",
     "magnificent-octopus/octopus/modules/oag/settings.py",
     "magnificent-octopus/octopus/modules/romeo/settings.py",
     "magnificent-octopus/octopus/modules/sherpafact/settings.py",
+    "magnificent-octopus/octopus/modules/store/settings.py",
+    "magnificent-octopus/octopus/modules/swordv2/settings.py",
 
     # local service configuration
     "config/service.py",

@@ -1,7 +1,9 @@
 from octopus.core import app
-from octopus.lib import dataobj, http
+from octopus.lib import http
 import urllib, string
 from lxml import etree
+from octopus.modules.epmc import models
+from octopus.modules.epmc.queries import QueryBuilder
 
 def quote(s, **kwargs):
     try:
@@ -62,15 +64,46 @@ class EuropePMC(object):
         return cls.field_search("TITLE", nt, fuzzy=True, page=page)
 
     @classmethod
-    def field_search(cls, field, value, fuzzy=False, page=1):
-        wrap = "\"" if not fuzzy else ""
-        quoted = quote(value, safe="/")
+    def field_search(cls, field, value, fuzzy=False, page=1, page_size=25):
+        qb = QueryBuilder()
+        qb.add_string_field(field, value, fuzzy)
+        return cls.query(qb.to_url_query_param(), page=page, page_size=page_size)
+
+    @classmethod
+    def field_search_iterator(cls, field, value, fuzzy=False, page=1, page_size=25):
+        qb = QueryBuilder()
+        qb.add_string_field(field, value, fuzzy)
+        return cls.iterate(qb.to_url_query_param(), page=page, page_size=page_size)
+
+    @classmethod
+    def complex_search(cls, query_builder, page=1, page_size=25):
+        return cls.query(query_builder.to_url_query_param(), page=page, page_size=page_size)
+
+    @classmethod
+    def complex_search_iterator(cls, query_builder, page_size=1000):
+        return cls.iterate(query_builder.to_url_query_param(), page_size=page_size)
+
+    @classmethod
+    def iterate(cls, query_string, page_size=1000):
+        page = 1
+        while True:
+            results = cls.query(query_string, page=page, page_size=page_size)
+            if len(results) == 0:
+                break
+            for r in results:
+                yield r
+            page += 1
+
+    @classmethod
+    def query(cls, query_string, page=1, page_size=25):
+        quoted = quote(query_string, safe="/")
         qpage = quote(str(page))
-        if quoted is None or qpage is None:
+        qsize = quote(str(page_size))
+        if qsize is None or qpage is None or quoted is None:
             raise EuropePMCException(None, "unable to url escape the string")
 
-        url = app.config.get("EPMC_REST_API") + "search/query=" + field + ":" + wrap + quoted + wrap
-        url += "&resultType=core&format=json&page=" + qpage
+        url = app.config.get("EPMC_REST_API") + "search/query=" + query_string
+        url += "&resulttype=core&format=json&page=" + qpage + "&pageSize=" + qsize
         app.logger.debug("Requesting EPMC metadata from " + url)
 
         resp = http.get(url)
@@ -84,7 +117,7 @@ class EuropePMC(object):
         except:
             raise EuropePMCException(message="could not decode JSON from EPMC response")
 
-        results = [EPMCMetadata(r) for r in j.get("resultList", {}).get("result", [])]
+        results = [models.EPMCMetadata(r) for r in j.get("resultList", {}).get("result", [])]
         return results
 
     @classmethod
@@ -98,87 +131,9 @@ class EuropePMC(object):
             raise EuropePMCException(resp)
         return EPMCFullText(resp.text)
 
-class EPMCMetadata(dataobj.DataObj):
-    def __init__(self, raw):
-        super(EPMCMetadata, self).__init__(raw)
+class EPMCFullText(models.JATS):
+    """
+    For backwards compatibility - don't add any methods here
+    """
+    pass
 
-    @property
-    def pmcid(self):
-        return self._get_single("pmcid", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def pmid(self):
-        return self._get_single("pmid", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def doi(self):
-        return self._get_single("doi", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def in_epmc(self):
-        return self._get_single("inEPMC", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def is_oa(self):
-        return self._get_single("isOpenAccess", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def issn(self):
-        return self._get_single("journalInfo.journal.issn", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def journal(self):
-        return self._get_single("journalInfo.journal.title", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def essn(self):
-        return self._get_single("journalInfo.journal.essn", self._utf8_unicode(), allow_coerce_failure=False)
-
-    @property
-    def title(self):
-        return self._get_single("title", self._utf8_unicode(), allow_coerce_failure=False)
-
-class EPMCFullText(object):
-    def __init__(self, raw):
-        self.raw = raw
-        try:
-            self.xml = etree.fromstring(self.raw)
-        except:
-            raise EPMCFullTextException("Unable to parse XML", self.raw)
-
-    @property
-    def title(self):
-        title_elements = self.xml.xpath("//title-group/article-title")
-        if len(title_elements) > 0:
-            return title_elements[0].text
-        return None
-
-    @property
-    def is_aam(self):
-        manuscripts = self.xml.xpath("//article-id[@pub-id-type='manuscript']")
-        return len(manuscripts) > 0
-
-    def get_licence_details(self):
-        # get the licence type
-        l = self.xml.xpath("//license")
-        if len(l) > 0:
-            l = l[0]
-        else:
-            return None, None, None
-        type = l.get("license-type")
-        url = l.get("{http://www.w3.org/1999/xlink}href")
-
-        # get the paragraph(s) describing the licence
-        para = self.xml.xpath("//license/license-p")
-        out = ""
-        for p in para:
-            out += etree.tostring(p)
-
-        return type, url, out
-
-    @property
-    def copyright_statement(self):
-        cs = self.xml.xpath("//copyright-statement")
-        if len(cs) > 0:
-            return cs[0].text
-        return None

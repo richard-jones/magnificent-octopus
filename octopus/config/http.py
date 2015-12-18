@@ -32,3 +32,15 @@ HTTP_RETRY_CODES = [
 # overridden on the method call, so use carefully
 HTTP_RESPONSE_ENCODING = None
 
+# When streaming content, what is the maximum size download that is allowed.  The streaming code
+# will first check the Content-Type header, then it will monitor the download until the size limit
+# is exceeded.  Setting this to 0 means no size limit
+HTTP_STREAM_MAX_SIZE = 0
+
+# When streaming content, what size of download to cut off at.  This differs from the HTTP_STREAM_MAX_SIZE
+# above in that all content downloaded before the cut off size is reached will be returned.
+HTTP_STREAM_CUT_OFF = 0
+
+# When streaming content, size of chunks to download by (this default is 250Kb)
+HTTP_STREAM_CHUNK_SIZE = 262144
+

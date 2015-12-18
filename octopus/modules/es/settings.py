@@ -18,12 +18,83 @@ ELASTIC_SEARCH_TEST_INDEX = "test"
 # should the initialise routing initialise the index automatically?
 INITIALISE_INDEX = True
 
-# an array of DAO classes from which to retrieve the ES mappings to be
-# loaded into the index during initialisation.  You should override this
+# mapping that will be pushed into the _default_ field of the index
+# itself, and be applied to all types that are subsequently created
+ELASTIC_SEARCH_DEFAULT_MAPPING = {
+    'dynamic_templates': [
+        {
+            'default': {
+                'mapping': {
+                    'fields': {
+                        'exact': {
+                            'index': 'not_analyzed',
+                            'store': 'yes',
+                            'type': '{dynamic_type}'
+                        },
+                        '{name}': {
+                            'index': 'analyzed',
+                            'store': 'no',
+                            'type': '{dynamic_type}'
+                        }
+                    },
+                    'type': 'multi_field'
+                },
+                'match': '*',
+                'match_mapping_type': 'string'
+            }
+        }
+    ],
+    'properties': {
+        'location': {'type': 'geo_point'}
+    }
+}
+
+# an array of DAO classes from which to retrieve the type-specific ES mappings
+# to be loaded into the index during initialisation.  You should override this
 # in service.py
+# If none of your types require mappings different from the ELASTIC_SEARCH_DEFAULT_MAPPING
+# above then you can leave this list empty
 ELASTIC_SEARCH_MAPPINGS = [
     # service.dao.MyDAO
 ]
+
+# an array of DAO classes from which to retrieve example documents that will
+# be pushed into the index and then deleted during startup in order to initialise
+# the type/mappings.  You should override this in service.py
+ELASTIC_SEARCH_EXAMPLE_DOCS = [
+    # service.dao.MyDAO
+]
+
+# an array of DAO classes which initialise themselves by having their self_init()
+# method called
+ELASTIC_SEARCH_SELF_INIT = [
+    # service.dao.MyDAO
+]
+
+##############################################################
+# Special DAO configuration
+##############################################################
+
+# The default time period to use for dynamically set index types
+# allowed: second, minute, hour, day, month, year
+ESDAO_DEFAULT_TIME_BOX = "month"
+# You can also set the time box on a per-type basis with
+# ESDAO_TIME_BOX_<UPPER CASE TYPE NAME> = "<period>"
+
+# How many time boxes to look back on during READ operations
+ESDAO_DEFAULT_TIME_BOX_LOOKBACK = 0
+# You can also set the look back on a per-type basis with
+# ESDAO_TIME_BOX_LOOKBACK_<UPPER CASE TYPE NAME> = <number of boxes>
+
+# path to directory where the "next", "prev" and "curr" files for routing
+# requests to the correct type are placed
+from octopus.lib import paths
+ESDAO_ROLLING_DIR = paths.rel2abs(__file__, "..", "..", "..", "..", "indexdir")
+
+# map of type names to DAOs which will have the publish() or rollback()
+# methods called on them
+# {"mytype" : "service.dao.MyDAO"}
+ESDAO_ROLLING_PLUGINS = {}
 
 ##############################################################
 # Query Endpoint Configuration

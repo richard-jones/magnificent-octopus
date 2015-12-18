@@ -2,6 +2,14 @@ from octopus.modules.es import dao
 from datetime import datetime
 from octopus.modules.account.exceptions import NonUniqueAccountException
 
+def query_filter(q):
+    """Function used by the query endpoint to ensure only the relevant account data is returned"""
+    # q is an esprit.models.Query object
+
+    # this limits the query to certain fields in the source, so that things like password
+    # hashes and activation/reset tokens are never sent to the client
+    q.include_source(["id", "email", "created_date", "last_updated", "role"])
+
 class BasicAccountDAO(dao.ESDAO):
     __type__ = 'account'
 

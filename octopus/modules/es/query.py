@@ -93,11 +93,17 @@ def query(path=None):
         # now run the query through the filters
         filters = app.config.get("QUERY_FILTERS", {})
         filter_names = cfg.get("filters", [])
-        for fn in filter_names:
-            f = filters.get(fn)
-            if f is None:
+        for filter_name in filter_names:
+            # because of back-compat, we have to do a few tricky things here...
+            # filter may be the name of a filter in the list of query filters
+            fn = filters.get(filter_name)
+            if fn is None:
+                # filter may be the path to a function
+                fn = plugin.load_function(filter_name)
+            if fn is None:
+                app.logger.info("Unable to load query filter for {x}".format(x=filter_name))
                 abort(500)
-            f(q)
+            fn(q)
 
         # finally send the query and return the response
         res = dao_klass.query(q=q.as_dict())

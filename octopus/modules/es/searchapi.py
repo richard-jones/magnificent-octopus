@@ -1,4 +1,4 @@
-import esprit, json
+import esprit, json, re
 from octopus.core import app
 from flask import Blueprint, request, abort, make_response
 from octopus.lib import webapp, plugin
@@ -6,6 +6,59 @@ from octopus.modules.es import dao
 from datetime import datetime
 
 blueprint = Blueprint('searchapi', __name__)
+
+def substitute(query, substitutions):
+    if len(substitutions.keys()) == 0:
+        return query
+
+    # apply the regex escapes to the substitutions, so we know they
+    # are ready to be matched
+    escsubs = {}
+    for k, v in substitutions.iteritems():
+        escsubs[k.replace(":", "\\:")] = v
+
+    # define a function which takes the match group and returns the
+    # substitution if there is one
+    def rep(match):
+        for k, v in escsubs.iteritems():
+            if k == match.group(1):
+                return v
+        return match.group(1)
+
+    # define the regular expressions for splitting and then extracting
+    # the field to be substituted
+    split_rx = "([^\\\\]:)"
+    field_rx = "([^\s\+\-\(\)\"]+?):$"
+
+    # split the query around any unescaped colons
+    bits = re.split(split_rx, query)
+
+    # stitch back together the split sections and the separators
+    segs = [bits[i] + bits[i+1] for i in range(0, len(bits), 2) if i+1 < len(bits)] + [bits[len(bits) - 1]] if len(bits) % 2 == 1 else []
+
+    # substitute the fields as required
+    subs = []
+    for seg in segs:
+        if seg.endswith(":"):
+            subs.append(re.sub(field_rx, rep, seg))
+        else:
+            subs.append(seg)
+
+    return ":".join(subs)
+
+def allowed(query, wildcards=False, fuzzy=False):
+    if not wildcards:
+        rx = "(.+[^\\\\][\?\*]+.*)"
+        if re.search(rx, query):
+            return False
+
+    if not fuzzy:
+        # this covers both fuzzy searching and proximity searching
+        rx = "(.+[^\\\\]~[0-9]{0,1}[\.]{0,1}[0-9]{0,1})"
+        if re.search(rx, query):
+            return False
+
+    return True
 
 # simple proxy for an underlying ES index, queried using a query string
 @blueprint.route('/search', methods=['GET'])
