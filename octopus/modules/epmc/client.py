@@ -95,7 +95,7 @@ class EuropePMC(object):
             raise EuropePMCException(None, "unable to url escape the string")
 
         url = app.config.get("EPMC_REST_API") + "search/query=" + query_string
-        url += "&resultType=core&format=json&page=" + qpage + "&pageSize=" + qsize
+        url += "&resulttype=core&format=json&page=" + qpage + "&pageSize=" + qsize
         app.logger.debug("Requesting EPMC metadata from " + url)
 
         resp = http.get(url)

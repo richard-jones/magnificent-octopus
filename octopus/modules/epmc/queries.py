@@ -1,3 +1,5 @@
+from octopus.lib import dates
+
 class QueryBuilder(object):
     def __init__(self):
         self.fields = []
@@ -30,10 +32,15 @@ def oa_issn_updated(issn, fro, to=None, date_sort=False):
     updated between the supplied dates
 
     :param issn: ISSN of the journal
-    :param fro: updated since
-    :param to: updated before
+    :param fro: updated since (YYYY-MM-DD)
+    :param to: updated before (YYYY-MM-DD)
     :return:
     """
+
+    fro = dates.reformat(fro, out_format="%Y-%m-%d")
+    if to is not None:
+        to = dates.reformat(to, out_format="%Y-%m-%d")
+
     qb = QueryBuilder()
     qb.add_string_field("ISSN", issn)
     qb.add_string_field("OPEN_ACCESS", "y")
