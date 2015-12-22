@@ -1,6 +1,6 @@
 from octopus.core import app
-
 from datetime import datetime, timedelta
+from random import randint
 
 def parse(s, format=None, guess=True):
     s = s.strip()
@@ -62,3 +62,13 @@ def day_ranges(fro, to):
             current = next
 
     return ranges
+
+def random_date(fro=None, to=None):
+    if fro is None:
+        fro = parse("1970-01-01T00:00:00Z")
+    if to is None:
+        to = datetime.utcnow()
+
+    span = int((to - fro).total_seconds())
+    s = randint(0, span)
+    return format(to - timedelta(seconds=s))
