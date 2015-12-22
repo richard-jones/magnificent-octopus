@@ -20,10 +20,10 @@ BASE_ARTICLE_STRUCT = {
 
         "bibjson": {
             "fields": {
-                "title": {"coerce": "unicode"},
-                "year": {"coerce": "unicode"},
-                "month": {"coerce": "unicode"},
-                "abstract": {"coerce": "unicode"}
+                "title": {"coerce": "unicode", "set__ignore_none": True},
+                "year": {"coerce": "unicode", "set__ignore_none": True},
+                "month": {"coerce": "unicode", "set__ignore_none": True},
+                "abstract": {"coerce": "unicode", "set__ignore_none": True}
             },
             "lists": {
                 "identifier": {"contains": "object"},
@@ -62,17 +62,17 @@ BASE_ARTICLE_STRUCT = {
 
                 "journal": {
                     "fields": {
-                        "start_page": {"coerce": "unicode"},
-                        "end_page": {"coerce": "unicode"},
-                        "volume": {"coerce": "unicode"},
-                        "number": {"coerce": "unicode"},
-                        "publisher": {"coerce": "unicode"},
-                        "title": {"coerce": "unicode"},
-                        "country": {"coerce": "unicode"}
+                        "start_page": {"coerce": "unicode", "set__ignore_none": True},
+                        "end_page": {"coerce": "unicode", "set__ignore_none": True},
+                        "volume": {"coerce": "unicode", "set__ignore_none": True},
+                        "number": {"coerce": "unicode", "set__ignore_none": True},
+                        "publisher": {"coerce": "unicode", "set__ignore_none": True},
+                        "title": {"coerce": "unicode", "set__ignore_none": True},
+                        "country": {"coerce": "unicode", "set__ignore_none": True}
                     },
                     "lists": {
                         "license": {"contains": "object"},
-                        "language": {"coerce": "unicode", "contains": "field"}
+                        "language": {"coerce": "unicode", "contains": "field", "set__ignore_none": True}
                     },
                     "structs": {
 
@@ -129,3 +129,30 @@ class Article(dataobj.DataObj):
     def __init__(self, raw=None):
         self._add_struct(BASE_ARTICLE_STRUCT)
         super(Article, self).__init__(raw, expose_data=True)
+
+    def add_identifier(self, type, id):
+        if type is None or id is None:
+            return
+        self._add_to_list("bibjson.identifier", {"type" : type, "id" : id})
+
+    def get_identifier(self, type):
+        for id in self._get_list("bibjson.identifier"):
+            if id.get("type") == type:
+                return id.get("id")
+        return None
+
+    def add_link(self, type, url):
+        if type is None or url is None:
+            return
+        self._add_to_list("bibjson.link", {"type" : type, "url" : url})
+
+    def get_link(self, type):
+        for link in self._get_list("bibjson.link"):
+            if link.get("type") == type:
+                return link.get("url")
+        return None
+
+    def add_author(self, name):
+        if name is None:
+            return
+        self._add_to_list("bibjson.author", {"name" : name})
