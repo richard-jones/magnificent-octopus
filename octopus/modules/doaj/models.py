@@ -46,9 +46,9 @@ BASE_ARTICLE_STRUCT = {
 
                 "link": {
                     "fields": {
-                        "type": {"coerce": "link_type"},
+                        "type": {"coerce": "unicode"},
                         "url": {"coerce": "url"},
-                        "content_type": {"coerce": "link_content_type"}
+                        "content_type": {"coerce": "unicde"}
                     }
                 },
 
@@ -78,8 +78,8 @@ BASE_ARTICLE_STRUCT = {
 
                         "license": {
                             "fields": {
-                                "title": {"coerce": "license"},
-                                "type": {"coerce": "license"},
+                                "title": {"coerce": "unicode"},
+                                "type": {"coerce": "unicode"},
                                 "url": {"coerce": "unicode"},
                                 "version": {"coerce": "unicode"},
                                 "open_access": {"coerce": "bool"},
@@ -100,6 +100,34 @@ BASE_ARTICLE_STRUCT = {
     }
 }
 
+ARTICLE_REQUIRED = {
+    "required": ["bibjson"],
+
+    "structs": {
+        "bibjson": {
+            "required": [
+                "title",
+                "author",                   # One author required
+                "identifier"                # One type of identifier is required
+            ],
+            "structs": {
+
+                "identifier": {
+                    "required": ["type", "id"]
+                },
+
+                "link": {
+                    "required": ["type", "url"]
+                },
+
+                "author": {
+                    "required": ["name"]
+                },
+            }
+        }
+    }
+}
+
 class Journal(dataobj.DataObj):
     def __init__(self, raw=None):
         super(Journal, self).__init__(raw, expose_data=True)
@@ -114,7 +142,13 @@ class Journal(dataobj.DataObj):
                 if ident.type in ["pissn", "eissn"]:
                     issns.append(ident.id)
 
-        hist = self.bibjson.history
+        # FIXME: this could be made better by having the Journal struct here too, but for
+        # the time being a catch on an AttributeError will suffice
+        try:
+            hist = self.bibjson.history
+        except AttributeError:
+            hist = None
+
         if hist is not None:
             for h in hist:
                 idents = h.bibjson.identifier
@@ -156,3 +190,16 @@ class Article(dataobj.DataObj):
         if name is None:
             return
         self._add_to_list("bibjson.author", {"name" : name})
+
+    def is_api_valid(self):
+        try:
+            a = ArticleValidator(self.data)
+        except Exception as e:
+            return False
+        return True
+
+class ArticleValidator(dataobj.DataObj):
+    def __init__(self, raw=None):
+        self._add_struct(BASE_ARTICLE_STRUCT)
+        self._add_struct(ARTICLE_REQUIRED)
+        super(ArticleValidator, self).__init__(raw, expose_data=True)

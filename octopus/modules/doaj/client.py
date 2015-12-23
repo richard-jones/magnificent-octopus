@@ -131,7 +131,7 @@ class DOAJv1API(object):
     def create_article(self, article):
         # support either the article object or the dict representation
         article_data = article
-        if isinstance(article, Article):
+        if isinstance(article, models.Article):
             article_data = article.data
 
         url = self.doaj_url(type="articles", params={"api_key" : self.api_key})
