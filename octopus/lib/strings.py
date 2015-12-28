@@ -1,13 +1,14 @@
 import string
 from unidecode import unidecode
+from octopus.lib.coerce import to_unicode
 
 def normalise(s, ascii=True, unpunc=True, lower=True, spacing=True, strip=True, space_replace=False):
     if s is None:
-        return ""
+        return u""
 
     if unpunc:
         throwlist = string.punctuation + '\n\t'
-        s = "".join(c for c in s if c not in throwlist)
+        s = u"".join(c for c in s if c not in throwlist)
 
     if ascii:
         try:
@@ -27,5 +28,8 @@ def normalise(s, ascii=True, unpunc=True, lower=True, spacing=True, strip=True, 
 
     if space_replace:
         s = s.replace(" ", space_replace)
+
+    # convert to unicode for return
+    s = to_unicode(s)
 
     return s
