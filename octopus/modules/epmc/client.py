@@ -1,9 +1,11 @@
 from octopus.core import app
-from octopus.lib import http
+from octopus.lib import http, dates
 import urllib, string
 from lxml import etree
 from octopus.modules.epmc import models
 from octopus.modules.epmc.queries import QueryBuilder
+from datetime import datetime
+import time
 
 def quote(s, **kwargs):
     try:
@@ -70,24 +72,33 @@ class EuropePMC(object):
         return cls.query(qb.to_url_query_param(), page=page, page_size=page_size)
 
     @classmethod
-    def field_search_iterator(cls, field, value, fuzzy=False, page=1, page_size=25):
+    def field_search_iterator(cls, field, value, fuzzy=False, page_size=25, throttle=None):
         qb = QueryBuilder()
         qb.add_string_field(field, value, fuzzy)
-        return cls.iterate(qb.to_url_query_param(), page=page, page_size=page_size)
+        return cls.iterate(qb.to_url_query_param(), page_size=page_size, throttle=throttle)
 
     @classmethod
     def complex_search(cls, query_builder, page=1, page_size=25):
         return cls.query(query_builder.to_url_query_param(), page=page, page_size=page_size)
 
     @classmethod
-    def complex_search_iterator(cls, query_builder, page_size=1000):
-        return cls.iterate(query_builder.to_url_query_param(), page_size=page_size)
+    def complex_search_iterator(cls, query_builder, page_size=1000, throttle=None):
+        return cls.iterate(query_builder.to_url_query_param(), page_size=page_size, throttle=throttle)
 
     @classmethod
-    def iterate(cls, query_string, page_size=1000):
+    def iterate(cls, query_string, page_size=1000, throttle=None):
         page = 1
+        last = None
         while True:
+            if last is not None and throttle is not None:
+                diff = (datetime.utcnow() - last).total_seconds()
+                app.logger.debug(u"Last request at {x}, {y}s ago; throttle {z}s".format(x=last, y=diff, z=throttle))
+                if diff < throttle:
+                    waitfor = throttle - diff
+                    app.logger.debug(u"Throttling EPMC requests for {x}s".format(x=waitfor))
+                    time.sleep(waitfor)
             results = cls.query(query_string, page=page, page_size=page_size)
+            last = datetime.utcnow()
             if len(results) == 0:
                 break
             for r in results:
