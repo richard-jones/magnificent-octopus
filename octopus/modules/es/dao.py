@@ -84,13 +84,17 @@ class RollingTypeESDAO(ESDAO):
     def _roll_dir(cls):
         return os.path.join(app.config.get("ESDAO_ROLLING_DIR"), cls.__type__)
 
+    # FIXME: these methods are not thread-safe.  We need to migrate to ES's index alias
+    # feature instead
     @classmethod
     def _get_cfg(cls, pos):
-        return app.config.get("ESDAO_ROLLING_{x}_{y}".format(x=pos.upper(), y=cls.__type__.upper()))
+        # return app.config.get("ESDAO_ROLLING_{x}_{y}".format(x=pos.upper(), y=cls.__type__.upper()))
+        return None
 
     @classmethod
     def _set_cfg(cls, pos, val):
-        app.config["ESDAO_ROLLING_{x}_{y}".format(x=pos.upper(), y=cls.__type__.upper())] = val
+        # app.config["ESDAO_ROLLING_{x}_{y}".format(x=pos.upper(), y=cls.__type__.upper())] = val
+        pass
 
     @classmethod
     def _get_file(cls, pos):
