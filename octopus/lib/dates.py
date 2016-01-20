@@ -1,6 +1,6 @@
 from octopus.core import app
-
 from datetime import datetime, timedelta
+from random import randint
 
 def parse(s, format=None, guess=True):
     s = s.strip()
@@ -33,3 +33,42 @@ def now():
 
 def before_now(seconds):
     return datetime.utcnow() - timedelta(seconds=seconds)
+
+def day_ranges(fro, to):
+    aday = timedelta(days=1)
+
+    # first, workout when the next midnight point is
+    next_day = fro + aday
+    next_midnight = datetime(next_day.year, next_day.month, next_day.day)
+
+    # in the degenerate case, to is before the next midnight, in which case they both
+    # fall within the one day range
+    if next_midnight > to:
+        return [(format(fro), format(to))]
+
+    # start the range off with the remainder of the first day
+    ranges = [(format(fro), format(next_midnight))]
+
+    # go through each day, adding to the range, until the next day is after
+    # the "to" date, then finish up and return
+    current = next_midnight
+    while True:
+        next = current + aday
+        if next > to:
+            ranges.append((format(current), format(to)))
+            break
+        else:
+            ranges.append((format(current), format(next)))
+            current = next
+
+    return ranges
+
+def random_date(fro=None, to=None):
+    if fro is None:
+        fro = parse("1970-01-01T00:00:00Z")
+    if to is None:
+        to = datetime.utcnow()
+
+    span = int((to - fro).total_seconds())
+    s = randint(0, span)
+    return format(to - timedelta(seconds=s))

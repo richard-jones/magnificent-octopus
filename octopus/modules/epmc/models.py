@@ -195,6 +195,74 @@ class EPMCMetadata(dataobj.DataObj):
     def title(self):
         return self._get_single("title", self._utf8_unicode(), allow_coerce_failure=False)
 
+    @property
+    def journal_volume(self):
+        return self._get_single("journalInfo.volume", self._utf8_unicode())
+
+    @property
+    def journal_issue(self):
+        return self._get_single("journalInfo.issue", self._utf8_unicode())
+
+    @property
+    def language(self):
+        return self._get_single("language", self._utf8_unicode())
+
+    @property
+    def month_of_publication(self):
+        return self._get_single("journalInfo.monthOfPublication", dataobj.to_int())
+
+    @property
+    def year_of_publication(self):
+        return self._get_single("journalInfo.yearOfPublication", dataobj.to_int())
+
+    @property
+    def page_info(self):
+        return self._get_single("pageInfo", self._utf8_unicode())
+
+    @property
+    def start_page(self):
+        pi = self.page_info
+        if pi is None:
+            return None
+        bits = pi.split("-")
+        if len(bits) > 0:
+            return bits[0]
+        return None
+
+    @property
+    def end_page(self):
+        pi = self.page_info
+        if pi is None:
+            return None
+        bits = pi.split("-")
+        if len(bits) > 1:
+            return bits[1]
+        return None
+
+    @property
+    def fulltext_urls(self):
+        return self._get_list("fullTextUrlList.fullTextUrl")
+
+    def get_first_fulltext_url(self, availability=None, document_style=None, site=None):
+        for obj in self.fulltext_urls:
+            if availability is not None and availability != obj.get("availability"):
+                continue
+            if document_style is not None and document_style != obj.get("documentStyle"):
+                continue
+            if site is not None and site != obj.get("site"):
+                continue
+            return obj.get("url")
+        return None
+
+    @property
+    def abstract(self):
+        return self._get_single("abstractText", self._utf8_unicode())
+
+    @property
+    def authors(self):
+        return self._get_list("authorList.author")
+
+
 class JATS(object):
     def __init__(self, raw=None, xml=None):
         self.raw = None

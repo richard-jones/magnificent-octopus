@@ -29,9 +29,17 @@ def to_keywords(s):
     return " ".join([x for x in raw.split(" ") if x != ""])
 
 class EuropePMCException(Exception):
-    def __init__(self, httpresponse=None, *args, **kwargs):
-        super(EuropePMCException, self).__init__(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        httpresponse = kwargs.get("httpresponse")
+        if httpresponse is not None:
+            del kwargs["httpresponse"]
+        super(EuropePMCException, self).__init__(*args)
         self.response = httpresponse
+
+class EPMCFullTextException(Exception):
+    def __init__(self, message, rawstring, *args, **kwargs):
+        super(EPMCFullTextException, self).__init__(message, *args)
+        self.raw = rawstring
 
 class EuropePMC(object):
     @classmethod
@@ -95,7 +103,7 @@ class EuropePMC(object):
             raise EuropePMCException(None, "unable to url escape the string")
 
         url = app.config.get("EPMC_REST_API") + "search/query=" + query_string
-        url += "&resultType=core&format=json&page=" + qpage + "&pageSize=" + qsize
+        url += "&resulttype=core&format=json&page=" + qpage + "&pageSize=" + qsize
         app.logger.debug("Requesting EPMC metadata from " + url)
 
         resp = http.get(url)

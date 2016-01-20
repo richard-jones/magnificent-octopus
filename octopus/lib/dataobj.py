@@ -334,6 +334,9 @@ class DataObj(object):
 
             return val
 
+        if instructions is None:
+            instructions = {}
+
         # if the struct contains a reference to the path, always return something, even if it is None - don't raise an AttributeError
         kwargs = construct_kwargs(type, "get", instructions)
         coerce_fn = self._coerce_map.get(instructions.get("coerce"))
@@ -406,6 +409,9 @@ class DataObj(object):
                 return True
             else:
                 return False
+
+        if instructions is None:
+            instructions = {}
 
         kwargs = construct_kwargs(type, "set", instructions)
         coerce_fn = self._coerce_map.get(instructions.get("coerce"))
@@ -933,6 +939,9 @@ def construct_merge(target, source):
             merged["structs"] = {}
         if field not in merged["structs"]:
             merged["structs"][field] = deepcopy(struct)
+        else:
+            # recursively merge
+            merged["structs"][field] = construct_merge(merged["structs"][field], struct)
 
     return merged
 
