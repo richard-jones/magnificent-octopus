@@ -233,6 +233,9 @@ class DataObj(object):
         # run the object's native validation routine
         self.custom_validate()
 
+        # finally, kick the request up
+        super(DataObj, self).__init__()
+
     def __getattr__(self, name):
         if hasattr(self.__class__, name):
             return object.__getattribute__(self, name)
