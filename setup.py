@@ -17,7 +17,8 @@ setup(
         "Flask-Mail==0.9.1",
         "python-dateutil",
         "unidecode",
-        "tablib"
+        "tablib",
+        "objectpath"
     ],
     url = 'http://cottagelabs.com/',
     author = 'Cottage Labs',
