@@ -8,10 +8,55 @@ import os, threading
 from octopus.lib import plugin
 from octopus.modules.es.initialise import put_mappings, put_example
 
+class ESInstanceDAO(esprit.dao.DAO):
+    def __init__(self, type=None, raw=None, *args, **kwargs):
+        self._conn = esprit.raw.Connection(app.config.get('ELASTIC_SEARCH_HOST'), app.config.get('ELASTIC_SEARCH_INDEX'))
+        self._es_version = app.config.get("ELASTIC_SEARCH_VERSION")
+        self._type = type if type is not None else "index"
+        super(ESInstanceDAO, self).__init__(raw=raw)
+
+    def save(self, **kwargs):
+        self.prep()
+        super(ESInstanceDAO, self).save(**kwargs)
+
+    def json(self):
+        return jsonlib.dumps(self.data)
+
+    def mapping(self):
+        return {
+            self._type : mappings.for_type(
+                self._type,
+                    mappings.properties(mappings.type_mapping("location", "geo_point")),
+                    mappings.dynamic_templates(
+                    [
+                        mappings.EXACT,
+                    ]
+                )
+            )
+        }
+
+    def _get_connection(self):
+        return self._conn
+
+    def _get_write_type(self):
+        return self._type
+
+    def _get_read_types(self):
+        return [self._type]
+
+    ############################################
+    # subclasses should implement these methods if they want them
+
+    def prep(self):
+        pass
+
 class ESDAO(esprit.dao.DomainObject):
     __type__ = 'index'
     __conn__ = esprit.raw.Connection(app.config.get('ELASTIC_SEARCH_HOST'), app.config.get('ELASTIC_SEARCH_INDEX'))
     __es_version__ = app.config.get("ELASTIC_SEARCH_VERSION")
+
+    def __init__(self, *args, **kwargs):
+        super(ESDAO, self).__init__(*args, **kwargs)
 
     #####################################################
     ## overrides on Domain Object
