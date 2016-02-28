@@ -8,6 +8,7 @@ arguments and keyword arguments as specified by the caller
 
 from objectpath import Tree
 import types
+from octopus.lib import strings
 
 def _execute(tree, expr):
     gen = tree.execute(expr)
@@ -16,7 +17,8 @@ def _execute(tree, expr):
             vals = [x for x in gen]
         else:
             vals = [gen]
-
+    return vals
+    """
     cleanvals = []
     for v in vals:
         if v.startswith("'") or v.startswith("\""):
@@ -25,6 +27,7 @@ def _execute(tree, expr):
             v = v[:-1]
     cleanvals.append(v)
     return cleanvals
+    """
 
 def add(*args, **kwargs):
     data = args[0]
@@ -47,3 +50,14 @@ def opath(*args, **kwargs):
         outputs += vals
 
     return outputs
+
+def ascii_unpunc(*args, **kwargs):
+    data = args[0]
+    doc = Tree(data)
+
+    todo = []
+    for expr in args[1:]:
+        vals = _execute(doc, expr)
+        todo += vals
+
+    return [strings.normalise(s, ascii=True, unpunc=True, lower=True, spacing=True, strip=True, space_replace=False) for s in todo]

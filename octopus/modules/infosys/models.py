@@ -67,7 +67,7 @@ class InfoSysModel(dataobj.DataObj, dao.ESInstanceDAO):
         self._info_sys_properties["full_struct"] = full_struct
         self._info_sys_properties["record_struct"] = record_struct
         self._info_sys_properties["admin_struct"] = admin_struct
-        self._info_sys_properties["index_rules"] = index_rules
+        self._info_sys_properties["index_rules"] = index_rules if index_rules is not None else []
         self._info_sys_properties["type"] = type
         self._info_sys_properties["args"] = args
         self._info_sys_properties["kwargs"] = kwargs
@@ -95,6 +95,20 @@ class InfoSysModel(dataobj.DataObj, dao.ESInstanceDAO):
         if type is None:
             raise InfoSysException("No 'type' set on InfoSysModel instance")
         return [type]
+
+    ##########################################################
+    ## Standard getters and setters for this object
+
+    @property
+    def record(self):
+        return self._get_single("record")
+
+    @record.setter
+    def record(self, val):
+        type, struct, instructions = dataobj.construct_lookup("record", self._struct)
+        dataobj.construct(val, struct, self._coerce_map)
+        kwargs = dataobj.construct_kwargs(type, "set", instructions)
+        self._set_single("record", val, **kwargs)
 
     ##########################################################
     ## storage methods which mimic the class-method instances in
@@ -146,7 +160,7 @@ class InfoSysModel(dataobj.DataObj, dao.ESInstanceDAO):
             fd = r.get("function", {})
             func_path = app.config.get("INDEX_FUNCTIONS_MODULE") + "." + fd.get("name")
             fn = plugin.load_function(func_path)
-            idx = fn(self.data, *fd.get("args"), **fd.get("kwargs"))
+            idx = fn(self.data, *fd.get("args", []), **fd.get("kwargs", {}))
             if idx is not None:
                 path = "index." + r.get("index_field")
                 if isinstance(idx, list):
