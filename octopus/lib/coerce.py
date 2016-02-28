@@ -1,5 +1,5 @@
 import locale, urlparse
-from octopus.lib import dates
+from octopus.lib import dates, locality
 
 class CoerceFactory(object):
 
@@ -130,6 +130,12 @@ def to_bool(val):
 
     raise ValueError(u"Could not convert {val} to boolean. Expect either boolean or string.".format(val=val))
 
+def to_currency_code(val):
+    l = locality.Locality()
+    cc = l.currency_code_for(val)
+    if cc is None:
+        raise ValueError(u"Could not map {x} to a known currency code".format(x=val))
+    return cc
 
 ##############################################################
 ## Data coerce closures
