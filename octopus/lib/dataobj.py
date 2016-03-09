@@ -911,7 +911,12 @@ def construct(obj, struct, coerce, context="", silent_prune=False):
         return None
 
     # check that all the required fields are there
-    keys = obj.keys()
+    try:
+        keys = obj.keys()
+    except:
+        c = context if context != "" else "root"
+        raise DataStructureException(u"Expected an object at {c} but found something else instead".format(c=c))
+
     for r in struct.get("required", []):
         if r not in keys:
             c = context if context != "" else "root"
@@ -979,6 +984,8 @@ def construct(obj, struct, coerce, context="", silent_prune=False):
         vals = obj.get(field_name)
         if vals is None:
             continue
+        if not isinstance(vals, list):
+            raise DataStructureException(u"Expecting list at {x} but found something else".format(x=context + field_name))
 
         # prep the keyword arguments for the setters
         kwargs = construct_kwargs("list", "set", instructions)
