@@ -13,7 +13,7 @@ class BaseReader(object):
             self.file = path
         else:
             self.path = path
-        super(BaseReader, self).__init__()
+        super(BaseReader, self).__init__(*args, **kwargs)
 
     def read(self, *args, **kwargs):
         pass

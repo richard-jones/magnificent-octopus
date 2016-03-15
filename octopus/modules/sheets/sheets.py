@@ -74,6 +74,9 @@ class ObjectByRow(StructuralSheet):
             yield obj
 
     def add_spec(self, col_name, trim=True, normalised_name=None, default=None, coerce=None, ignore_values=None):
+        coerce = coerce if coerce is not None else []
+        ignore_values = ignore_values if ignore_values is not None else []
+
         # coerce all the values
         uc = CoerceFactory.get("unicode")
         col_name = uc(col_name)
@@ -102,14 +105,14 @@ class ObjectByRow(StructuralSheet):
             raw["normalised_name"] = normalised_name
 
         # the list of coerce functions (by name)
-        if coerce is None:
+        if len(coerce) == 0:
             raw["coerce"] = []
         else:
             named = [c if isinstance(c, basestring) else c.func_name for c in coerce]
             raw["coerce"] = named
 
         # the list of ignore values
-        if ignore_values is None:
+        if len(ignore_values) == 0:
             raw["ignore_values"] = []
         else:
             raw["ignore_values"] = ignore_values
@@ -128,8 +131,11 @@ class ObjectByRow(StructuralSheet):
         fields = {}
         for s in self.raw_spec:
             cs = s.get("coerce", ["unicode"])
-            c = cs[len(cs) - 1]
-            fields[s.get("normalised_name")] = {"coerce" : c}
+            if len(cs) > 0:
+                c = cs[len(cs) - 1]
+                fields[s.get("normalised_name")] = {"coerce" : c}
+            else:
+                fields[s.get("normalised_name")] = {}
         struct = { "fields" : fields }
         return struct
 

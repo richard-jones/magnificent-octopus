@@ -1,0 +1,3 @@
+Column A,Column B,Column C,Column D,Column E
+Value 1   ,"1,000","2,000",Ignore 1,No Trim  
+Value 2,"3,000",,Ignore 2,No Trim   
