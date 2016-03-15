@@ -183,7 +183,7 @@ class DataObj(object):
         "currency_code" : coerce_lib.to_currency_code
     }
 
-    def __init__(self, raw=None, struct=None, construct_raw=True, expose_data=False, properties=None, coerce_map=None, construct_silent_prune=False):
+    def __init__(self, raw=None, struct=None, construct_raw=True, expose_data=False, properties=None, coerce_map=None, construct_silent_prune=False, *args, **kwargs):
         # make a shortcut to the object.__getattribute__ function
         og = object.__getattribute__
 
@@ -235,7 +235,7 @@ class DataObj(object):
         self.custom_validate()
 
         # finally, kick the request up
-        super(DataObj, self).__init__()
+        super(DataObj, self).__init__(*args, **kwargs)
 
     def __getattr__(self, name):
         if hasattr(self.__class__, name):
@@ -329,8 +329,9 @@ class DataObj(object):
             if wrapper is not None:
                 if isinstance(val, dict):
                     return wrapper(val, expose_data=self._expose_data)
-                elif isinstance(val, list):
-                    return [wrapper(v, expose_data=self._expose_data) for v in val]
+                elif isinstance(val, list) and len(val) > 0:
+                    if isinstance(val[0], dict):    # just check the first one
+                        return [wrapper(v, expose_data=self._expose_data) for v in val]
 
             # otherwise, return the raw value if it is not None, or raise an AttributeError
             if val is None:
