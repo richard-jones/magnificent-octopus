@@ -1,21 +1,27 @@
 from unittest import TestCase
 from octopus.modules.sheets import sheets, commasep
 from octopus.modules.sheets.tests import fixtures
+import os
 
 class TestModels(TestCase):
     def setUp(self):
         super(TestModels, self).setUp()
+        self.test_files = []
 
     def tearDown(self):
         super(TestModels, self).tearDown()
+        for tf in self.test_files:
+            try:
+                os.remove(tf)
+            except:
+                pass
 
     def test_01_read_simple_csv(self):
         spec = fixtures.SheetsFixtureFactory.test_spec()
         path = fixtures.SheetsFixtureFactory.simple_test_file_path()
 
         reader = commasep.CsvReader(path)
-        obr = sheets.ObjectByRow(reader, spec)
-        obr.read()
+        obr = sheets.ObjectByRow(reader=reader, spec=spec)
 
         dicts = [d for d in obr.dicts()]
         assert len(dicts) == 2
@@ -48,8 +54,7 @@ class TestModels(TestCase):
         path = fixtures.SheetsFixtureFactory.encoded_test_file_path()
 
         reader = commasep.CsvReader(path)
-        obr = sheets.ObjectByRow(reader, spec)
-        obr.read()
+        obr = sheets.ObjectByRow(reader=reader, spec=spec)
 
         dicts = [d for d in obr.dicts()]
         assert len(dicts) == 2
@@ -82,8 +87,7 @@ class TestModels(TestCase):
         path = fixtures.SheetsFixtureFactory.complex_test_file_path()
 
         reader = commasep.CsvReader(path)
-        obr = sheets.ObjectByRow(reader, spec)
-        obr.read()
+        obr = sheets.ObjectByRow(reader=reader, spec=spec)
 
         dicts = [d for d in obr.dicts()]
         assert len(dicts) == 2
@@ -112,3 +116,28 @@ class TestModels(TestCase):
 
         assert two
         assert three
+
+    def test_04_read_write(self):
+        spec = fixtures.SheetsFixtureFactory.test_spec()
+        path = fixtures.SheetsFixtureFactory.make_writable_source()
+        self.test_files.append(path)
+
+        reader = commasep.CsvReader(path)
+        writer = commasep.CsvWriter(path)
+        obr = sheets.ObjectByRow(reader=reader, writer=writer, spec=spec)
+
+        assert len(obr.dicts()) == 2
+
+        dicts = obr.dicts()
+        dicts[0]["column_a"] = "Updated Value"
+
+        obr.write()
+
+        reader2 = commasep.CsvReader(path)
+        obr2 = sheets.ObjectByRow(reader=reader, spec=spec)
+
+        found = False
+        for d in obr2.dicts():
+            if d.get("column_a") == "Updated Value":
+                found = True
+        assert found is True

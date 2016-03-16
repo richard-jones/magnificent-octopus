@@ -1,5 +1,6 @@
 from copy import deepcopy
 from octopus.lib import paths
+import shutil
 
 class SheetsFixtureFactory(object):
 
@@ -23,63 +24,75 @@ class SheetsFixtureFactory(object):
     def complex_test_file_path(cls):
         return paths.rel2abs(__file__, "..", "resources", "test_complex.csv")
 
-TEST_SPEC = [
-    {
-        "col_name" : "Column A",
-        "trim" : True,
-        "normalised_name" : "column_a",
-        "default" : None,
-        "coerce" : ["unicode"],
-        "ignore_values" : []
-    },
-    {
-        "col_name" : "Column B",
-        "trim" : True,
-        "normalised_name" : "column_b",
-        "default" : None,
-        "coerce" : ["unicode"],
-        "ignore_values" : []
-    },
-    {
-        "col_name" : "Column C",
-        "trim" : True,
-        "normalised_name" : "column_c",
-        "default" : None,
-        "coerce" : ["unicode"],
-        "ignore_values" : []
-    },
-    {
-        "col_name" : "Column D",
-        "trim" : True,
-        "normalised_name" : "column_d",
-        "default" : None,
-        "coerce" : ["unicode"],
-        "ignore_values" : []
-    }
-]
+    @classmethod
+    def make_writable_source(cls):
+        source = paths.rel2abs(__file__, "..", "resources", "test.csv")
+        target = paths.rel2abs(__file__, "..", "resources", "test_read_write.csv")
+        shutil.copyfile(source, target)
+        return target
 
-COMPLEX_SPEC = [
-    {
-        "col_name" : "Column A",
-        "normalised_name" : "column_a",
-        "ignore_values" : ["Value 2"],
-        "trim" : True
-    },
-    {
-        "col_name" : "Column B",
-        "coerce" : ["integer"],
-    },
-    {
-        "col_name" : "Column C",
-        "coerce" : ["integer", "unicode"],
-        "default" : "100"
-    },
-    {
-        "col_name" : "Column D",
-        "ignore_values" : ["Ignore 1", "Ignore 2"]
-    },
-    {
-        "col_name" : "Column E",
-        "trim" : False
-    }
-]
+TEST_SPEC = {
+
+    "columns" : [
+        {
+            "col_name" : "Column A",
+            "trim" : True,
+            "normalised_name" : "column_a",
+            "default" : None,
+            "coerce" : ["unicode"],
+            "ignore_values" : []
+        },
+        {
+            "col_name" : "Column B",
+            "trim" : True,
+            "normalised_name" : "column_b",
+            "default" : None,
+            "coerce" : ["unicode"],
+            "ignore_values" : []
+        },
+        {
+            "col_name" : "Column C",
+            "trim" : True,
+            "normalised_name" : "column_c",
+            "default" : None,
+            "coerce" : ["unicode"],
+            "ignore_values" : []
+        },
+        {
+            "col_name" : "Column D",
+            "trim" : True,
+            "normalised_name" : "column_d",
+            "default" : None,
+            "coerce" : ["unicode"],
+            "ignore_values" : []
+        }
+    ]
+}
+
+COMPLEX_SPEC = {
+    "columns" : [
+        {
+            "col_name" : "Column A",
+            "normalised_name" : "column_a",
+            "ignore_values" : ["Value 2"],
+            "trim" : True
+        },
+        {
+            "col_name" : "Column B",
+            "coerce" : ["integer"],
+        },
+        {
+            "col_name" : "Column C",
+            "coerce" : ["integer", "unicode"],
+            "default" : "100"
+        },
+        {
+            "col_name" : "Column D",
+            "ignore_values" : ["Ignore 1", "Ignore 2"]
+        },
+        {
+            "col_name" : "Column E",
+            "trim" : False
+        }
+    ]
+}

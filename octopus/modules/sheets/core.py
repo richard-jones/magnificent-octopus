@@ -20,13 +20,23 @@ class BaseReader(object):
 
 class BaseWriter(object):
     def __init__(self, path, *args, **kwargs):
-        super(BaseWriter, self).__init__()
+        self.file = None
+        self.path = None
 
-    def write(self, *args, **kwargs):
+        if type(path) == file:
+            self.file = path
+        else:
+            self.path = path
+        super(BaseWriter, self).__init__(*args, **kwargs)
+
+    def write(self, rows, *args, **kwargs):
         pass
 
 class StructuralSheet(object):
     def read(self, *args, **kwargs):
+        pass
+
+    def write(self, *args, **kwargs):
         pass
 
     def dicts(self):

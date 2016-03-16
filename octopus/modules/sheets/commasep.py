@@ -1,6 +1,6 @@
 from octopus.core import app
 from octopus.modules.sheets.core import BaseReader, BaseWriter, FileReadException, DataStructureException
-import csv, codecs, tablib
+import csv, codecs, tablib, cStringIO
 
 class CsvReader(BaseReader):
 
@@ -63,6 +63,32 @@ class CsvReader(BaseReader):
     def _is_empty(self, row):
         return sum([1 if c is not None and c != "" else 0 for c in row]) == 0
 
+class CsvWriter(BaseWriter):
+    def __init__(self, path, output_encoding=None):
+        super(CsvWriter, self).__init__(path)
+
+        self.output_encoding = output_encoding if output_encoding is not None else app.config.get("CSV_READER_OUTPUT_ENCODING", "utf-8")
+
+    def write(self, rows, close=True, *args, **kwargs):
+        """
+        Write and close the file.
+        """
+        if self.path is not None:
+            self.file = codecs.open(self.path, "wb", encoding=self.output_encoding)
+        elif self.file is not None:
+            if self.file.closed:
+                self.file = codecs.open(self.file.name, "wb", encoding=self.output_encoding)
+            else:
+                self.file.seek(0)
+                self.file.truncate()
+
+        # Write new CSV data
+        writer = UnicodeWriter(self.file, encoding=self.output_encoding)
+        writer.writerows(rows)
+
+        if close:
+            self.file.close()
+
 class UnicodeReader:
     """
     A CSV reader which will iterate over lines in the CSV file "f",
@@ -97,6 +123,37 @@ class UTF8Recoder:
             raw = raw.replace(codecs.BOM_UTF8, '', 1)
         return raw
 
-class CsvWriter(BaseWriter):
-    def write(self, *args, **kwargs):
-        pass
+class UnicodeWriter:
+    """
+    A CSV writer which will write rows to CSV file "f",
+    which is encoded in the given encoding.
+    """
+
+    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+        # Redirect output to a queue
+        self.queue = cStringIO.StringIO()
+        self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
+        self.stream = f
+        self.encoder = codecs.getincrementalencoder(encoding)()
+        self.encoding = encoding
+
+    def writerow(self, row):
+        encoded_row = []
+        for s in row:
+            if s is None:
+                s = ''
+            if not isinstance(s, basestring):
+                s = str(s)
+            encoded_row.append(s.encode(self.encoding))
+        self.writer.writerow(encoded_row)
+        # Fetch UTF-8 output from the queue ...
+        data = self.queue.getvalue()
+        data = data.decode(self.encoding)
+        # write to the target stream
+        self.stream.write(data)
+        # empty queue
+        self.queue.truncate(0)
+
+    def writerows(self, rows):
+        for row in rows:
+            self.writerow(row)
