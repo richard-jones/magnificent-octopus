@@ -1,6 +1,6 @@
 from octopus.core import app
 from octopus.modules.sheets.core import BaseReader, BaseWriter, FileReadException, DataStructureException
-import csv, codecs, tablib, cStringIO
+import csv, codecs, cStringIO
 
 class CsvReader(BaseReader):
 
@@ -8,13 +8,26 @@ class CsvReader(BaseReader):
         "excel" : csv.excel
     }
 
-    def __init__(self, path, input_encoding=None, try_other_encodings=True, fallback_encodings=None, input_dialect=None):
+    def __init__(self, path, input_encoding=None, try_other_encodings=True, fallback_encodings=None, input_dialect=None, rectangular=True):
+        """
+        Set up a csv reader around the specified path (which may also be a file object)
+
+        :param path:    path to file, or file-like object
+        :param input_encoding:  expected input encoding (set from config if not set here)
+        :param try_other_encodings: if the expected input encoding doesn't work, should we try others
+        :param fallback_encodings:  if we are trying other encodings, use this list  (set from config if not set here)
+        :param input_dialect: name of the dialect.  Allowed values are "excel".  (set from config if not set here)
+        :param rectangular: should the resulting csv be rectangular.  Usually this is true, and if a csv is not rectangular, it may indicate a failure to correctly interpret the encoding)
+        :return:
+        """
         super(CsvReader, self).__init__(path)
 
         self.try_other_encodings = try_other_encodings
         self.input_encoding = input_encoding if input_encoding is not None else app.config.get("CSV_READER_INPUT_ENCODING", "utf-8")
         self.fallback_encodings = fallback_encodings if fallback_encodings is not None else app.config.get("CSV_READER_FALLBACK_ENCODINGS", ["cp1252", "cp1251", "iso-8859-1", "iso-8859-2", "windows-1252", "windows-1251", "mac_roman"])
         self.input_dialect = input_dialect if input_dialect is not None else self.DIALECTS.get(app.config.get("CSV_READER_INPUT_DIALECT", "excel"), csv.excel)
+
+        self.rectangular = True
 
     def read(self):
         if self.path is not None:
@@ -48,20 +61,15 @@ class CsvReader(BaseReader):
 
             reader = UnicodeReader(file_object, dialect=self.input_dialect)
             length = -1
-            self.data = tablib.Dataset()
+            self.data = []
             for row in reader:
-                if length == -1:
+                if length == -1:    # track the length of the first row - everything else needs to be the same length, or we'll throw an error
                     length = len(row)
-                if len(row) != length:
+                if len(row) != length and self.rectangular:
                     raise DataStructureException("Unable to read file into meaningful datastructure using encoding {x}".format(x=self.input_encoding))
-                if self._is_empty(row):
-                    continue
                 self.data.append(row)
         except:
             raise FileReadException("Unable to read file with encoding {x} - likely an encoding problem".format(x=self.input_encoding))
-
-    def _is_empty(self, row):
-        return sum([1 if c is not None and c != "" else 0 for c in row]) == 0
 
 class CsvWriter(BaseWriter):
     def __init__(self, path, output_encoding=None):

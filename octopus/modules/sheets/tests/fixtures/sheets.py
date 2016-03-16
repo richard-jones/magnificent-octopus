@@ -9,6 +9,12 @@ class SheetsFixtureFactory(object):
         return deepcopy(TEST_SPEC)
 
     @classmethod
+    def incomplete_test_spec(cls):
+        incomplete = deepcopy(TEST_SPEC)
+        del incomplete["columns"][3]
+        return incomplete
+
+    @classmethod
     def complex_spec(cls):
         return deepcopy(COMPLEX_SPEC)
 

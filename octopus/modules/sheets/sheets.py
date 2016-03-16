@@ -16,6 +16,11 @@ class ObjectByRow(StructuralSheet):
         Spec is of the following form:
 
         {
+            "from_row" : 0,
+            "to_row" : -1,
+            "from_col" : 0,
+            "to_col" : -1,
+            "ignore_empty_rows" : True,
             "columns" : [
                 {
                     "col_name" : "<name as it appears in the sheet>",
@@ -43,8 +48,20 @@ class ObjectByRow(StructuralSheet):
         self.name_map = {}
         self.column_ordering = []
         self.data = None
+        self.off_spec_data = None
 
         self._is_read = False
+
+        if "from_row" not in self.spec:
+            self.spec["from_row"] = 0
+        if "to_row" not in self.spec:
+            self.spec["to_row"] = -1
+        if "from_col" not in self.spec:
+            self.spec["from_col"] = 0
+        if "to_col" not in self.spec:
+            self.spec["to_col"] = -1
+        if "ignore_empty_rows" not in self.spec:
+            self.spec["ignore_empty_rows"] = True
 
         if spec is not None:
             for s in spec.get("columns", []):
@@ -68,28 +85,37 @@ class ObjectByRow(StructuralSheet):
 
         # create our internal dataset that we'll read from the raw layer
         self.data = []
+        self.off_spec_data = []
 
-        # take the first row as the header row, and translate it
-        headers = raw.lpop()
-        new_headers = [self.name_map.get(x) for x in headers if x in self.name_map]
+        # take the first row as the header row
+        headers = raw.pop(0)
 
-        # set the headers on the raw dataset too, so we can build a dict on it
-        raw.headers = [self.name_map.get(x, x) for x in headers]
+        # go through the rows, translating them to a dictionary with the appropriate
+        # data conversions
+        for row in raw:
+            if self._is_empty(row) and self.spec.get("ignore_empty_rows") is True:
+                continue
 
-        dicts = raw.dict    # an ordered dict
-        raw.wipe()
-        for d in dicts:
-            new_dict = {}
-            empty_row = True
-            for k in d.keys():
-                spec = self.compiled_col_spec.get(k)
-                if spec is not None:
-                    nv = self._apply_spec(d[k], spec)
-                    new_dict[k] = nv
-                    if nv is not None:
+            empty_row = True    # the above code catches initially empty rows, but once we've applied the spec a row may be empty too, so we need to catch that below
+            on_spec = {}
+            off_spec = {}
+            for i in range(len(headers)):
+                h = headers[i]
+                val = row[i]
+                sh = self.name_map.get(h)
+                if sh is not None:
+                    spec = self.compiled_col_spec.get(sh)
+                    on_spec[sh] = self._apply_spec(val, spec)
+                    if on_spec[sh] is not None and on_spec[sh] != "":
                         empty_row = False
+                else:
+                    off_spec[h] = val
+                    if off_spec[h] is not None and off_spec[h] != "":
+                        empty_row = False
+
             if not empty_row:
-                self.data.append(new_dict)
+                self.data.append(on_spec)
+                self.off_spec_data.append(off_spec)
 
         self._is_read = True
 
@@ -205,8 +231,14 @@ class ObjectByRow(StructuralSheet):
         self.name_map[comp.get("col_name")] = comp.get("normalised_name")
         self.column_ordering.append(comp.get("normalised_name"))
 
+    def off_spec_dicts(self):
+        return self.off_spec_data
+
     ###################################################
     ## Internal methods
+
+    def _is_empty(self, row):
+        return sum([1 if c is not None and c != "" else 0 for c in row]) == 0
 
     def _normalise(self, col_name):
         return strings.normalise(col_name, ascii=True, unpunc=True, lower=True, spacing=True, strip=True, space_replace="_")

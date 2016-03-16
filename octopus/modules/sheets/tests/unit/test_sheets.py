@@ -141,3 +141,33 @@ class TestModels(TestCase):
             if d.get("column_a") == "Updated Value":
                 found = True
         assert found is True
+
+    def test_05_off_spec(self):
+        spec = fixtures.SheetsFixtureFactory.incomplete_test_spec()
+        path = fixtures.SheetsFixtureFactory.simple_test_file_path()
+
+        reader = commasep.CsvReader(path)
+        obr = sheets.ObjectByRow(reader=reader, spec=spec)
+
+        dicts = [d for d in obr.dicts()]
+        assert len(dicts) == 2
+
+        offspec = [d for d in obr.off_spec_dicts()]
+        assert len(offspec) == 2
+
+        two = False
+        four = False
+        for d in offspec:
+            keys = d.keys()
+            keys.sort()
+            assert keys == ["Column D"]
+            values = d.values()
+            values.sort()
+            if values[0] == "Value D2":
+                assert values == ["Value D2"]
+                two = True
+            else:
+                assert values == ["Value D4"]
+                four = True
+        assert two
+        assert four
