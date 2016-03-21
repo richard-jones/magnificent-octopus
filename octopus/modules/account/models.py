@@ -159,21 +159,12 @@ class ContactableAccount(dataobj.DataObj):
     """
     Extension option for the basic account which adds key user contact details
     {
-        "id" : "<user email address>",
         "name" : "<user's full name>",
         "loc" : {
             "lat" : <latitude>,
             "lon" : <longitude>
         },
         "phone" : "<user's preferred phone number>",
-        "password" : "<hashed password>",
-        "role" : ["<user role>"],
-        "reset_token" : "<password reset token>",
-        "reset_expires" : "<password reset token expiration timestamp>",
-        "activation_token" : "<account activation token>",
-        "activation_expires" : "<account activation token expiration timestamp>",
-        "created_date" : "<date account was created>",
-        "last_updated" : "<date account was last modified>"
     }
     """
 
@@ -232,15 +223,6 @@ class MonitoredAccount(dataobj.DataObj):
     """
     Extension for the basic account that adds delete/ban options
     {
-        "id" : "<user email address>",
-        "password" : "<hashed password>",
-        "role" : ["<user role>"],
-        "reset_token" : "<password reset token>",
-        "reset_expires" : "<password reset token expiration timestamp>",
-        "activation_token" : "<account activation token>",
-        "activation_expires" : "<account activation token expiration timestamp>",
-        "created_date" : "<date account was created>",
-        "last_updated" : "<date account was last modified>",
         "admin" : {
             "deleted" : true|false,
             "banned" : true|false
@@ -268,3 +250,21 @@ class MonitoredAccount(dataobj.DataObj):
     def can_log_in(self):
         return not (self.is_deleted or self.is_banned)
 
+class APIAccount(dataobj.DataObj, dao.APIAccountDAO):
+    """
+    Extension for the basic account that adds api authentication options
+    {
+        "api_key" : "<unique api key for the user>"
+    }
+    """
+
+    @property
+    def api_key(self):
+        return self._get_single("api_key", coerce=self._utf8_unicode())
+
+    @api_key.setter
+    def api_key(self, val):
+        self._set_single("api_key", val, coerce=self._utf8_unicode())
+
+    def generate_api_key(self):
+        self.api_key = uuid.uuid4().hex

@@ -52,6 +52,35 @@ class BasicAccountDAO(dao.ESDAO):
             return None
         return acc
 
+class APIAccountDAO(dao.ESDAO):
+    __type__ = "account"
+
+    @classmethod
+    def get_by_api_key(cls, api_key):
+        q = APIKeyQuery(api_key)
+        accs = cls.object_query(q=q.query())
+        if len(accs) > 1:
+            raise NonUniqueAccountException("There is more than one user account with the requested API Key (redacted from logs)")
+        elif len(accs) == 0:
+            return None
+
+        acc = accs[0]
+        return acc
+
+class APIKeyQuery(object):
+    def __init__(self, api_key):
+        self.api_key = api_key
+
+    def query(self):
+        return {
+            "query" : {
+                "bool" : {
+                    "must" : [
+                        {"term" : {"api_key.exact" : self.api_key}}
+                    ]
+                }
+            }
+        }
 
 class AccountQuery(object):
     def __init__(self, email=None, reset_token=None, activation_token=None):
