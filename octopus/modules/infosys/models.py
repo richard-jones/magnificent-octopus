@@ -2,6 +2,7 @@ from octopus.lib import dataobj, plugin
 from octopus.modules.es import dao
 from copy import deepcopy
 from octopus.core import app
+from octopus.modules.crud.models import CRUDObject
 
 class InfoSysException(Exception):
     pass
@@ -176,3 +177,6 @@ class InfoSysModel(dataobj.DataObj, dao.ESInstanceDAO):
     def save(self, conn=None, blocking=False, **kwargs):
         type = self._get_write_type(True)
         super(InfoSysModel, self).save(conn=conn, blocking=blocking, type=type, **kwargs)
+
+class InfoSysCrud(CRUDObject):
+    pass
