@@ -11,6 +11,7 @@ import types
 from octopus.lib import strings
 
 def _execute(tree, expr):
+    vals = None
     gen = tree.execute(expr)
     if gen is not None:
         if isinstance(gen, types.GeneratorType):
@@ -18,16 +19,6 @@ def _execute(tree, expr):
         else:
             vals = [gen]
     return vals
-    """
-    cleanvals = []
-    for v in vals:
-        if v.startswith("'") or v.startswith("\""):
-            v = v[1:]
-        if v.endswith("'") or v.endswith("\""):
-            v = v[:-1]
-    cleanvals.append(v)
-    return cleanvals
-    """
 
 def add(*args, **kwargs):
     data = args[0]
@@ -36,7 +27,8 @@ def add(*args, **kwargs):
     summable = []
     for expr in args[1:]:
         vals = _execute(doc, expr)
-        summable += vals
+        if vals is not None:
+            summable += vals
 
     return sum(summable)
 
@@ -47,7 +39,8 @@ def opath(*args, **kwargs):
     outputs = []
     for expr in args[1:]:
         vals = _execute(doc, expr)
-        outputs += vals
+        if vals is not None:
+            outputs += vals
 
     return outputs
 
@@ -58,6 +51,7 @@ def ascii_unpunc(*args, **kwargs):
     todo = []
     for expr in args[1:]:
         vals = _execute(doc, expr)
-        todo += vals
+        if vals is not None:
+            todo += vals
 
     return [strings.normalise(s, ascii=True, unpunc=True, lower=True, spacing=True, strip=True, space_replace=False) for s in todo]
