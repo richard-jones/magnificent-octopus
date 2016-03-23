@@ -1,11 +1,16 @@
 from flask import Blueprint, make_response, url_for, request, abort
 import json
-from octopus.lib.dataobj import ObjectSchemaValidationError
+from octopus.lib.dataobj import ObjectSchemaValidationError, DataSchemaException, DataStructureException
 from octopus.core import app
 from octopus.lib import webapp
 from octopus.modules.crud.factory import CRUDFactory
+from octopus.modules.account.factory import AccountFactory
+from octopus.modules.crud import models
 
 blueprint = Blueprint('crud', __name__)
+
+################################################
+## Pre-packaged response codes and bodies
 
 def _not_found():
     app.logger.debug("Sending 404 Not Found")
@@ -35,6 +40,53 @@ def _success():
     resp = make_response(json.dumps({"status" : "success"}))
     return resp
 
+def _unauthorised(error):
+    app.logger.info("Sending 401 Unauthorised from client: {x} (ref: {y})".format(x=error))
+    resp = make_response(json.dumps({"status" : "unauthorised", "error" : error}))
+    resp.mimetype = "application/json"
+    resp.status_code = 401
+    return resp
+
+def _forbidden(error):
+    app.logger.info("Sending 403 Forbidden from client: {x} (ref: {y})".format(x=error))
+    resp = make_response(json.dumps({"status" : "forbidden", "error" : error}))
+    resp.mimetype = "application/json"
+    resp.status_code = 403
+    return resp
+
+###############################################
+## Authentication/Authorisation
+
+def _auth(container_type, method):
+    cfg = app.config.get("CRUD", {}).get(container_type, {}).get(method, {})
+    if not cfg.get("auth", False):
+        return None
+
+    api_key = request.values.get("api_key")
+    if api_key is None:
+        raise models.AuthenticationException("No API key provided for route which requires authentication")
+
+    klazz = AccountFactory.get_model()
+    try:
+        acc = klazz.get_by_api_key(api_key)
+    except AttributeError:
+        msg = "You have authenticated API routes, but your Account model does not support get_by_api_key"
+        app.logger.error(msg)
+        raise Exception(msg)
+
+    roles = cfg.get("roles", [])
+    if len(roles) == 0:
+        return acc
+
+    for r in roles:
+        if not acc.has_role(r):
+            raise models.AuthorisationException("Your account does not have permission for that action")
+
+    return acc
+
+################################################
+## Web routes
+
 @blueprint.route("/<container_type>", methods=["POST"])
 @webapp.jsonp
 def container(container_type=None):
@@ -47,13 +99,27 @@ def container(container_type=None):
         if klazz is None:
             return _not_found()
 
+        # determine if authNZ is required, and carry it out
+        try:
+            acc = _auth(container_type, "create")
+        except models.AuthenticationException as e:
+            return _unauthorised(e.message)
+        except models.AuthorisationException as e:
+            return _forbidden(e.message)
+
         # get the data from the request
         data = json.loads(request.data)
 
         # make and save a new object
         try:
-            obj = klazz(data, request.headers)
+            obj = klazz(data, request.headers, acc)
         except ObjectSchemaValidationError as e:
+            app.logger.info("Error processing create request {x}".format(x=e.message))
+            return _bad_request(e)
+        except DataSchemaException as e:
+            app.logger.info("Error processing create request {x}".format(x=e.message))
+            return _bad_request(e)
+        except DataStructureException as e:
             app.logger.info("Error processing create request {x}".format(x=e.message))
             return _bad_request(e)
 
@@ -65,7 +131,7 @@ def container(container_type=None):
 
     abort(405)
 
-@blueprint.route("/<container_type>/<type_id>", methods=["GET", "PUT", "DELETE"])
+@blueprint.route("/<container_type>/<path:type_id>", methods=["GET", "PUT", "DELETE"])
 @webapp.jsonp
 def entity(container_type=None, type_id=None):
     if request.method == "GET":
@@ -76,8 +142,16 @@ def entity(container_type=None, type_id=None):
         if klazz is None:
             return _not_found()
 
+        # determine if authNZ is required, and carry it out
+        try:
+            acc = _auth(container_type, "retrieve")
+        except models.AuthenticationException as e:
+            return _unauthorised(e.message)
+        except models.AuthorisationException as e:
+            return _forbidden(e.message)
+
         # get the existing object, json it, and return it
-        obj = klazz.pull(type_id)
+        obj = klazz.pull(type_id, acc)
         if obj is None:
             return _not_found()
 
@@ -93,8 +167,16 @@ def entity(container_type=None, type_id=None):
         if klazz is None:
             return _not_found()
 
+        # determine if authNZ is required, and carry it out
+        try:
+            acc = _auth(container_type, "update")
+        except models.AuthenticationException as e:
+            return _unauthorised(e.message)
+        except models.AuthorisationException as e:
+            return _forbidden(e.message)
+
         # get the existing record
-        obj = klazz.pull(type_id)
+        obj = klazz.pull(type_id, acc)
         if obj is None:
             return _not_found()
 
@@ -103,6 +185,12 @@ def entity(container_type=None, type_id=None):
         try:
             obj.update(data)
         except ObjectSchemaValidationError as e:
+            app.logger.info("Error processing update request {x}".format(x=e.message))
+            return _bad_request(e)
+        except DataSchemaException as e:
+            app.logger.info("Error processing update request {x}".format(x=e.message))
+            return _bad_request(e)
+        except DataStructureException as e:
             app.logger.info("Error processing update request {x}".format(x=e.message))
             return _bad_request(e)
 
@@ -120,7 +208,15 @@ def entity(container_type=None, type_id=None):
         if klazz is None:
             return _not_found()
 
-        obj = klazz.pull(type_id)
+        # determine if authNZ is required, and carry it out
+        try:
+            acc = _auth(container_type, "delete")
+        except models.AuthenticationException as e:
+            return _unauthorised(e.message)
+        except models.AuthorisationException as e:
+            return _forbidden(e.message)
+
+        obj = klazz.pull(type_id, acc)
         if obj is None:
             return _not_found()
         obj.delete()

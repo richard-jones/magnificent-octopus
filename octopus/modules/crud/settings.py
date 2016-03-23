@@ -7,16 +7,24 @@ CRUD = {
     "payment" : {
         "model" : "service.models.CRUDPayment",
         "create" : {
-            "enable" : True
+            "enable" : True,
+            "auth" : True,
+            "roles" : []
         },
         "retrieve" : {
-            "enable" : True
+            "enable" : True,
+            "auth" : True,
+            "roles" : []
         },
         "update" : {
-            "enable" : True
+            "enable" : True,
+            "auth" : True,
+            "roles" : []
         },
         "delete" : {
-            "enable" : True
+            "enable" : True,
+            "auth" : True,
+            "roles" : []
         }
     }
 }

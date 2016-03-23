@@ -1,11 +1,17 @@
 from octopus.core import app
 
+class AuthenticationException(Exception):
+    pass
+
+class AuthorisationException(Exception):
+    pass
+
 class CRUDObject(object):
-    def __init__(self, raw=None, headers=None):
+    def __init__(self, raw=None, headers=None, account=None):
         pass
 
     @classmethod
-    def pull(cls, id):
+    def pull(cls, id, account=None):
         raise NotImplementedError()
 
     @property
