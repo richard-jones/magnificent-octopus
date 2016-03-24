@@ -106,10 +106,21 @@ class InfoSysModel(dataobj.DataObj, dao.ESInstanceDAO):
 
     @record.setter
     def record(self, val):
+        """
         type, struct, instructions = dataobj.construct_lookup("record", self._struct)
         dataobj.construct(val, struct, self._coerce_map)
         kwargs = dataobj.construct_kwargs(type, "set", instructions)
         self._set_single("record", val, **kwargs)
+        """
+        self._set_with_struct("record", val)
+
+    @property
+    def admin(self):
+        return self._get_single("admin")
+
+    @admin.setter
+    def admin(self, val):
+        self._set_with_struct("admin", val)
 
     ##########################################################
     ## storage methods which mimic the class-method instances in
