@@ -26,29 +26,62 @@ def _bad_request(e):
     resp.status_code = 400
     return resp
 
-def _created(obj, container_type):
+def _created(obj, container_type, include_location=True):
     app.logger.info("Sending 201 Created: {x} {y}".format(x=container_type, y=obj.id))
-    url = url_for("crud.entity", container_type=container_type, type_id=obj.id)
-    resp = make_response(json.dumps({"status" : "success", "id" : obj.id, "location" : url }))
+    body = obj.created_response()
+    if include_location:
+        if body is None:
+            body = {}
+        if "location" not in body:
+            location = url_for("crud.entity", container_type=container_type, type_id=obj.id)
+            body["location"] = location
+    resp = make_response(json.dumps(body))
     resp.mimetype = "application/json"
-    resp.headers["Location"] = url
+    if include_location:
+        resp.headers["Location"] = body["location"]
     resp.status_code = 201
+    return resp
+
+def _updated(obj, container_type, include_location=True):
+    app.logger.info("Sending 200 OK for update: {x} {y}".format(x=container_type, y=obj.id))
+    body = obj.updated_response()
+    if include_location:
+        if body is None:
+            body = {}
+        if "location" not in body:
+            location = url_for("crud.entity", container_type=container_type, type_id=obj.id)
+            body["location"] = location
+    resp = make_response(json.dumps(body))
+    resp.mimetype = "application/json"
+    if include_location:
+        resp.headers["Location"] = body["location"]
+    resp.status_code = 200
+    return resp
+
+def _deleted(obj, container_type):
+    app.logger.info("Sending 200 OK for delete: {x} {y}".format(x=container_type, y=obj.id))
+    body = obj.deleted_response()
+    resp = make_response(json.dumps(body))
+    resp.mimetype = "application/json"
+    resp.status_code = 200
     return resp
 
 def _success():
     app.logger.debug("Sending 200 OK")
     resp = make_response(json.dumps({"status" : "success"}))
+    resp.mimetype = "application/json"
+    resp.status_code = 200
     return resp
 
 def _unauthorised(error):
-    app.logger.info("Sending 401 Unauthorised from client: {x} (ref: {y})".format(x=error))
+    app.logger.info("Sending 401 Unauthorised from client: {x}".format(x=error))
     resp = make_response(json.dumps({"status" : "unauthorised", "error" : error}))
     resp.mimetype = "application/json"
     resp.status_code = 401
     return resp
 
 def _forbidden(error):
-    app.logger.info("Sending 403 Forbidden from client: {x} (ref: {y})".format(x=error))
+    app.logger.info("Sending 403 Forbidden from client: {x}".format(x=error))
     resp = make_response(json.dumps({"status" : "forbidden", "error" : error}))
     resp.mimetype = "application/json"
     resp.status_code = 403
@@ -127,7 +160,8 @@ def container(container_type=None):
         obj.save()
 
         # return a useful response
-        return _created(obj, container_type)
+        include_location = app.config.get("CRUD", {}).get(container_type, {}).get("create", {}).get("response", {}).get("location", True)
+        return _created(obj, container_type, include_location)
 
     abort(405)
 
@@ -198,7 +232,50 @@ def entity(container_type=None, type_id=None):
         obj.save()
 
         # return a useful response object
-        return _success()
+        include_location = app.config.get("CRUD", {}).get(container_type, {}).get("update", {}).get("response", {}).get("location", True)
+        return _updated(obj, container_type, include_location)
+
+    elif request.method == "POST":
+        app.logger.info("Append request for {x} {y}".format(x=container_type, y=type_id))
+
+        # load the data management class for this operation type
+        klazz = CRUDFactory.get_class(container_type, "append")
+        if klazz is None:
+            return _not_found()
+
+        # determine if authNZ is required, and carry it out
+        try:
+            acc = _auth(container_type, "append")
+        except models.AuthenticationException as e:
+            return _unauthorised(e.message)
+        except models.AuthorisationException as e:
+            return _forbidden(e.message)
+
+        # get the existing record
+        obj = klazz.pull(type_id, acc)
+        if obj is None:
+            return _not_found()
+
+        # ge the data to replace the object
+        data = json.loads(request.data)
+        try:
+            obj.append(data)
+        except ObjectSchemaValidationError as e:
+            app.logger.info("Error processing append request {x}".format(x=e.message))
+            return _bad_request(e)
+        except DataSchemaException as e:
+            app.logger.info("Error processing append request {x}".format(x=e.message))
+            return _bad_request(e)
+        except DataStructureException as e:
+            app.logger.info("Error processing append request {x}".format(x=e.message))
+            return _bad_request(e)
+
+        # call save on the object
+        obj.save()
+
+        # return a useful response object
+        include_location = app.config.get("CRUD", {}).get(container_type, {}).get("update", {}).get("response", {}).get("location", True)
+        return _updated(obj, container_type, include_location)
 
     elif request.method == "DELETE":
         app.logger.info("Delete request for {x} {y}".format(x=container_type, y=type_id))
@@ -219,9 +296,13 @@ def entity(container_type=None, type_id=None):
         obj = klazz.pull(type_id, acc)
         if obj is None:
             return _not_found()
-        obj.delete()
+
+        try:
+            obj.delete()
+        except models.AuthorisationException as e:
+            return _forbidden(e.message)
 
         # return a useful response object
-        return _success()
+        return _deleted(obj, container_type)
 
     abort(405)

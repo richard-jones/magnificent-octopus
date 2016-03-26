@@ -27,8 +27,20 @@ class CRUDObject(object):
     def update(self, data, headers=None):
         raise NotImplementedError()
 
+    def append(self, data, headers=None):
+        raise NotImplementedError()
+
     def delete(self):
         raise NotImplementedError()
+
+    def created_response(self):
+        return {"status" : "created", "id" : self.id }
+
+    def updated_response(self):
+        return {"status" : "updated", "id" : self.id }
+
+    def deleted_response(self):
+        return {"status" : "deleted", "id" : self.id }
 
 
 class ES_CRUD_Wrapper(CRUDObject):

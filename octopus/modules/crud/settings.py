@@ -9,7 +9,10 @@ CRUD = {
         "create" : {
             "enable" : True,
             "auth" : True,
-            "roles" : []
+            "roles" : [],
+            "response" : {
+                "location" : True
+            }
         },
         "retrieve" : {
             "enable" : True,
@@ -19,7 +22,18 @@ CRUD = {
         "update" : {
             "enable" : True,
             "auth" : True,
-            "roles" : []
+            "roles" : [],
+            "response" : {
+                "location" : True
+            }
+        },
+        "append" : {
+            "enable" : True,
+            "auth" : True,
+            "roles" : [],
+            "response" : {
+                "location" : True
+            }
         },
         "delete" : {
             "enable" : True,
