@@ -25,7 +25,7 @@ def load_class(classpath, cache_class_ref=True):
 
     klazz = load_class_raw(classpath)
     if klazz is None:
-        app.logger.info("Could not load function {x}".format(x=classpath))
+        app.logger.info("Could not load class {x}".format(x=classpath))
         return None
 
     if cache_class_ref:
