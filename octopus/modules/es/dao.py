@@ -582,3 +582,28 @@ class QueryStringQuery(object):
             "from" : self.fro,
             "size" : self.psize
         }
+
+class SearchAPIQuery(object):
+    def __init__(self, qs, fro, psize, sortby, sortdir, acc):
+        self.qs = qs
+        self.fro = fro if fro is not None else 0
+        self.psize = psize if psize is not None else 10
+        self.sortby = sortby    # this can be left as None if no sorting is required
+        self.sortdir = sortdir if sortby is not None else "asc"
+        self.acc = acc
+
+    def query(self):
+        q = {
+            "query" :{
+                "query_string" : {
+                    "query" : self.qs
+                }
+            },
+            "from" : self.fro,
+            "size" : self.psize,
+        }
+
+        if self.sortby is not None:
+            q["sort"] = [{self.sortby : {"order" : self.sortdir, "mode" : "min"}}]
+
+        return q
