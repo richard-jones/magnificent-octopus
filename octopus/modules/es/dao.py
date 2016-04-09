@@ -8,10 +8,55 @@ import os, threading
 from octopus.lib import plugin
 from octopus.modules.es.initialise import put_mappings, put_example
 
+class ESInstanceDAO(esprit.dao.DAO):
+    def __init__(self, type=None, raw=None, *args, **kwargs):
+        self._conn = esprit.raw.Connection(app.config.get('ELASTIC_SEARCH_HOST'), app.config.get('ELASTIC_SEARCH_INDEX'))
+        self._es_version = app.config.get("ELASTIC_SEARCH_VERSION")
+        self._type = type if type is not None else "index"
+        super(ESInstanceDAO, self).__init__(raw=raw)
+
+    def save(self, **kwargs):
+        self.prep()
+        super(ESInstanceDAO, self).save(**kwargs)
+
+    def json(self):
+        return jsonlib.dumps(self.data)
+
+    def mapping(self):
+        return {
+            self._type : mappings.for_type(
+                self._type,
+                    mappings.properties(mappings.type_mapping("location", "geo_point")),
+                    mappings.dynamic_templates(
+                    [
+                        mappings.EXACT,
+                    ]
+                )
+            )
+        }
+
+    def _get_connection(self):
+        return self._conn
+
+    def _get_write_type(self):
+        return self._type
+
+    def _get_read_types(self):
+        return [self._type]
+
+    ############################################
+    # subclasses should implement these methods if they want them
+
+    def prep(self):
+        pass
+
 class ESDAO(esprit.dao.DomainObject):
     __type__ = 'index'
     __conn__ = esprit.raw.Connection(app.config.get('ELASTIC_SEARCH_HOST'), app.config.get('ELASTIC_SEARCH_INDEX'))
     __es_version__ = app.config.get("ELASTIC_SEARCH_VERSION")
+
+    def __init__(self, *args, **kwargs):
+        super(ESDAO, self).__init__(*args, **kwargs)
 
     #####################################################
     ## overrides on Domain Object
@@ -84,13 +129,17 @@ class RollingTypeESDAO(ESDAO):
     def _roll_dir(cls):
         return os.path.join(app.config.get("ESDAO_ROLLING_DIR"), cls.__type__)
 
+    # FIXME: these methods are not thread-safe.  We need to migrate to ES's index alias
+    # feature instead
     @classmethod
     def _get_cfg(cls, pos):
-        return app.config.get("ESDAO_ROLLING_{x}_{y}".format(x=pos.upper(), y=cls.__type__.upper()))
+        # return app.config.get("ESDAO_ROLLING_{x}_{y}".format(x=pos.upper(), y=cls.__type__.upper()))
+        return None
 
     @classmethod
     def _set_cfg(cls, pos, val):
-        app.config["ESDAO_ROLLING_{x}_{y}".format(x=pos.upper(), y=cls.__type__.upper())] = val
+        # app.config["ESDAO_ROLLING_{x}_{y}".format(x=pos.upper(), y=cls.__type__.upper())] = val
+        pass
 
     @classmethod
     def _get_file(cls, pos):
@@ -533,3 +582,28 @@ class QueryStringQuery(object):
             "from" : self.fro,
             "size" : self.psize
         }
+
+class SearchAPIQuery(object):
+    def __init__(self, qs, fro, psize, sortby, sortdir, acc):
+        self.qs = qs
+        self.fro = fro if fro is not None else 0
+        self.psize = psize if psize is not None else 10
+        self.sortby = sortby    # this can be left as None if no sorting is required
+        self.sortdir = sortdir if sortby is not None else "asc"
+        self.acc = acc
+
+    def query(self):
+        q = {
+            "query" :{
+                "query_string" : {
+                    "query" : self.qs
+                }
+            },
+            "from" : self.fro,
+            "size" : self.psize,
+        }
+
+        if self.sortby is not None:
+            q["sort"] = [{self.sortby : {"order" : self.sortdir, "mode" : "min"}}]
+
+        return q

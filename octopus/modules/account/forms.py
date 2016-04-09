@@ -128,6 +128,8 @@ class BasicUserFormContext(FormContext):
         self.target.save(blocking=True)
 
     def render_template(self, template=None, **kwargs):
+        if "account" in kwargs:
+            del kwargs["account"]
         return super(BasicUserFormContext, self).render_template(template=template, account=self.source, **kwargs)
 
     #####################################################

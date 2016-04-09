@@ -1,0 +1,1 @@
+INDEX_FUNCTIONS_MODULE = "octopus.modules.infosys.index"

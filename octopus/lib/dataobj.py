@@ -1,4 +1,4 @@
-from octopus.lib import dates
+from octopus.lib import dates, coerce as coerce_lib
 from copy import deepcopy
 import locale, json, urlparse
 
@@ -179,10 +179,11 @@ class DataObj(object):
         "url": to_url,
         "bool": to_bool,
         "isolang_2letter": to_isolang(output_format="alpha2"),
-        "bigenddate" : date_str(out_format="%Y-%m-%d")
+        "bigenddate" : date_str(out_format="%Y-%m-%d"),
+        "currency_code" : coerce_lib.to_currency_code
     }
 
-    def __init__(self, raw=None, struct=None, construct_raw=True, expose_data=False, properties=None, coerce_map=None, construct_silent_prune=False):
+    def __init__(self, raw=None, struct=None, construct_raw=True, expose_data=False, properties=None, coerce_map=None, construct_silent_prune=False, *args, **kwargs):
         # make a shortcut to the object.__getattribute__ function
         og = object.__getattribute__
 
@@ -232,6 +233,9 @@ class DataObj(object):
 
         # run the object's native validation routine
         self.custom_validate()
+
+        # finally, kick the request up
+        super(DataObj, self).__init__(*args, **kwargs)
 
     def __getattr__(self, name):
         if hasattr(self.__class__, name):
@@ -325,14 +329,18 @@ class DataObj(object):
             if wrapper is not None:
                 if isinstance(val, dict):
                     return wrapper(val, expose_data=self._expose_data)
-                elif isinstance(val, list):
-                    return [wrapper(v, expose_data=self._expose_data) for v in val]
+                elif isinstance(val, list) and len(val) > 0:
+                    if isinstance(val[0], dict):    # just check the first one
+                        return [wrapper(v, expose_data=self._expose_data) for v in val]
 
             # otherwise, return the raw value if it is not None, or raise an AttributeError
             if val is None:
                 raise AttributeError('{name} is not set'.format(name=path))
 
             return val
+
+        if instructions is None:
+            instructions = {}
 
         # if the struct contains a reference to the path, always return something, even if it is None - don't raise an AttributeError
         kwargs = construct_kwargs(type, "get", instructions)
@@ -406,6 +414,9 @@ class DataObj(object):
                 return True
             else:
                 return False
+
+        if instructions is None:
+            instructions = {}
 
         kwargs = construct_kwargs(type, "set", instructions)
         coerce_fn = self._coerce_map.get(instructions.get("coerce"))
@@ -662,6 +673,33 @@ class DataObj(object):
         # otherwise, append
         current.append(val)
 
+    def _set_with_struct(self, path, val):
+        type, struct, instructions = construct_lookup(path, self._struct)
+        if type == "field":
+            kwargs = construct_kwargs(type, "set", instructions)
+            self._set_single(path, val, **kwargs)
+        elif type == "list":
+            if not isinstance(val, list):
+                val = [val]
+            if struct is not None:
+                val = [construct(x, struct, self._coerce_map) for x in val]
+            kwargs = construct_kwargs(type, "set", instructions)
+            self._set_list(path, val, **kwargs)
+        elif type == "object":
+            if struct is not None:
+                val = construct(val, struct, self._coerce_map)
+            self._set_single(path, val)
+
+    def _add_to_list_with_struct(self, path, val):
+        type, struct, instructions = construct_lookup(path, self._struct)
+        if type != "list":
+            raise DataStructureException(u"Attempt to add to list {x} failed - it is not a list element".format(x=path))
+        if struct is not None:
+            val = construct(val, struct, self._coerce_map)
+        kwargs = construct_kwargs(type, "set", instructions)
+        self._add_to_list(path, val, **kwargs)
+
+
     def _utf8_unicode(self):
         """
         DEPRECATED - use dataobj.to_unicode() instead
@@ -755,6 +793,95 @@ def validate(obj, schema):
 class DataStructureException(Exception):
     pass
 
+class ConstructException(Exception):
+    pass
+
+def construct_validate(struct, context=""):
+    """
+    Is the provided struct of the correct form
+    {
+        "fields" : {
+            "field_name" : {"coerce" :"coerce_function", **kwargs}
+        },
+        "objects" : [
+            "field_name"
+        ],
+        "lists" : {
+            "field_name" : {"contains" : "object|field", "coerce" : "field_coerce_function, **kwargs}
+        },
+        "required" : ["field_name"],
+        "structs" : {
+            "field_name" : {
+                <construct>
+            }
+        }
+    }
+    """
+    # check that only the allowed keys are present
+    keys = struct.keys()
+    for k in keys:
+        if k not in ["fields", "objects", "lists", "required", "structs"]:
+            c = context if context != "" else "root"
+            raise ConstructException(u"Key '{x}' present in struct at '{y}', but is not permitted".format(x=k, y=c))
+
+    # now go through and make sure the fields are the right shape:
+    for field_name, instructions in struct.get("fields", {}).iteritems():
+        if "coerce" not in instructions:
+            c = context if context != "" else "root"
+            raise ConstructException(u"Coerce function not listed in field '{x}' at '{y}'".format(x=field_name, y=c))
+        for k,v in instructions.iteritems():
+            if not isinstance(v, list) and not isinstance(v, basestring):
+                c = context if context != "" else "root"
+                raise ConstructException(u"Argument '{a}' in field '{b}' at '{c}' is not a string or list".format(a=k, b=field_name, c=c))
+
+    # then make sure the objects are ok
+    for o in struct.get("objects", []):
+        if not isinstance(o, basestring):
+            c = context if context != "" else "root"
+            raise ConstructException(u"There is a non-string value in the object list at '{y}'".format(y=c))
+
+    # make sure the lists are correct
+    for field_name, instructions in struct.get("lists", {}).iteritems():
+        contains = instructions.get("contains")
+        if contains is None:
+            c = context if context != "" else "root"
+            raise ConstructException(u"No 'contains' argument in list definition for field '{x}' at '{y}'".format(x=field_name, y=c))
+        if contains not in ["object", "field"]:
+            c = context if context != "" else "root"
+            raise ConstructException(u"'contains' argument in list '{x}' at '{y}' contains illegal value '{z}'".format(x=field_name, y=c, z=contains))
+        for k,v in instructions.iteritems():
+            if not isinstance(v, list) and not isinstance(v, basestring):
+                c = context if context != "" else "root"
+                raise ConstructException(u"Argument '{a}' in list '{b}' at '{c}' is not a string or list".format(a=k, b=field_name, c=c))
+
+    # make sure the requireds are correct
+    for o in struct.get("required", []):
+        if not isinstance(o, basestring):
+            c = context if context != "" else "root"
+            raise ConstructException(u"There is a non-string value in the required list at '{y}'".format(y=c))
+
+    # now do the structs, which will involve some recursion
+    substructs = struct.get("structs", {})
+
+    # first check that there are no previously unknown keys in there
+    possibles = struct.get("objects", []) + struct.get("lists", {}).keys()
+    for s in substructs:
+        if s not in possibles:
+            c = context if context != "" else "root"
+            raise ConstructException(u"struct contains key '{a}' which is not listed in object or list definitions at '{x}'".format(a=s, x=c))
+
+    # now recurse into each struct
+    for k,v in substructs.iteritems():
+        nc = context
+        if nc == "":
+            nc = k
+        else:
+            nc += "." + k
+        construct_validate(v, context=nc)
+
+    return True
+
+
 def construct(obj, struct, coerce, context="", silent_prune=False):
     """
     {
@@ -785,7 +912,12 @@ def construct(obj, struct, coerce, context="", silent_prune=False):
         return None
 
     # check that all the required fields are there
-    keys = obj.keys()
+    try:
+        keys = obj.keys()
+    except:
+        c = context if context != "" else "root"
+        raise DataStructureException(u"Expected an object at {c} but found something else instead".format(c=c))
+
     for r in struct.get("required", []):
         if r not in keys:
             c = context if context != "" else "root"
@@ -853,6 +985,8 @@ def construct(obj, struct, coerce, context="", silent_prune=False):
         vals = obj.get(field_name)
         if vals is None:
             continue
+        if not isinstance(vals, list):
+            raise DataStructureException(u"Expecting list at {x} but found something else".format(x=context + field_name))
 
         # prep the keyword arguments for the setters
         kwargs = construct_kwargs("list", "set", instructions)
@@ -933,6 +1067,9 @@ def construct_merge(target, source):
             merged["structs"] = {}
         if field not in merged["structs"]:
             merged["structs"][field] = deepcopy(struct)
+        else:
+            # recursively merge
+            merged["structs"][field] = construct_merge(merged["structs"][field], struct)
 
     return merged
 

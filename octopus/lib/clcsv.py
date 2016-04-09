@@ -473,6 +473,7 @@ class SheetWrapper(object):
     IGNORE_VALUES = {}
 
     def __init__(self, path=None, writer=None, spec=None):
+        self._sheet = None
         if path is not None:
             self._sheet = ClCsv(path, ignore_blank_rows=True)
         elif writer is not None:
@@ -565,6 +566,8 @@ class SheetWrapper(object):
         return True
 
     def objects(self, use_headers=True, beyond_headers=False):
+        if self._sheet is None:
+            return
         for o in self._sheet.objects():
             no = {}
             for key, val in o.iteritems():

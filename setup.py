@@ -16,7 +16,9 @@ setup(
         "nose",
         "Flask-Mail==0.9.1",
         "python-dateutil",
-        "unidecode"
+        "unidecode",
+        "objectpath",
+        "schedule==0.3.2"
     ],
     url = 'http://cottagelabs.com/',
     author = 'Cottage Labs',

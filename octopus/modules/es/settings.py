@@ -131,16 +131,27 @@ QUERY_FILTERS = {
 # Public Search API Configuration
 ##############################################################
 
-# maximum results per page to return, irrespective of what the user asks for
-SEARCH_MAX_PAGE_SIZE = 100
-
-# DAO through which search requests should pass.  You MUST update this if you are using
-# this module, as the one defined here is just a template
-SEARCH_DAO = "octopus.modules.es.dao.ESDAO"
-
-# reference for a function to which all search results will be passed for filtering
-# before being sent to the user
-SEARCH_RESULT_FILTER = None
+# The search configuration for each mount point
+SEARCHAPI = {
+    "search" : {                                                        # the url path where the search will be mounted
+        "auth" : False,                                                 # whether to authenticate the user
+        "roles" : [],                                                   # roles the authenticated user must have (must have ALL roles)
+        "default_page_size" : 10,                                       # default page size if none specified in request
+        "max_page_size" : 100,                                          # maximum page size, irrespective of what the user asks
+        "search_no_mod" : [],                                           # fields which should not be modified (substituted/prefixed) on search string preparation
+        "search_prefix" : "record.",                                    # every field that does not have a substitution, and does not already start with this string will be prefixed with it
+        "search_subs" : {                                               # when the field on the left is seen, it is substituted for the field on the right
+            "title" : "record.title"
+        },
+        "sort_prefix" : "record.",                                      # every field that does not have a substitution, and does not already start with this string will be prefixed with it
+        "sort_subs" : {
+            "title" : "index.unpunctitle.exact"                         # when the field on the left is seen, it is substituted for the field on the right
+        },
+        "query_builder" : "octopus.modules.es.dao.SearchAPIQuery",      # class to use to build the query.  Implementations may use this to apply specific constraints.  Should extend octopus.modules.es.dao.SearchAPIQuery
+        "dao" : "octopus.modules.es.dao.ESDAO",                         # DAO through which to access the index
+        "results_filter" : None                                         # filter to apply to each result before returning it
+    }
+}
 
 ##############################################################
 # Compound Field Auto-Complete Configuration
