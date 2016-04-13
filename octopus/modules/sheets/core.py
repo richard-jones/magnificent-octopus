@@ -9,7 +9,7 @@ class BaseReader(object):
         self.file = None
         self.path = None
 
-        if type(path) == file:
+        if hasattr(path, "read"):
             self.file = path
         else:
             self.path = path
@@ -23,7 +23,7 @@ class BaseWriter(object):
         self.file = None
         self.path = None
 
-        if type(path) == file:
+        if hasattr(path, "write"):
             self.file = path
         else:
             self.path = path
@@ -41,8 +41,18 @@ class StructuralSheet(object):
 
     def dicts(self):
         """
-        A generator which produces python dictionary objects for each record
+        A list of python dicts represented by this object
 
+        :return:
+        """
+        pass
+
+    def set_dicts(self, data):
+        """
+        Set a list of dictionary objects to be represented by this object.
+
+        They may be validated against the spec
+        :param data:
         :return:
         """
         pass
