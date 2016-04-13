@@ -23,6 +23,7 @@ for name, path in app.config.get("CLI_SCRIPTS", {}).iteritems():
         # run it
         ran = True
         klazz().run(args)
+        exit(1)
 
     if not ran:
         print command, "- command not found"
