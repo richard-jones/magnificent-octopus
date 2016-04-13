@@ -27,7 +27,7 @@ class CsvReader(BaseReader):
         self.fallback_encodings = fallback_encodings if fallback_encodings is not None else app.config.get("CSV_READER_FALLBACK_ENCODINGS", ["cp1252", "cp1251", "iso-8859-1", "iso-8859-2", "windows-1252", "windows-1251", "mac_roman"])
         self.input_dialect = input_dialect if input_dialect is not None else self.DIALECTS.get(app.config.get("CSV_READER_INPUT_DIALECT", "excel"), csv.excel)
 
-        self.rectangular = True
+        self.rectangular = rectangular
 
     def read(self):
         if self.path is not None:
