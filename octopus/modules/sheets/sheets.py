@@ -155,6 +155,23 @@ class ObjectByRow(StructuralSheet):
     def dicts(self):
         return self.data
 
+    def set_dicts(self, data):
+        self.data = []
+        self.off_spec_data = []
+
+        for d in data:
+            on_spec = {}
+            off_spec = {}
+            for k in d.keys():
+                spec = self.compiled_col_spec.get(k)
+                if spec is not None:
+                    on_spec[k] = d[k]
+                else:
+                    off_spec[k] = d[k]
+
+            self.data.append(on_spec)
+            self.off_spec_data.append(off_spec)
+
     def dataobj_struct(self):
         fields = {}
         for s in self.raw_col_spec:
