@@ -54,8 +54,8 @@ def sanitise(raw_query, struct, coerce_map=None, source_includes=None, aggs_type
         raise QuerySanitisationException("must be a filtered or match_all query")
 
     if source_includes is not None:
-        clean_query["source"] = {}
-        clean_query["source"]["includes"] = source_includes
+        clean_query["_source"] = {}
+        clean_query["_source"]["includes"] = source_includes
 
     aggs = None
     if "aggs" in clean_query:
@@ -78,11 +78,7 @@ def sanitise(raw_query, struct, coerce_map=None, source_includes=None, aggs_type
                 del clean_query["aggs"]
             if "aggregations" in clean_query:
                 del clean_query["aggregations"]
-    else:
-        if "aggs" in clean_query:
-            del clean_query["aggs"]
-        if "aggregations" in clean_query:
-            del clean_query["aggregations"]
+
 
     if sortable is not None:
         if "sort" in clean_query:
@@ -105,7 +101,7 @@ def sanitise(raw_query, struct, coerce_map=None, source_includes=None, aggs_type
 def _sanitise_aggregation(definition, type_field_map):
     type = definition.keys()[0]
     field = definition[type].get("field")
-    allowed_fields = type_field_map.get(type, {}).keys()
+    allowed_fields = type_field_map[type].keys()
     if field not in allowed_fields:
         return False
 
