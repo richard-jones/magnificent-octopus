@@ -1,0 +1,60 @@
+{% macro main_nav(navigation) %}
+
+<nav role="navigation" >
+    <ul>
+        {% for ni in navigation %}
+            {%  if ni.get("main_nav", False) %}
+                {{ _nav_item(ni) }}
+            {%  endif %}
+        {%  endfor %}
+        <!-- <li class="parent"><span>Elem with subs</span><ul>
+            <li><a href="#">Sub elem</a></li>
+            <li class="active" ><a href="#">Sub elem</a></li>
+            <li><a href="#">Sub elem</a></li>
+        </ul></li>
+        <li class="parent" ><a href="#">Elem with subs</a></li> -->
+    </ul>
+</nav>
+
+{% endmacro %}
+
+{%  macro _nav_item(ni) %}
+    {% set attrs = {"class" : ""} %}
+    {% for aoe in ni.get("active_on_exact", []) %}
+        {% if request.path == url_for(aoe) %}
+            {% do attrs.update({"class" : "active"}) %}
+        {% endif %}
+    {% endfor %}
+
+    <li class="{{ attrs["class"] }}"><a href="{{ url_for(ni.get("url_for")) }}">{{ ni.get("label") }}</a></li>
+{%  endmacro %}
+
+
+{% macro breadcrumb(navigation) %}
+
+<ol class="breadcrumb" >
+    {{ _breadcrumb_item(navigation) }}
+<!--
+    <ol class="breadcrumb" >
+        <li><a href="#">Home</a></li>
+        <li><a href="#">Library</a></li>
+        <li class="active">Manage Academic Outputs</li>
+    </ol>-->
+</ol>
+
+{% endmacro %}
+
+{% macro _breadcrumb_item(navigation) %}
+
+    {% for ni in navigation %}
+        {%  if ni.get("breadcrumb", False) %}
+            {% for aoe in ni.get("active_on_exact", []) %}
+                {% if request.path == url_for(aoe) %}
+                    <li><a href="{{ url_for(ni.get("url_for")) }}">{{ ni.get("label") }}</a></li>
+                    {{ _breadcrumb_item(ni.get("subnav", [])) }}
+                {% endif %}
+            {% endfor %}
+        {%  endif %}
+    {%  endfor %}
+
+{% endmacro %}
