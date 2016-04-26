@@ -19,14 +19,74 @@
 {% endmacro %}
 
 {%  macro _nav_item(ni) %}
-    {% set attrs = {"class" : ""} %}
-    {% for aoe in ni.get("active_on_exact", []) %}
-        {% if request.path == url_for(aoe) %}
+    {% set current_url = request.path|urlencode %}
+
+    {#  lets work out if this item is visible #}
+    {% set authd = current_user.is_authenticated() %}
+    {% set anon = current_user.is_anonymous() %}
+
+    {% set vauth = ni.get("visibility", {}).get("auth", True) %}
+    {% set vanon = ni.get("visibility", {}).get("anonymous", True) %}
+
+    {# only render this nav item (and its children) if it is visible #}
+    {% if (vauth and authd) or (vanon and anon) %}
+        {# these are the various function-level properties we'll read and write #}
+        {% set attrs = {"class" : "", "url" : ""} %}
+
+        {# work out the url #}
+        {% set args = {} %}
+        {% if ni.get("url", {}).get("kwargs") %}
+            {% do args.update(ni.get("url", {}).get("kwargs")) %}
+        {% endif %}
+        {% for cuk in ni.get("url", {}).get("current_user_kwargs", []) %}
+            {% do args.update({cuk.get("arg_name") : current_user[cuk.get("property")]}) %}
+        {% endfor %}
+
+        {% if ni.get("url", {}).get("url_for") %}
+            {% do attrs.update({"url" : url_for(ni.get("url", {}).get("url_for"), **args)}) %}
+        {% endif %}
+
+        {# now determine if the nav item is active #}
+
+        {# first we can determine if this is active by looking to see if we're on the current url #}
+        {% if attrs["url"] != "" and current_url == attrs["url"] %}
             {% do attrs.update({"class" : "active"}) %}
         {% endif %}
-    {% endfor %}
 
-    <li class="{{ attrs["class"] }}"><a href="{{ url_for(ni.get("url_for")) }}">{{ ni.get("label") }}</a></li>
+        {# If that fails, check the other url routes for which this page may be active #}
+        {% if attrs["class"] != "active" %}
+            {% for active in ni.get("active", []) %}
+                {% set args = {} %}
+                {% if active.get("kwargs") %}
+                    {% do args.update(active.get("kwargs")) %}
+                {% endif %}
+                {% for cuk in active.get("current_user_kwargs", []) %}
+                    {% do args.update({cuk.get("arg_name") : current_user[cuk.get("property")]}) %}
+                {% endfor %}
+
+                {% if active.get("match", "exact") == "exact" %}
+                    {% if current_url == url_for(active.get("url_for"), **args) %}
+                        {% do attrs.update({"class" : "active"}) %}
+                    {% endif %}
+                {% elif active.get("match") == "startswith" %}
+                    {% if current_url.startswith(url_for(active.get("url_for"), **args)) %}
+                        {% do attrs.update({"class" : "active"}) %}
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        {#  render the nav item, with the relevant class and linking #}
+        <li class="{{ attrs["class"] }}">
+            {% if (attrs["class"] == "active" and ni.get("link_on_active", True)) or attrs["class"] != "active" %}
+                <a href="{{ attrs["url"] }}">{{ ni.get("label") }}</a>
+            {% else %}
+                <span>{{ ni.get("label") }}</span>
+            {% endif %}
+        </li>
+
+    {% endif %}
+
 {%  endmacro %}
 
 
@@ -34,26 +94,72 @@
 
 <ol class="breadcrumb" >
     {{ _breadcrumb_item(navigation) }}
-<!--
-    <ol class="breadcrumb" >
-        <li><a href="#">Home</a></li>
-        <li><a href="#">Library</a></li>
-        <li class="active">Manage Academic Outputs</li>
-    </ol>-->
 </ol>
 
 {% endmacro %}
 
 {% macro _breadcrumb_item(navigation) %}
+    {% set current_url = request.path|urlencode %}
 
     {% for ni in navigation %}
         {%  if ni.get("breadcrumb", False) %}
-            {% for aoe in ni.get("active_on_exact", []) %}
-                {% if request.path == url_for(aoe) %}
-                    <li><a href="{{ url_for(ni.get("url_for")) }}">{{ ni.get("label") }}</a></li>
-                    {{ _breadcrumb_item(ni.get("subnav", [])) }}
-                {% endif %}
+            {% set attrs = {"class" : "", "url" : ""} %}
+
+            {# work out the url #}
+            {% set args = {} %}
+            {% if ni.get("url", {}).get("kwargs") %}
+                {% do args.update(ni.get("url", {}).get("kwargs")) %}
+            {% endif %}
+            {% for cuk in ni.get("url", {}).get("current_user_kwargs", []) %}
+                {% do args.update({cuk.get("arg_name") : current_user[cuk.get("property")]}) %}
             {% endfor %}
+
+            {% if ni.get("url", {}).get("url_for") %}
+                {% do attrs.update({"url" : url_for(ni.get("url", {}).get("url_for"), **args)}) %}
+            {% endif %}
+
+            {# now determine if the nav item is active #}
+
+            {# first we can determine if this is active by looking to see if we're on the current url #}
+            {% if attrs["url"] != "" and current_url == attrs["url"] %}
+                {% do attrs.update({"class" : "active"}) %}
+            {% endif %}
+
+            {# If that fails, check the other url routes for which this page may be active #}
+            {% if attrs["class"] != "active" %}
+                {% for active in ni.get("active", []) %}
+                    {% set args = {} %}
+                    {% if active.get("kwargs") %}
+                        {% do args.update(active.get("kwargs")) %}
+                    {% endif %}
+                    {% for cuk in active.get("current_user_kwargs", []) %}
+                        {% do args.update({cuk.get("arg_name") : current_user[cuk.get("property")]}) %}
+                    {% endfor %}
+
+                    {% if active.get("match") == "exact" %}
+                        {% if current_url == url_for(active.get("url_for"), **args) %}
+                            {% do attrs.update({"class" : "active"}) %}
+                        {% endif %}
+                    {% elif active.get("match") == "startswith" %}
+                        {% if current_url.startswith(url_for(active.get("url_for"), **args)) %}
+                            {% do attrs.update({"class" : "active"}) %}
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+
+            {% if attrs["class"] == "active" %}
+                <li>
+                {% if ni.get("link_on_active", True) %}
+                    {% set url = url_for(ni.get("url", {}).get("url_for"), **args) %}
+                    <a href="{{ url }}">{{ ni.get("label") }}</a>
+                {% else %}
+                    {{ ni.get("label") }}
+                {% endif %}
+                </li>
+                {{ _breadcrumb_item(ni.get("subnav", [])) }}
+            {% endif %}
+
         {%  endif %}
     {%  endfor %}
 
