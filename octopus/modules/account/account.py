@@ -86,70 +86,6 @@ def logout():
     flash('You are now logged out', 'success')
     return redirect(url_for(app.config.get("ACCOUNT_LOGOUT_REDIRECT_ROUTE", "index")))
 
-@blueprint.route('/<username>', methods=['GET', 'POST', 'DELETE'])
-@login_required
-@ssl_required
-def username(username):
-    Account = AccountFactory.get_model()
-    acc = Account.pull(username)
-    if acc is None:
-        try:
-            acc = Account.pull_by_email(username)
-        except exceptions.NonUniqueAccountException:
-            flash("Permanent Error: these user credentials are invalid - please contact an administrator", "error")
-            return redirect(url_for(("logut")))
-
-    if acc is None:
-        abort(404)
-
-    # actions on this page are only availble to the actual user, or a user with the edit-users role
-    if current_user.id != acc.id or not current_user.has_role(app.config.get("ACCOUNT_EDIT_USERS_ROLE")):
-        abort(401)
-
-    # if this is a request for the user page, just render it
-    if request.method == "GET":
-        fc = AccountFactory.get_user_formcontext(acc)
-        return fc.render_template()
-
-
-    is_delete = request.method == "DELETE" or (request.method == "POST" and request.values.get("submit", False) == "Delete")
-    if is_delete:
-        # validate the delete
-        if not current_user.check_password(request.values.get("password")):
-            flash("Incorrect password", "error")
-            fc = AccountFactory.get_user_formcontext(acc=acc)
-            return fc.render_template()
-
-        # if the password validates, go ahead and do it
-        acc.remove()    # Note we don't use the DAO's delete method - this allows the model to decide the delete behaviour
-        _do_logout()
-        flash('Account {x} deleted'.format(x=username), "success")
-        return redirect(url_for(app.config.get("ACCOUNT_LOGOUT_REDIRECT_ROUTE", "index")))
-
-    if request.method == "POST":
-        fc = AccountFactory.get_user_formcontext(acc=acc, form_data=request.form)
-
-        # attempt to validate the form
-        if not fc.validate():
-            flash("There was a problem when submitting the form", "error")
-            return fc.render_template()
-
-        # if the form validates, then check the legality of the submission
-        try:
-            fc.legal()
-        except exceptions.AccountException as e:
-            flash(e.message, "error")
-            return fc.render_template()
-
-        # if we get to here, then update the user record
-        fc.finalise()
-
-        # tell the user that everything is good
-        flash("Account updated", "success")
-
-        # end with a redirect because some details have changed
-        return redirect(url_for("account.username", username=fc.target.email))
-
 @blueprint.route('/forgot', methods=['GET', 'POST'])
 @ssl_required
 def forgot():
@@ -286,3 +222,66 @@ def activate(activation_token):
         flash("Your account has been activated and you have been logged in", "success")
         return redirect(url_for(app.config.get("ACCOUNT_LOGIN_REDIRECT_ROUTE", "index")))
 
+@blueprint.route('/<username>', methods=['GET', 'POST', 'DELETE'])
+@login_required
+@ssl_required
+def username(username):
+    Account = AccountFactory.get_model()
+    acc = Account.pull(username)
+    if acc is None:
+        try:
+            acc = Account.pull_by_email(username)
+        except exceptions.NonUniqueAccountException:
+            flash("Permanent Error: these user credentials are invalid - please contact an administrator", "error")
+            return redirect(url_for(("logut")))
+
+    if acc is None:
+        abort(404)
+
+    # actions on this page are only availble to the actual user, or a user with the edit-users role
+    if current_user.id != acc.id or not current_user.has_role(app.config.get("ACCOUNT_EDIT_USERS_ROLE")):
+        abort(401)
+
+    # if this is a request for the user page, just render it
+    if request.method == "GET":
+        fc = AccountFactory.get_user_formcontext(acc)
+        return fc.render_template()
+
+
+    is_delete = request.method == "DELETE" or (request.method == "POST" and request.values.get("submit", False) == "Delete")
+    if is_delete:
+        # validate the delete
+        if not current_user.check_password(request.values.get("password")):
+            flash("Incorrect password", "error")
+            fc = AccountFactory.get_user_formcontext(acc=acc)
+            return fc.render_template()
+
+        # if the password validates, go ahead and do it
+        acc.remove()    # Note we don't use the DAO's delete method - this allows the model to decide the delete behaviour
+        _do_logout()
+        flash('Account {x} deleted'.format(x=username), "success")
+        return redirect(url_for(app.config.get("ACCOUNT_LOGOUT_REDIRECT_ROUTE", "index")))
+
+    if request.method == "POST":
+        fc = AccountFactory.get_user_formcontext(acc=acc, form_data=request.form)
+
+        # attempt to validate the form
+        if not fc.validate():
+            flash("There was a problem when submitting the form", "error")
+            return fc.render_template()
+
+        # if the form validates, then check the legality of the submission
+        try:
+            fc.legal()
+        except exceptions.AccountException as e:
+            flash(e.message, "error")
+            return fc.render_template()
+
+        # if we get to here, then update the user record
+        fc.finalise()
+
+        # tell the user that everything is good
+        flash("Account updated", "success")
+
+        # end with a redirect because some details have changed
+        return redirect(url_for("account.username", username=fc.target.email))

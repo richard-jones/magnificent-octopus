@@ -99,7 +99,7 @@ class BasicUserForm(Form):
         validators.Optional(),
         validators.EqualTo('confirm_new_password', message='Passwords must match')
     ])
-    confirm_new_password = PasswordField('Repeat Password', [validators.Optional()])
+    confirm_new_password = PasswordField('Repeat New Password', [validators.Optional()])
 
     password = PasswordField("Current Password", [validators.DataRequired()])
 

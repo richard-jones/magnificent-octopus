@@ -1,11 +1,13 @@
 jQuery(document).ready(function($) {
 
     // when the update button is clicked, disable it and show the waiting gif
-    $("#update").click(function(event) {
+    $(".update_button").click(function(event) {
         event.preventDefault();
-        $("#update").attr("disabled", "disabled")
-                    .html("Updating <img src='/static/images/white-transparent-loader.gif'>");
-        $("#user_details").submit();
+        var sub = $(this).attr("data-submit");
+        var text = $(this).attr("data-holding");
+        $(this).attr("disabled", "disabled")
+                    .html(text + " <img src='/static/images/white-transparent-loader.gif'>");
+        $("#" + sub).submit();
     });
 
     // when the delete button is clicked, check that the user is really sure
