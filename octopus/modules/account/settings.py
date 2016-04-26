@@ -27,6 +27,10 @@ ACCOUNT_MODEL = "octopus.modules.account.models.BasicAccount"
 ACCOUNT_LIST_USERS = False
 ACCOUNT_LIST_USERS_ROLE = "list_users"
 
+# list of fields to be inserted into the _source part of a query on the account index.
+# This prevents us from sending information like api keys or hashed passwords to the front-end
+ACCOUNT_LIST_USERS_INCLUDE_SOURCE = ["id", "email", "created_date", "last_updated", "role"]
+
 # if user listing is enabled, this points to the query endpoint where the data can be retrieved
 CLIENTJS_ACCOUNT_LIST_ENDPOINT = "/account_query/account"
 
@@ -73,6 +77,8 @@ ACCOUNT_FORGOT_REDIRECT_ROUTE = "account.forgot_pending"
 
 # where to direct the user once they have created a user account
 ACCOUNT_REGISTER_REDIECT_ROUTE = "account.index"
+
+ACCOUNT_RESTRICTED_AREA_REDIRECT_ROUTE = "index"
 
 # amount of time a reset token is valid for (86400 is 24 hours)
 ACCOUNT_RESET_TIMEOUT = 86400
