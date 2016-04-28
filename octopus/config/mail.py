@@ -2,7 +2,7 @@ MAIL_FROM_ADDRESS = "none@example.com"
 
 MAIL_SUBJECT_PREFIX = "[octopus] "
 
-# Settings for Flask-Mail. Set in app.cfg
+# Settings for Flask-Mail. Set in local.cfg
 MAIL_SERVER = None          # default localhost
 MAIL_PORT = 25              # default 25
 #MAIL_USE_TLS               # default False

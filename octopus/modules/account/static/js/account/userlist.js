@@ -53,7 +53,7 @@ jQuery(document).ready(function($) {
 
         // right-hand container for links out
         result += "<div class='col-md-2'>";
-        result += '<a href="/account/' + escapeHtml(acc.get_field("email")) + '" class="btn btn-info pull-right" style="margin-top: 15px"><span class="glyphicon glyphicon-pencil"></span> Edit User</a>';
+        result += '<a href="/account/' + escapeHtml(acc.get_field("email")) + '" class="btn btn-info pull-right" style="margin-top: 15px"><span class="glyphicon glyphicon-pencil"></span>&nbsp;&nbsp;Edit User</a>';
 
         // close right-hand container
         result += "</div>";

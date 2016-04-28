@@ -268,3 +268,21 @@ class APIAccount(dataobj.DataObj, dao.APIAccountDAO):
 
     def generate_api_key(self):
         self.api_key = uuid.uuid4().hex
+
+class OrganisationAccount(dataobj.DataObj):
+
+    @property
+    def organisation(self):
+        return self._get_single("organisation", coerce=self._utf8_unicode())
+
+    @organisation.setter
+    def organisation(self, val):
+        self._set_single("organisation", val, coerce=self._utf8_unicode())
+
+    @property
+    def org_role(self):
+        return self._get_single("org_role", coerce=self._utf8_unicode())
+
+    @org_role.setter
+    def org_role(self, val):
+        self._set_single("org_role", val, coerce=self._utf8_unicode())

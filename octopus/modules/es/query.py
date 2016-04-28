@@ -9,6 +9,9 @@ from octopus.lib import webapp, plugin
 
 blueprint = Blueprint('query', __name__)
 
+class QueryFilterException(Exception):
+    pass
+
 # pass queries direct to index. POST only for receipt of complex query objects
 @blueprint.route('/<path:path>', methods=['GET','POST'])
 @webapp.jsonp
@@ -103,7 +106,13 @@ def query(path=None):
             if fn is None:
                 app.logger.info("Unable to load query filter for {x}".format(x=filter_name))
                 abort(500)
-            fn(q)
+
+            try:
+                fn(q)
+            except QueryFilterException as e:
+                abort(400)
+            except:
+                abort(500)
 
         # finally send the query and return the response
         res = dao_klass.query(q=q.as_dict())

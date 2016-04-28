@@ -21,7 +21,7 @@
                 {% autoescape off %}
                 {{ form_context.render_field_group("details") }}
                 {% endautoescape %}
-                <button class="btn btn-primary" id="update" type="submit" style="width: 100%; font-size: 30px; line-height: 30px">
+                <button class="btn btn-primary update_button" id="update" type="submit" style="width: 100%; font-size: 30px; line-height: 30px" data-submit="user_details" data-holding="Updating">
                     Update <i class="glyphicon glyphicon-pencil"></i>
                 </button>
             </div>
