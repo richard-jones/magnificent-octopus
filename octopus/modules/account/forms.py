@@ -434,7 +434,7 @@ class BasicRegisterFormRenderer(Renderer):
                 "fields" : [
                     {
                         "email" : {
-                            "attributes" : {}
+                            "attributes" : {"placeholder" : "Email address for the new account"}
                         }
                     }
                 ]

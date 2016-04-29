@@ -239,7 +239,7 @@ def username(username):
         abort(404)
 
     # actions on this page are only availble to the actual user, or a user with the edit-users role
-    if current_user.id != acc.id or not current_user.has_role(app.config.get("ACCOUNT_EDIT_USERS_ROLE")):
+    if current_user.id != acc.id and not current_user.has_role(app.config.get("ACCOUNT_EDIT_USERS_ROLE")):
         abort(401)
 
     # if this is a request for the user page, just render it
