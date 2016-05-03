@@ -92,7 +92,38 @@
             {% do attrs.update({"active" : True}) %}
         {% endif %}
 
-        {# If that fails, check the other url routes for which this page may be active #}
+        {# If that fails, check the other url routes for which this page may be active/deactivated #}
+        {% if not attrs["active"] %}
+            {% for match in ni.get("match", []) %}
+                {% set args = {} %}
+                {% if match.get("kwargs") %}
+                    {% do args.update(match.get("kwargs")) %}
+                {% endif %}
+                {% for cuk in match.get("current_user_kwargs", []) %}
+                    {% do args.update({cuk.get("arg_name") : current_user[cuk.get("property")]}) %}
+                {% endfor %}
+
+                {% if match.get("type", "exact") == "exact" %}
+                    {% if current_url == url_for(match.get("url_for"), **args) %}
+                        {% if match.get("action", "activate") == "activate" %}
+                            {% do attrs.update({"active" : True, "parent" : True}) %}
+                        {% elif match.get("action") == "deactivate" %}
+                            {% do attrs.update({"active" : False, "parent" : False}) %}
+                        {% endif %}
+                    {% endif %}
+                {% elif match.get("type") == "startswith" %}
+                    {% if current_url.startswith(url_for(match.get("url_for"), **args)) %}
+                        {% if match.get("action", "activate") == "activate" %}
+                            {% do attrs.update({"active" : True, "parent" : True}) %}
+                        {% elif match.get("action") == "deactivate" %}
+                            {% do attrs.update({"active" : False, "parent" : False}) %}
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        {#
         {% if not attrs["active"] %}
             {% for active in ni.get("active", []) %}
                 {% set args = {} %}
@@ -114,6 +145,7 @@
                 {% endif %}
             {% endfor %}
         {% endif %}
+         #}
 
         {# work out the classes to attach to this element #}
         {% if attrs["active"] and not attrs["parent"] %}
@@ -164,7 +196,9 @@
 
     {% for ni in navigation %}
         {%  if ni.get("breadcrumb", False) %}
-            {% set attrs = {"class" : "", "url" : ""} %}
+            {% set attrs = {"active" : False} %}
+
+            {#  % set attrs = {"class" : "", "url" : ""} %} #}
 
             {# work out the url #}
             {% set args = {} %}
@@ -183,10 +217,41 @@
 
             {# first we can determine if this is active by looking to see if we're on the current url #}
             {% if attrs["url"] != "" and current_url == attrs["url"] %}
-                {% do attrs.update({"class" : "active"}) %}
+                {% do attrs.update({"active" : True}) %}
+            {% endif %}
+
+            {% if not attrs["active"] %}
+                {% for match in ni.get("match", []) %}
+                    {% set args = {} %}
+                    {% if match.get("kwargs") %}
+                        {% do args.update(match.get("kwargs")) %}
+                    {% endif %}
+                    {% for cuk in match.get("current_user_kwargs", []) %}
+                        {% do args.update({cuk.get("arg_name") : current_user[cuk.get("property")]}) %}
+                    {% endfor %}
+
+                    {% if match.get("type", "exact") == "exact" %}
+                        {% if current_url == url_for(match.get("url_for"), **args) %}
+                            {% if match.get("action", "activate") == "activate" %}
+                                {% do attrs.update({"active" : True}) %}
+                            {% elif match.get("action") == "deactivate" %}
+                                {% do attrs.update({"active" : False, "parent" : False}) %}
+                            {% endif %}
+                        {% endif %}
+                    {% elif match.get("type") == "startswith" %}
+                        {% if current_url.startswith(url_for(match.get("url_for"), **args)) %}
+                            {% if match.get("action", "activate") == "activate" %}
+                                {% do attrs.update({"active" : True}) %}
+                            {% elif match.get("action") == "deactivate" %}
+                                {% do attrs.update({"active" : False}) %}
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
             {% endif %}
 
             {# If that fails, check the other url routes for which this page may be active #}
+            {#
             {% if attrs["class"] != "active" %}
                 {% for active in ni.get("active", []) %}
                     {% set args = {} %}
@@ -208,8 +273,10 @@
                     {% endif %}
                 {% endfor %}
             {% endif %}
+            #}
 
-            {% if attrs["class"] == "active" %}
+            {# work out the classes to attach to this element #}
+            {% if attrs["active"] %}
                 <li>
                 {% if ni.get("link_on_active", True) %}
                     {% set url = url_for(ni.get("url", {}).get("url_for"), **args) %}
