@@ -238,7 +238,7 @@ class ObjectByRow(StructuralSheet):
 
         # now compile the spec
         comp = deepcopy(raw)
-        funcs = [f if type(f) == types.FunctionType else CoerceFactory.get(f) for f in coerce]
+        funcs = [f if type(f) == types.FunctionType else CoerceFactory.get(f) for f in coerce if CoerceFactory.get(f) is not None]
         comp["coerce"] = funcs
         comp["to_unicode"] = raw["to_unicode"] if type(raw["to_unicode"]) == types.FunctionType else CoerceFactory.get(raw["to_unicode"])
 

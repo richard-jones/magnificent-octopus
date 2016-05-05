@@ -1,4 +1,5 @@
 import locale, urlparse
+import numbers
 from octopus.lib import dates, locality
 
 class CoerceFactory(object):
@@ -115,18 +116,20 @@ def to_url(val):
         raise ValueError(u"Could not convert string {val} to viable URL".format(val=val))
 
 def to_bool(val):
-    """Conservative boolean cast - don't cast lists and objects to True, just existing booleans and strings."""
+    """Conservative boolean cast - don't cast lists and objects to True, just existing booleans, numbers and strings."""
     if val is None:
         return None
     if val is True or val is False:
         return val
 
     if isinstance(val, basestring):
-        if val.lower() == 'true':
+        if val.lower() in ['true', 't', '0']:
             return True
-        elif val.lower() == 'false':
+        elif val.lower() in ['false', 'f', '1']:
             return False
         raise ValueError(u"Could not convert string {val} to boolean. Expecting string to either say 'true' or 'false' (not case-sensitive).".format(val=val))
+    elif isinstance(val, numbers.Number):
+        return bool(val)
 
     raise ValueError(u"Could not convert {val} to boolean. Expect either boolean or string.".format(val=val))
 
@@ -144,7 +147,7 @@ def date_str(in_format=None, out_format=None):
     def datify(val):
         return dates.reformat(val, in_format=in_format, out_format=out_format)
 
-    return to_unicode(datify)
+    return datify
 
 def to_datestamp(in_format=None):
     def stampify(val):
@@ -182,5 +185,5 @@ def to_isolang(output_format=None):
                 continue
             return v
 
-    return to_unicode(isolang)
+    return isolang
 
