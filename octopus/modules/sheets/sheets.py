@@ -21,14 +21,18 @@ class ObjectByRow(StructuralSheet):
             "from_col" : 0,
             "to_col" : -1,
             "ignore_empty_rows" : True,
+            "defaults" : {
+                "on_coerce_failure" : "ignore|raise"
+            },
             "columns" : [
                 {
                     "col_name" : "<name as it appears in the sheet>",
-                    "trim" : "<whether to whitespace trim>",
+                    "trim" : "<whether to whitespace trim: True|False>",
                     "normalised_name" : "<normalised name of the column>",
                     "default" : "<default value if not set or set to the empty string>",
                     "coerce" : ["<name of coerce function>"],
                     "ignore_values" : ["<values that should be treated as empty string>"],
+                    "on_coerce_failure" : "ignore|raise",
                     "to_unicode" : "<name of coerce function which will turn the coerced value back to unicode>"
                 }
             ]
@@ -187,9 +191,12 @@ class ObjectByRow(StructuralSheet):
     ####################################################
     ## Methods specific to this sheet type
 
-    def add_col_spec(self, col_name, trim=True, normalised_name=None, default=None, coerce=None, ignore_values=None, to_unicode=None):
+    def add_col_spec(self, col_name, trim=True, normalised_name=None, default=None, coerce=None, ignore_values=None, to_unicode=None, on_coerce_failure=None):
         coerce = coerce if coerce is not None else []
         ignore_values = ignore_values if ignore_values is not None else []
+
+        if on_coerce_failure is None:
+            on_coerce_failure = self.spec.get("defaults", {}).get("on_coerce_failure", "raise")
 
         # coerce all the values
         uc = CoerceFactory.get("unicode")
@@ -200,6 +207,7 @@ class ObjectByRow(StructuralSheet):
             "col_name" : col_name,
             "trim" : trim,
             "default" : default,
+            "on_coerce_failure" : on_coerce_failure
         }
 
         # the normalised name for the column
@@ -275,6 +283,12 @@ class ObjectByRow(StructuralSheet):
 
         # apply the coerce functions in order
         for c in spec.get("coerce", []):
-            val = c(val)
+            try:
+                val = c(val)
+            except:
+                if spec.get("on_coerce_failure", "raise") == "raise":
+                    print spec.get("normalised_name")
+                    raise
+                val = spec.get("default")
 
         return val
