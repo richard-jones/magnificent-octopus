@@ -21,7 +21,7 @@ def normalise(s, ascii=True, unpunc=True, lower=True, spacing=True, strip=True, 
 
     if spacing:
         while "  " in s:
-            s.replace("  ", " ")
+            s = s.replace("  ", " ")
 
     if strip:
         s = s.strip()

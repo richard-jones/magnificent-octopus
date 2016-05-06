@@ -122,9 +122,9 @@ def to_bool(val):
         return val
 
     if isinstance(val, basestring):
-        if val.lower() == 'true':
+        if val.lower() in ['true', "yes"]:
             return True
-        elif val.lower() == 'false':
+        elif val.lower() in ['false', "no"]:
             return False
         raise ValueError(u"Could not convert string {val} to boolean. Expecting string to either say 'true' or 'false' (not case-sensitive).".format(val=val))
 
@@ -144,7 +144,7 @@ def date_str(in_format=None, out_format=None):
     def datify(val):
         return dates.reformat(val, in_format=in_format, out_format=out_format)
 
-    return to_unicode(datify)
+    return datify
 
 def to_datestamp(in_format=None):
     def stampify(val):
@@ -182,5 +182,5 @@ def to_isolang(output_format=None):
                 continue
             return v
 
-    return to_unicode(isolang)
+    return isolang
 
