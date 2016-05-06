@@ -1,4 +1,5 @@
 import locale, urlparse
+import numbers
 from octopus.lib import dates, locality
 
 class CoerceFactory(object):
@@ -115,18 +116,21 @@ def to_url(val):
         raise ValueError(u"Could not convert string {val} to viable URL".format(val=val))
 
 def to_bool(val):
-    """Conservative boolean cast - don't cast lists and objects to True, just existing booleans and strings."""
+    """Conservative boolean cast - don't cast lists and objects to True, just existing booleans, numbers and strings."""
     if val is None:
         return None
     if val is True or val is False:
         return val
 
     if isinstance(val, basestring):
-        if val.lower() in ['true', "yes"]:
+        if val.lower() in ['true', "yes", "t", "1"]:
             return True
-        elif val.lower() in ['false', "no"]:
+        elif val.lower() in ['false', "no", "f", "0"]:
             return False
         raise ValueError(u"Could not convert string {val} to boolean. Expecting string to either say 'true' or 'false' (not case-sensitive).".format(val=val))
+    
+    elif isinstance(val, numbers.Number):
+        return bool(val)
 
     raise ValueError(u"Could not convert {val} to boolean. Expect either boolean or string.".format(val=val))
 
