@@ -1,23 +1,34 @@
-{% macro main_nav(navigation, wrap=True) %}
+{% macro main_nav(navigation, wrap=True, top_classes="", sub_classes="") %}
 
     {% if wrap %}
     <nav role="navigation" >
     {% endif %}
 
-        <ul>
+    {% set attrs = {"hasnav" : False } %}
+    {% for ni in navigation %}
+        {%  if ni.get("main_nav", False) %}
+            {% do attrs.update({"hasnav" : True}) %}
+        {% endif %}
+    {% endfor %}
+
+    {# this prevents us from rendering unnecessary navigation #}
+    {% if attrs["hasnav"] %}
+        <ul class="{{ top_classes }}">
             {% for ni in navigation %}
                 {%  if ni.get("main_nav", False) %}
-                    {{ _nav_item(ni) }}
+                    {{ _nav_item(ni, sub_classes=sub_classes) }}
                 {%  endif %}
             {%  endfor %}
         </ul>
+    {% endif %}
+
     {% if wrap %}
     </nav>
     {% endif %}
 
 {% endmacro %}
 
-{%  macro _nav_item(ni) %}
+{%  macro _nav_item(ni, sub_classes="") %}
     {% set current_url = request.path|urlencode %}
 
     {#  lets work out if this item is visible #}
@@ -123,30 +134,6 @@
             {% endfor %}
         {% endif %}
 
-        {#
-        {% if not attrs["active"] %}
-            {% for active in ni.get("active", []) %}
-                {% set args = {} %}
-                {% if active.get("kwargs") %}
-                    {% do args.update(active.get("kwargs")) %}
-                {% endif %}
-                {% for cuk in active.get("current_user_kwargs", []) %}
-                    {% do args.update({cuk.get("arg_name") : current_user[cuk.get("property")]}) %}
-                {% endfor %}
-
-                {% if active.get("match", "exact") == "exact" %}
-                    {% if current_url == url_for(active.get("url_for"), **args) %}
-                        {% do attrs.update({"active" : True, "parent" : True}) %}
-                    {% endif %}
-                {% elif active.get("match") == "startswith" %}
-                    {% if current_url.startswith(url_for(active.get("url_for"), **args)) %}
-                        {% do attrs.update({"active" : True, "parent" : True}) %}
-                    {% endif %}
-                {% endif %}
-            {% endfor %}
-        {% endif %}
-         #}
-
         {# work out the classes to attach to this element #}
         {% if attrs["active"] and not attrs["parent"] %}
             {% do attrs.update({"classes" : "active"}) %}
@@ -169,12 +156,12 @@
         {#  render the nav item, with the relevant class and linking #}
         <li class="{{ attrs["classes"] }}">
             {% if (attrs["active"] and ni.get("link_on_active", True)) or not attrs["active"] %}
-                <a href="{{ attrs["url"] }}">{{ ni.get("label") }}</a>
+                <a href="{{ attrs["url"] }}">{% autoescape off %}{{ ni.get("label") }}{% endautoescape %}</a>
             {% else %}
-                <span>{{ ni.get("label") }}</span>
+                <span>{% autoescape off %}{{ ni.get("label") }}{% endautoescape %}</span>
             {% endif %}
             {% if draw_sub %}
-                {{ main_nav(ni.get("subnav", []), wrap=False) }}
+                {{ main_nav(ni.get("subnav", []), wrap=False, top_classes=sub_classes) }}
             {% endif %}
         </li>
 
@@ -250,39 +237,14 @@
                 {% endfor %}
             {% endif %}
 
-            {# If that fails, check the other url routes for which this page may be active #}
-            {#
-            {% if attrs["class"] != "active" %}
-                {% for active in ni.get("active", []) %}
-                    {% set args = {} %}
-                    {% if active.get("kwargs") %}
-                        {% do args.update(active.get("kwargs")) %}
-                    {% endif %}
-                    {% for cuk in active.get("current_user_kwargs", []) %}
-                        {% do args.update({cuk.get("arg_name") : current_user[cuk.get("property")]}) %}
-                    {% endfor %}
-
-                    {% if active.get("match") == "exact" %}
-                        {% if current_url == url_for(active.get("url_for"), **args) %}
-                            {% do attrs.update({"class" : "active"}) %}
-                        {% endif %}
-                    {% elif active.get("match") == "startswith" %}
-                        {% if current_url.startswith(url_for(active.get("url_for"), **args)) %}
-                            {% do attrs.update({"class" : "active"}) %}
-                        {% endif %}
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
-            #}
-
             {# work out the classes to attach to this element #}
             {% if attrs["active"] %}
                 <li>
                 {% if ni.get("link_on_active", True) %}
                     {% set url = url_for(ni.get("url", {}).get("url_for"), **args) %}
-                    <a href="{{ url }}">{{ ni.get("label") }}</a>
+                    <a href="{{ url }}">{% autoescape off %}{{ ni.get("label") }}{%  endautoescape %}</a>
                 {% else %}
-                    {{ ni.get("label") }}
+                    {% autoescape off %}{{ ni.get("label") }}{%  endautoescape %}
                 {% endif %}
                 </li>
                 {{ _breadcrumb_item(ni.get("subnav", [])) }}
