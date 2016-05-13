@@ -1,5 +1,6 @@
 from octopus.core import app
 from octopus.lib import plugin
+from flask_login import current_user
 
 class AccountFactory(object):
 
@@ -12,6 +13,8 @@ class AccountFactory(object):
     @classmethod
     def get_user_formcontext(cls, acc=None, form_data=None):
         path = app.config.get("ACCOUNT_USER_FORM_CONTEXT")
+        if current_user is not None and current_user.has_role(app.config.get("ACCOUNT_EDIT_USERS_ROLE")) and current_user.id != acc.id:
+            path = app.config.get("ACCOUNT_USER_FORM_ADMIN_CONTEXT")
         klazz = plugin.load_class(path)
         fc = klazz(form_data, acc)
         return fc

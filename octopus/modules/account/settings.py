@@ -61,6 +61,7 @@ ACCOUNT_ALLOW_REGISTER = False
 # UI Form Contexts for the various interface aspects
 ACCOUNT_LOGIN_FORM_CONTEXT = "octopus.modules.account.forms.LoginFormContext"
 ACCOUNT_USER_FORM_CONTEXT = "octopus.modules.account.forms.BasicUserFormContext"
+ACCOUNT_USER_FORM_ADMIN_CONTEXT = "octopus.modules.account.forms.BasicUserFormContext"
 ACCOUNT_FORGOT_FORM_CONTEXT = "octopus.modules.account.forms.ForgotFormContext"
 ACCOUNT_RESET_FORM_CONTEXT = "octopus.modules.account.forms.ResetFormContext"
 ACCOUNT_REGISTER_FORM_CONTEXT = "octopus.modules.account.forms.BasicRegisterFormContext"
