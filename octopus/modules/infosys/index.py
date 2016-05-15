@@ -16,6 +16,8 @@ def _execute(tree, expr):
     if gen is not None:
         if isinstance(gen, types.GeneratorType):
             vals = [x for x in gen]
+        elif isinstance(gen, list):
+            return gen
         else:
             vals = [gen]
     return vals
@@ -55,3 +57,41 @@ def ascii_unpunc(*args, **kwargs):
             todo += vals
 
     return [strings.normalise(s, ascii=True, unpunc=True, lower=True, spacing=True, strip=True, space_replace=False) for s in todo]
+
+def count(*args, **kwargs):
+    data = args[0]
+    doc = Tree(data)
+
+    list_field = kwargs.get("list_field")
+    vals = _execute(doc, list_field)
+
+    if vals is not None:
+        return len(vals)
+    return 0
+
+def unique_count(*args, **kwargs):
+    data = args[0]
+    doc = Tree(data)
+
+    list_field = kwargs.get("list_field")
+    unique_field = kwargs.get("unique_field")
+
+    vals = _execute(doc, list_field)
+    if vals is None:
+        return 0
+
+    count = 0
+    found = []
+    for v in vals:
+        subdoc = Tree(v)
+        uvals = _execute(subdoc, unique_field)
+        unique = True
+        for u in uvals:
+            if u in found:
+                unique = False
+                break
+        if unique:
+            count += 1
+        found += uvals
+
+    return count
