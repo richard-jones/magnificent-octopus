@@ -258,9 +258,14 @@ def username(username):
 
         # if the password validates, go ahead and do it
         acc.remove()    # Note we don't use the DAO's delete method - this allows the model to decide the delete behaviour
-        _do_logout()
         flash('Account {x} deleted'.format(x=username), "success")
-        return redirect(url_for(app.config.get("ACCOUNT_LOGOUT_REDIRECT_ROUTE", "index")))
+
+        # if the user deleted their own account, then log them out
+        if current_user.id == acc.id:
+            _do_logout()
+            return redirect(url_for(app.config.get("ACCOUNT_LOGOUT_REDIRECT_ROUTE", "index")))
+        else:
+            return redirect(url_for(app.config.get("ACCOUNT_ADMIN_DELETE_REDIRECT_ROUTE", "index")))
 
     if request.method == "POST":
         fc = AccountFactory.get_user_formcontext(acc=acc, form_data=request.form)

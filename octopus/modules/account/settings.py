@@ -81,6 +81,9 @@ ACCOUNT_REGISTER_REDIECT_ROUTE = "account.index"
 
 ACCOUNT_RESTRICTED_AREA_REDIRECT_ROUTE = "index"
 
+# if an admin deletes an account, where to send them after
+ACCOUNT_ADMIN_DELETE_REDIRECT_ROUTE = "account.index"
+
 # amount of time a reset token is valid for (86400 is 24 hours)
 ACCOUNT_RESET_TIMEOUT = 86400
 ACCOUNT_ACTIVATE_TIMEOUT = ACCOUNT_RESET_TIMEOUT * 14
