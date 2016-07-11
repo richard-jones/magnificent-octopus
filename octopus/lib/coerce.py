@@ -1,4 +1,4 @@
-import locale, urlparse
+import locale, urlparse, string, re
 import numbers
 from octopus.lib import dates, locality
 
@@ -77,6 +77,9 @@ def to_int(val):
 
 
 def to_float(val):
+    if val == "":
+        return None
+
     # strip any characters that are outside the ascii range - they won't make up the float anyway
     # and this will get rid of things like strange currency marks
     if isinstance(val, unicode):
@@ -88,7 +91,29 @@ def to_float(val):
     except ValueError:
         pass
 
-    # could have commas in it, so try stripping them
+    # now we're going to have to try some stuff that takes into account possible locales
+    thousands = [",", " ", ".", "'"]
+    decimals = [".", ",", "'"]
+    punc = list(set(thousands + decimals))
+
+    clean = ""
+    for c in val:
+        if c in punc or c in string.digits:
+            clean += c
+    if clean == "":
+        return None
+
+    val = clean
+
+
+    # try the straight cast again
+    try:
+        return float(val)
+    except ValueError:
+        pass
+
+    # try the most obvious locale - this probably means this function doesn't work
+    # so well for other locales
     try:
         return float(val.replace(",", ""))
     except ValueError:
@@ -100,7 +125,17 @@ def to_float(val):
     except ValueError:
         pass
 
-    raise ValueError(u"Could not convert string to float: {x}".format(x=val))
+    # ok, now try the various combinations of locale-related layouts
+    #dot_dec_rx = ".+(?<=\.)\d+"
+    #comma_dec_rx = ".+(?<=,)\d+"
+    #quote_dec_rx = ".+(?<=')\d+"
+
+    #comma_th_rx = ".+,{1}\d{3}[\d',\.]*"
+    #space_th_rx = ".+ {1}\d{3}[\d',\.]*"
+    #dot_th_rx = ".+\.{1}\d{3}[\d',\.]*"
+    #quote_th_rx = ".+'{1}\d{3}[\d',\.]*"
+
+    raise ValueError(u"Could not convert string to float: '{x}'".format(x=val))
 
 def to_url(val):
     if val is None:
