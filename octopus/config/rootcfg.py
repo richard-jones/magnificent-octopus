@@ -20,6 +20,7 @@ CONFIG_FILES = [
     "magnificent-octopus/octopus/modules/es/settings.py",
     "magnificent-octopus/octopus/modules/infosys/settings.py",
     "magnificent-octopus/octopus/modules/jper/settings.py",
+    "magnificent-octopus/octopus/modules/lantern/settings.py",
     "magnificent-octopus/octopus/modules/oag/settings.py",
     "magnificent-octopus/octopus/modules/romeo/settings.py",
     "magnificent-octopus/octopus/modules/scheduler/settings.py",
