@@ -82,6 +82,10 @@ def _make_request(method, url,
         app.logger.debug('Request to {url} backing off for {bo} seconds'.format(url=url, bo=bo))
         time.sleep(bo)
 
+        # reset any file pointers to the beginning
+        if "data" in kwargs and hasattr(kwargs["data"], "read") and hasattr(kwargs["data"], "seek"):
+            kwargs["data"].seek(0)
+
     if response_encoding is not None and r is not None:
         r.encoding = 'utf-8'
 
