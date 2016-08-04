@@ -4,6 +4,9 @@ from copy import deepcopy
 from octopus.core import app
 from octopus.modules.crud.models import CRUDObject
 
+from objectpath import Tree
+import types
+
 class InfoSysException(Exception):
     pass
 
@@ -121,6 +124,19 @@ class InfoSysModel(dataobj.DataObj, dao.ESInstanceDAO):
     @admin.setter
     def admin(self, val):
         self._set_with_struct("admin", val)
+
+    def objectpath(self, path):
+        t = Tree(self.data)
+        gen = t.execute(path)
+        vals = None
+        if gen is not None:
+            if isinstance(gen, types.GeneratorType):
+                vals = [x for x in gen]
+            elif isinstance(gen, list):
+                return gen
+            else:
+                vals = [gen]
+        return vals
 
     ##########################################################
     ## storage methods which mimic the class-method instances in
