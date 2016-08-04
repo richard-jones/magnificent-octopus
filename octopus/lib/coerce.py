@@ -1,5 +1,6 @@
 import locale, urlparse, string, re
 import numbers
+from datetime import date, datetime
 from octopus.lib import dates, locality
 
 class CoerceFactory(object):
@@ -181,7 +182,12 @@ def to_currency_code(val):
 
 def date_str(in_format=None, out_format=None):
     def datify(val):
-        return dates.reformat(val, in_format=in_format, out_format=out_format)
+        if val is None or val == "":
+            return None
+        if isinstance(val, date) or isinstance(val, datetime):
+            return dates.format(val, format=out_format)
+        else:
+            return dates.reformat(val, in_format=in_format, out_format=out_format)
 
     return datify
 

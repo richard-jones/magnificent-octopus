@@ -1,6 +1,7 @@
 from octopus.lib import dates, coerce as coerce_lib
 from copy import deepcopy
 import locale, json, urlparse
+from datetime import date, datetime
 
 #########################################################
 ## Data coerce functions
@@ -79,7 +80,12 @@ def to_float():
 
 def date_str(in_format=None, out_format=None):
     def datify(val):
-        return dates.reformat(val, in_format=in_format, out_format=out_format)
+        if val is None or val == "":
+            return None
+        if isinstance(val, date) or isinstance(val, datetime):
+            return dates.format(val, format=out_format)
+        else:
+            return dates.reformat(val, in_format=in_format, out_format=out_format)
 
     return datify
 
