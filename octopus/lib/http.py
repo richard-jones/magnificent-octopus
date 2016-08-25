@@ -77,6 +77,9 @@ def _make_request(method, url,
             app.logger.debug('Request to {url} timeout, attempt {attempt}'.format(url=url, attempt=attempt))
             if not retry_on_timeout:
                 break
+        except requests.exceptions.ConnectionError:
+            attempt += 1
+            app.logger.debug('Request to {url} connection error, attempt {attempt}'.format(url=url, attempt=attempt))
 
         bo = _backoff(attempt, back_off_factor, max_back_off)
         app.logger.debug('Request to {url} backing off for {bo} seconds'.format(url=url, bo=bo))

@@ -47,6 +47,37 @@ class TestDictMerge(TestCase):
         assert result["two"] == 2
         assert result["three"] == 4
 
+    def test_02_1_override_if_better(self):
+        source = {
+            "two" : 2,
+            "three" : 3.3,
+            "four" : 4.1,
+            "five" : 6
+        }
+        target = {
+            "one" : 1,
+            "three" : 3.1,
+            "four" : 4.3,
+            "five" : 5
+        }
+        rules = {
+            "override_if_better" : {
+                "one" : { "hierarchy" : [1, 2, 3] },
+                "two" : { "hierarchy" : [1, 2, 3] },
+                "three" : { "hierarchy" : [3.1, 3.2, 3.3, 3.4] },
+                "four" : { "hierarchy" : [4.1, 4.2, 4.3, 4.4] },
+                "five" : { "hierarchy" : [4, (5, 6), 7] }
+            }
+        }
+
+        result = dictmerge.merge(source, target, rules, validate=True)
+
+        assert result["one"] == 1
+        assert "two" not in result
+        assert result["three"] == 3.3
+        assert result["four"] == 4.3
+        assert result["five"] == 5
+
     def test_03_list_append_no_dedupe(self):
         source = {
             "one" : 1,
@@ -370,17 +401,17 @@ class TestDictMerge(TestCase):
     def test_09_precedence(self):
         # This test covers the behaviour when fields appear in multiple rules, to ensure the precedence is correct.  These are the conditions this test looks at:
         #
-        # copy_if_missing   override    list_append     merge       result
-        # 0                 1           0               1           source
-        # 0                 1           1               0           source
-        # 0                 1           1               1           source
-        # 1                 0           0               1           merged
-        # 1                 0           1               0           appended
-        # 1                 0           1               1           merged + appended
-        # 1                 1           0               0           source
-        # 1                 1           0               1           source
-        # 1                 1           1               0           source
-        # 1                 1           1               1           source
+        # copy_if_missing   override    override_if_better  list_append     merge       result
+        # 0                 1           TODO                0               1           source
+        # 0                 1                               1               0           source
+        # 0                 1                               1               1           source
+        # 1                 0                               0               1           merged
+        # 1                 0                               1               0           appended
+        # 1                 0                               1               1           merged + appended
+        # 1                 1                               0               0           source
+        # 1                 1                               0               1           source
+        # 1                 1                               1               0           source
+        # 1                 1                               1               1           source
 
         source = {
             "one" : {
@@ -549,7 +580,7 @@ class TestDictMerge(TestCase):
         broken_rules = {"whatever" : "hello"}
         with self.assertRaises(dictmerge.RulesException):
             dictmerge.validate_rules(broken_rules)
-        fixed_rules = {"copy_if_missing" : [], "override" : [], "list_append" : {}, "merge" : {}}
+        fixed_rules = {"copy_if_missing" : [], "override" : [], "override_if_better" : {}, "list_append" : {}, "merge" : {}}
         dictmerge.validate_rules(fixed_rules)
 
         # 3. Incorrectly formatted copy_if_missing
@@ -570,6 +601,31 @@ class TestDictMerge(TestCase):
         with self.assertRaises(dictmerge.RulesException):
             dictmerge.validate_rules(broken_rules)
         fixed_rules = {"override" : ["hello"]}
+        dictmerge.validate_rules(fixed_rules)
+
+        # 4a Incorrectly formatted override_if_better
+        broken_rules = {"override_if_better" : "hello"}
+        with self.assertRaises(dictmerge.RulesException):
+            dictmerge.validate_rules(broken_rules)
+        broken_rules = {"override_if_better" : {1: {}}}
+        with self.assertRaises(dictmerge.RulesException):
+            dictmerge.validate_rules(broken_rules)
+        broken_rules = {"override_if_better" : {"one": []}}
+        with self.assertRaises(dictmerge.RulesException):
+            dictmerge.validate_rules(broken_rules)
+        broken_rules = {"override_if_better" : {"one": {"other" : []}}}
+        with self.assertRaises(dictmerge.RulesException):
+            dictmerge.validate_rules(broken_rules)
+        broken_rules = {"override_if_better" : {"one": {"hierarchy" : "whatever"}}}
+        with self.assertRaises(dictmerge.RulesException):
+            dictmerge.validate_rules(broken_rules)
+        broken_rules = {"override_if_better" : {"one": {"hierarchy" : ["one", ("two", "three"), 4]}}}
+        with self.assertRaises(dictmerge.RulesException):
+            dictmerge.validate_rules(broken_rules)
+        broken_rules = {"override_if_better" : {"one": {"hierarchy" : ["one", ("two", 3)]}}}
+        with self.assertRaises(dictmerge.RulesException):
+            dictmerge.validate_rules(broken_rules)
+        fixed_rules = {"override_if_better" : {"one": {"hierarchy" : ["one", ("two", "three")]}}}
         dictmerge.validate_rules(fixed_rules)
 
         # 5. Incorrectly formatted list_append

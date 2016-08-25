@@ -15,6 +15,15 @@ def merge(source, target, rules, validate=False):
     {
         "copy_if_missing" : ["<element to copy from source if key not present in target>"],
         "override" : ["<element to take from source and overwrite any existing value in target>"],
+        "override_if_better" : {
+            "<field name>" : {
+                "hierarchy" : [
+                    ("<first level a>", "<first level b>", ...),
+                    ("<second level a>", "<second level b>", ...),
+                    ...
+                ]
+            }
+        },
         "list_append" : {
             "<field name>" : {
                 "dedupe" : True|False   # whether to attempt to deduplicate lists as they are appended
@@ -36,13 +45,14 @@ def merge(source, target, rules, validate=False):
 
     Rules are applied in an order of precedence:
 
-    1. copy_if_missing
-    2. override
-    3. list_append
-    4. merge
+    1. copy_if_missing  - copy from source to target if target does not have this field
+    2. override - copy from source to target in all situations
+    3. override_if_better   - copy from source to target if the value is higher in the hieararchy in the source than in the target
+    4. list_append - append to list in target from source, matching and sub-merging where appropriate
+    5. merge - merge sub-objects or list elements
 
-    All fields will be processed exactly once, by the first rule in that order to specify the field.  If action is taken, then the field will be considered "done",
-    and if it is specified by a later rule, it will not be acted upon.
+    All fields will be processed exactly once, by the first rule in that order to specify the field and act upon it.  If action is taken, then the field will be considered "done",
+    and if it is specified by a later rule, it will not be acted upon.  If no action is taken, then the field may be acted upon by another rule further down the list.
 
     This means that copy_if_missing and override should be considered mutually exclusive - only one of them should specify the field.  If you specify the field in copy_if_missing
     and in override, the override directive will always succeed.
@@ -66,6 +76,7 @@ def merge(source, target, rules, validate=False):
 
     _copy_if_missing(source, target, rules, done)
     _override(source, target, rules, done)
+    _override_if_better(source, target, rules, done)
     _list_append(source, target, rules, done)
     _merge(source, target, rules, done)
 
@@ -86,6 +97,34 @@ def _override(source, target, rules, done):
         if k in source and k not in done:
             target[k] = deepcopy(source[k])
             done.append(k)
+
+def _override_if_better(source, target, rules, done):
+    oib = rules.get("override_if_better", {})
+    for field, instructions in oib.iteritems():
+        if field in done:
+            continue
+        if field not in source:
+            continue
+        if field not in target:
+            continue
+
+        source_val = source[field]
+        target_val = target[field]
+        source_i = 0
+        target_i = 0
+        hi = instructions.get("hierarchy", [])
+        for i in range(len(hi)):
+            level = hi[i]
+            if not isinstance(level, tuple):
+                level = (level,)
+            if source_val in level:
+                source_i = i
+            if target_val in level:
+                target_i = i
+
+        if source_i > target_i:
+            target[field] = deepcopy(source_val)
+            done.append(field)
 
 def _list_append(source, target, rules, done):
     la = rules.get("list_append", {})
@@ -223,6 +262,15 @@ def validate_rules(rules, context=u"root"):
     {
         "copy_if_missing" : ["<element to copy from source if key not present in target>"],
         "override" : ["<element to take from source and overwrite any existing value in target>"],
+        "override_if_better" : {
+            "<field name>" : {
+                "hierarchy" : [
+                    ("<first level a>", "<first level b>", ...),
+                    ("<second level a>", "<second level b>", ...),
+                    ...
+                ]
+            }
+        },
         "list_append" : {
             "<field name>" : {
                 "dedupe" : True|False   # whether to attempt to deduplicate lists as they are appended
@@ -242,34 +290,66 @@ def validate_rules(rules, context=u"root"):
     :return:
     """
     if not isinstance(rules, dict):
-        raise RulesException(u"The rules you supplied at {x} were not a dict".format(x=context))
+        raise RulesException(u"The rules you supplied at '{x}' were not a dict".format(x=context))
 
     # first check we've got only the keys we're supposed to have
     keys = rules.keys()
     for k in keys:
-        if k not in ["copy_if_missing", "override", "list_append", "merge"]:
-            raise RulesException(u"Found {x} but expected one of 'copy_if_missing', 'override', 'list_append', 'merge at {y}'".format(x=k, y=context))
+        if k not in ["copy_if_missing", "override", "override_if_better", "list_append", "merge"]:
+            raise RulesException(u"Found '{x}' but expected one of 'copy_if_missing', 'override', 'override_if_better', 'list_append', 'merge at {y}'".format(x=k, y=context))
 
     # now check the specific fields to make sure they are the shape they're supposed to be
     cim = rules.get("copy_if_missing")
     if cim is not None:
         if not isinstance(cim, list):
-            raise RulesException(u"copy_if_missing at {x} should be a list".format(x=context))
+            raise RulesException(u"copy_if_missing at '{x}' should be a list".format(x=context))
         for i in range(len(cim)):
             field = cim[i]
             if not isinstance(field, basestring):
                 nc = context + u".copy_if_missing[{x}]".format(x=i)
-                raise RulesException(u"value at {x} should be a string".format(x=nc))
+                raise RulesException(u"value at '{x}' should be a string".format(x=nc))
 
     over = rules.get("override")
     if over is not None:
         if not isinstance(over, list):
-            raise RulesException(u"override at {x} should be a list".format(x=context))
+            raise RulesException(u"override at '{x}' should be a list".format(x=context))
         for i in range(len(over)):
             field = over[i]
             if not isinstance(field, basestring):
                 nc = context + u".override[{x}]".format(x=i)
-                raise RulesException(u"value at {x} should be a string".format(x=nc))
+                raise RulesException(u"value at '{x}' should be a string".format(x=nc))
+
+    oib = rules.get("override_if_better")
+    if oib is not None:
+        if not isinstance(oib, dict):
+            raise RulesException(u"override_if_better at '{x}' should be a dict".format(x=context))
+        for field, instructions in oib.iteritems():
+            if not isinstance(field, basestring):
+                raise RulesException(u"keys for override_if_better directive at '{x}' must be strings".format(x=context))
+            if not isinstance(instructions, dict):
+                raise RulesException(u"values for override_if_better directive at '{x}' must be dicts".format(x=context))
+
+            nc = context + ".override_if_better." + field
+
+            keys = instructions.keys()
+            for k in keys:
+                if k not in ["hierarchy"]:
+                    raise RulesException(u"Found '{x}' but expected 'heirarchy' at '{y}'".format(x=k, y=nc))
+
+            if "hierarchy" in instructions:
+                hi = instructions["hierarchy"]
+                if not isinstance(hi, list):
+                    raise RulesException(u"The hierarchy directive you supplied at '{x}' was not a list".format(x=nc))
+
+                # this checks that the values are either strings or tuples, but that limitation seems unfair, so leaving it out for the time being
+                #for i in range(len(hi)):
+                #    level = hi[i]
+                #    if not isinstance(level, basestring) and not isinstance() not isinstance(level, tuple):
+                #        raise RulesException(u"The hierarchy directive you supplied at '{x}[{y}]' was not a string or a tuple".format(x=nc, y=i))
+                #    if isinstance(level, tuple):
+                #        for j in range(len(level)):
+                #            if not isinstance(level[j], basestring):
+                #                raise RulesException(u"The hierarchy directive you supplied at '{x}[{y}][{z}]' was not a string".format(x=nc, y=i, z=j))
 
     la = rules.get("list_append")
     if la is not None:
@@ -286,7 +366,7 @@ def validate_rules(rules, context=u"root"):
             keys = instructions.keys()
             for k in keys:
                 if k not in ["dedupe", "match"]:
-                    raise RulesException(u"Found {x} but expected one of 'dedupe', 'match' at {y}'".format(x=k, y=nc))
+                    raise RulesException(u"Found {x} but expected one of 'dedupe', 'match' at '{y}'".format(x=k, y=nc))
 
             if "dedupe" in instructions:
                 if instructions.get("dedupe") not in [True, False]:

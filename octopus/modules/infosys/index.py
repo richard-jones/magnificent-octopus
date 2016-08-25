@@ -85,6 +85,8 @@ def unique_count(*args, **kwargs):
     for v in vals:
         subdoc = Tree(v)
         uvals = _execute(subdoc, unique_field)
+        if uvals is None:
+            continue
         unique = True
         for u in uvals:
             if u in found:
