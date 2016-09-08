@@ -26,9 +26,9 @@ def build_assets(config, outputs=None):
         sources = _resolve_sources(idents, config)
         compiled = []
         if outcfg.get("pipeline") == "js":
-            compiled = _uglify(sources, js_compdir, config)
+            compiled = _uglify(output, sources, js_compdir, config)
         elif outcfg.get("pipeline") == "css":
-            compiled = _minify_css(sources, css_compdir, config)
+            compiled = _minify_css(output, sources, css_compdir, config)
 
         path_elements = outcfg.get("out")
         outfile = _pathify(path_elements, config)
@@ -44,13 +44,13 @@ def _cat(sources, outfile):
                 f.write(infile.read())
             f.write("\n")
 
-def _minify_css(sources, outdir, config):
+def _minify_css(name, sources, outdir, config):
     node = config.get("parameters", {}).get("node", "node")
     r_file = config.get("parameters", {}).get("r_file", "r.js")
     outputs = []
     for source in sources:
         fn = os.path.split(source)[-1]
-        prefix = _random()
+        prefix = name + "_" + _random()
         out = os.path.join(outdir, prefix + "_" + fn)
         outputs.append(out)
         cmd = "{node} {r_file} -o cssIn={source} out={out} baseUrl=.".format(node=node, r_file=r_file, source=source, out=out)
@@ -58,13 +58,13 @@ def _minify_css(sources, outdir, config):
         print subprocess.call(cmd, shell=True)
     return outputs
 
-def _uglify(sources, outdir, config):
+def _uglify(name, sources, outdir, config):
     node = config.get("parameters", {}).get("node", "node")
     uglify = config.get("parameters", {}).get("uglify", "uglifyjs")
     outputs = []
     for source in sources:
         fn = os.path.split(source)[-1]
-        prefix = _random()
+        prefix = name + "_" + _random()
         out = os.path.join(outdir, prefix + "_" + fn)
         outputs.append(out)
         cmd = "{node} {uglify} -o {out} {source}".format(node=node, uglify=uglify, source=source, out=out)
