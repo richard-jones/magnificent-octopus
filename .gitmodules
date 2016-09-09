@@ -4,6 +4,3 @@
 [submodule "octopus/static/vendor/edges"]
 	path = octopus/static/vendor/edges
 	url = https://github.com/CottageLabs/edges.git
-[submodule "octopus/static/vendor/edges_build"]
-	path = octopus/static/vendor/edges_build
-	url = https://github.com/CottageLabs/edges.git
