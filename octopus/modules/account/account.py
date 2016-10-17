@@ -43,6 +43,10 @@ def login():
     # current_info = {'next': request.args.get('next', '')}
     fc = AccountFactory.get_login_formcontext(request.form)
 
+    next = request.args.get('next')
+    if next:
+        fc.form.next.data = next
+
     if request.method == 'POST':
         if fc.validate():
             password = fc.form.password.data
