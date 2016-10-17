@@ -96,6 +96,10 @@
             {% do attrs.update({"url" : url_for(ni.get("url", {}).get("url_for"), **args)}) %}
         {% endif %}
 
+        {% if ni.get("url", {}).get("url") %}
+            {% do attrs.update(ni.get("url", {}.get("url"))) %}
+        {% endif %}
+
         {# now determine if the nav item is active #}
 
         {# first we can determine if this is active by looking to see if we're on the current url #}
