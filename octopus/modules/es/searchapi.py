@@ -199,6 +199,41 @@ def _escape(query):
 
     return query
 
+#######################################################
+## Responses
+
+def _not_found():
+    app.logger.debug("Sending 404 Not Found")
+    resp = make_response(json.dumps({"status" : "not found"}))
+    resp.mimetype = "application/json"
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.status_code = 404
+    return resp
+
+def _bad_request():
+    # app.logger.info("Sending 400 Bad Request from client: {x}".format(x=e.message))
+    resp = make_response(json.dumps({"status" : "error"}))
+    resp.mimetype = "application/json"
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.status_code = 400
+    return resp
+
+def _unauthorised(error):
+    app.logger.info("Sending 401 Unauthorised from client: {x}".format(x=error))
+    resp = make_response(json.dumps({"status" : "unauthorised", "error" : error}))
+    resp.mimetype = "application/json"
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.status_code = 401
+    return resp
+
+def _forbidden(error):
+    app.logger.info("Sending 403 Forbidden from client: {x}".format(x=error))
+    resp = make_response(json.dumps({"status" : "forbidden", "error" : error}))
+    resp.mimetype = "application/json"
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.status_code = 403
+    return resp
+
 ########################################################
 
 # simple proxy for an underlying ES index, queried using a query string
@@ -207,27 +242,29 @@ def _escape(query):
 def search(cfg_name):
     cfg = app.config.get("SEARCHAPI", {}).get(cfg_name)
     if cfg is None:
-        abort(404)
+        return _not_found()
 
     qb = cfg.get("query_builder")
     if qb is None:
-        abort(404)
+        return _not_found()
 
     dao_path = cfg.get("dao")
     if dao_path is None:
-        abort(404)
+        return _not_found()
 
     acc = None
     if cfg.get("auth", False):
         try:
             acc = _auth(cfg.get("roles", []))
         except AuthenticationException:
-            abort(401)
+            return _unauthorised("Unauthorised")
         except AuthorisationException:
-            abort(403)
+            return _forbidden("Forbidden")
 
     # get the values for the 3 key bits of search info: the query, the page number and the page size
     q = request.values.get("q")
+    if q is None:
+        return _bad_request()
     page = request.values.get("page", 1)
     psize = request.values.get("pageSize", cfg.get("default_page_size", 10))
     sort_by = request.values.get("sortBy")
@@ -238,7 +275,7 @@ def search(cfg_name):
     try:
         q, fro, page, psize, sort_by, sort_dir = _sanitise(cfg, q, page, psize, sort_by, sort_dir)
     except BadRequest:
-        abort(400)
+        return _bad_request()
 
     # assemble the query
     query_builder = plugin.load_class(qb)
@@ -250,7 +287,7 @@ def search(cfg_name):
 
     # check to see if there was a search error
     if res.get("error") is not None:
-        abort(400)
+        return _bad_request()
 
     # unpack the results and pull out the search metadata
     obs = esprit.raw.unpack_json_result(res)
@@ -261,6 +298,10 @@ def search(cfg_name):
     if filter is not None:
         fn = plugin.load_function(filter)
         obs = [fn(o) for o in obs]
+
+    if len(obs) == 0:
+        # we have reached the end of the result set, so let's just 404
+        return _not_found()
 
     # build the response object
     response = {
