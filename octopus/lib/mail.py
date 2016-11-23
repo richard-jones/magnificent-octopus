@@ -58,6 +58,15 @@ def send_mail(to, subject, fro=None, template_name=None, bcc=None, files=None, m
                   extra_headers=None
     )
 
+    try:
+        mail = Mail(app)
+        with app.app_context():
+            mail.send(msg)
+            app.logger.info("Email template {0} sent.\nto:{1}\tsubject:{2}".format(template_name, to, subject))
+    except Exception as e:
+        raise
+
+    """
     if appcontext:
         mail = Mail(app)
         mail.send(msg)
@@ -65,6 +74,7 @@ def send_mail(to, subject, fro=None, template_name=None, bcc=None, files=None, m
         with app.test_request_context():
             mail = Mail(app)
             mail.send(msg)
+    """
 
 def to_unicode(val):
     if isinstance(val, unicode):
