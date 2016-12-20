@@ -48,6 +48,8 @@
     <!-- form styles -->
     <link rel="stylesheet" href="{{url_for('static', filename='css/form/forms.css')}}">
 
+    {% block extra_css_top %}{% endblock extra_css_top %}
+
     <!-- get the application's css -->
     <link rel="stylesheet" href="{{url_for('static', filename='css/service.css')}}">
 
