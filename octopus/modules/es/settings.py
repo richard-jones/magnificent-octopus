@@ -18,6 +18,7 @@ ELASTIC_SEARCH_TEST_INDEX = "test"
 # should the initialise routing initialise the index automatically?
 INITIALISE_INDEX = True
 
+# Use this for ES < 5.x
 # mapping that will be pushed into the _default_ field of the index
 # itself, and be applied to all types that are subsequently created
 ELASTIC_SEARCH_DEFAULT_MAPPING = {
@@ -48,6 +49,34 @@ ELASTIC_SEARCH_DEFAULT_MAPPING = {
         'location': {'type': 'geo_point'}
     }
 }
+
+# Use this for ES 5.x
+# ELASTIC_SEARCH_DEFAULT_MAPPING = {
+#     'dynamic_templates': [
+#         {
+#             'default': {
+#                 'match': '*',
+#                 'match_mapping_type': 'string',
+#
+#                 'mapping': {
+#                     "type" : "{dynamic_type}",
+#                     'index': True,
+#                     'store': False,
+#                     'fields': {
+#                         'exact': {
+#                             'index': True,
+#                             'store': True,
+#                             'type': 'keyword'
+#                         }
+#                     }
+#                 }
+#             }
+#         }
+#     ],
+#     'properties': {
+#         'location': {'type': 'geo_point'}
+#     }
+# }
 
 # an array of DAO classes from which to retrieve the type-specific ES mappings
 # to be loaded into the index during initialisation.  You should override this

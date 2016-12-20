@@ -24,15 +24,9 @@ class ESInstanceDAO(esprit.dao.DAO):
 
     def mapping(self):
         return {
-            self._type : mappings.for_type(
-                self._type,
-                    mappings.properties(mappings.type_mapping("location", "geo_point")),
-                    mappings.dynamic_templates(
-                    [
-                        mappings.EXACT,
-                    ]
-                )
-            )
+            self._type : {
+                self._type : app.config.get("ELASTIC_SEARCH_DEFAULT_MAPPING")
+            }
         }
 
     def _get_connection(self):
@@ -78,15 +72,9 @@ class ESDAO(esprit.dao.DomainObject):
     @classmethod
     def mappings(cls):
         return {
-            cls.__type__ : mappings.for_type(
-                cls.__type__,
-                    mappings.properties(mappings.type_mapping("location", "geo_point")),
-                    mappings.dynamic_templates(
-                    [
-                        mappings.EXACT,
-                    ]
-                )
-            )
+            cls.__type__ : {
+                cls.__type__ : app.config.get("ELASTIC_SEARCH_DEFAULT_MAPPING")
+            }
         }
 
     @classmethod
