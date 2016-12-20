@@ -1,5 +1,17 @@
 {% extends "base.html" %}
 
+{% block extra_css_top %}
+
+    <!-- edges styles -->
+    <link rel="stylesheet" href="{{url_for('static', filename='vendor/edges/css/bs3.Facetview.css')}}">
+    <link rel="stylesheet" href="{{url_for('static', filename='vendor/edges/css/bs3.FullSearchControllerRenderer.css')}}">
+    <link rel="stylesheet" href="{{url_for('static', filename='vendor/edges/css/bs3.PagerRenderer.css')}}">
+    <link rel="stylesheet" href="{{url_for('static', filename='vendor/edges/css/bs3.SearchingNotificationRenderer.css')}}">
+
+    <link rel="stylesheet" href="{{url_for('static', filename='css/account/userlist.css')}}">
+
+{% endblock %}
+
 {% block content %}
 
 {% if current_user.has_role(config.get("ACCOUNT_CREATE_USER_ROLE")) %}
@@ -18,5 +30,17 @@
 {% endblock %}
 
 {% block extra_js_bottom %}
-<script type="text/javascript" src="{{ url_for('static', filename='js/account/userlist.js') }}"></script>
+
+    <script type="text/javascript" src="{{url_for('static', filename='vendor/edges/src/es5x.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='vendor/edges/src/edges.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='vendor/edges/src/edges.jquery.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='vendor/edges/src/components/search.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='vendor/edges/src/templates/bs3.Facetview.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='vendor/edges/src/renderers/bs3.FullSearchControllerRenderer.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='vendor/edges/src/renderers/bs3.PagerRenderer.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='vendor/edges/src/renderers/bs3.SearchingNotificationRenderer.js')}}"></script>
+
+
+    <script type="text/javascript" src="{{ url_for('static', filename='js/account/userlist.js') }}"></script>
+
 {% endblock extra_js_bottom %}

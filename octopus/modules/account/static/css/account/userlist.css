@@ -1,0 +1,17 @@
+.edges-bs3-facetview-container {
+    background-color: #ffffff !important;
+    padding: 20px;
+}
+
+.edges-bs3-search-controller-direction {
+    margin-top: 0px;
+}
+
+.edges-bs3-search-controller-text {
+    width: 200px !important;
+}
+
+.octopus-account-user-result {
+    padding: 10px;
+    border-bottom: 1px dotted #cccccc;
+}

@@ -9,7 +9,7 @@ def query_filter(q):
     # this limits the query to certain fields in the source, so that things like password
     # hashes and activation/reset tokens are never sent to the client
     source = app.config.get("ACCOUNT_LIST_USERS_INCLUDE_SOURCE", ["id", "email", "created_date", "last_updated", "role"])
-    q.include_source(source)
+    q.include_source(source, es_version=app.config.get("ELASTIC_SEARCH_VERSION"))
 
 class BasicAccountDAO(dao.ESDAO):
     __type__ = 'account'
