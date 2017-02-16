@@ -41,6 +41,8 @@ class OctopusHttpLayer(HttpLayer):
         self.username = None
         self.password = None
         self.auth = None
+        self._args = args
+        self._kwargs = kwargs
 
     def add_credentials(self, username, password):
         self.username = username
@@ -50,13 +52,13 @@ class OctopusHttpLayer(HttpLayer):
     def request(self, uri, method, headers=None, payload=None):    # Note that body can be file-like
         resp = None
         if method == "GET":
-            resp = http.get(uri, headers=headers, auth=self.auth)
+            resp = http.get(uri, headers=headers, auth=self.auth, **self._kwargs)
         elif method == "POST":
-            resp = http.post(uri, headers=headers, data=payload, auth=self.auth)
+            resp = http.post(uri, headers=headers, data=payload, auth=self.auth, **self._kwargs)
         elif method == "PUT":
-            resp = http.put(uri, headers=headers, data=payload, auth=self.auth)
+            resp = http.put(uri, headers=headers, data=payload, auth=self.auth, **self._kwargs)
         elif method == "DELETE":
-            resp = http.delete(uri, headers=headers, auth=self.auth)
+            resp = http.delete(uri, headers=headers, auth=self.auth, **self._kwargs)
 
         if resp is None:
             return OctopusHttpResponse(None, status=408), None
