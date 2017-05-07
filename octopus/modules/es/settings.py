@@ -84,7 +84,7 @@ ELASTIC_SEARCH_DEFAULT_MAPPING = {
 # If none of your types require mappings different from the ELASTIC_SEARCH_DEFAULT_MAPPING
 # above then you can leave this list empty
 ELASTIC_SEARCH_MAPPINGS = [
-    # service.dao.MyDAO
+    # "service.dao.MyDAO"
 ]
 
 # an array of DAO classes from which to retrieve example documents that will
