@@ -71,6 +71,9 @@ class EuropePMC(object):
 
     @classmethod
     def field_search(cls, field, value, fuzzy=False, cursor="", page_size=25):
+        """
+        :return: (results, next_cursor)
+        """
         qb = QueryBuilder()
         qb.add_string_field(field, value, fuzzy)
         return cls.query(qb.to_url_query_param(), cursor=cursor, page_size=page_size)
@@ -83,6 +86,9 @@ class EuropePMC(object):
 
     @classmethod
     def complex_search(cls, query_builder, cursor="", page_size=25):
+        """
+        :return: (results, next_cursor)
+        """
         return cls.query(query_builder.to_url_query_param(), cursor=cursor, page_size=page_size)
 
     @classmethod
@@ -110,6 +116,9 @@ class EuropePMC(object):
 
     @classmethod
     def query(cls, query_string, cursor="", page_size=25):
+        """
+        :return: (results, next_cursor)
+        """
         quoted = quote(query_string, safe="/")
         qcursor = quote(str(cursor))
         qsize = quote(str(page_size))
@@ -136,7 +145,7 @@ class EuropePMC(object):
 
         results = [models.EPMCMetadata(r) for r in j.get("resultList", {}).get("result", [])]
         next_cursor_mark = j.get("nextCursorMark", "")
-        return results, next_cursor_mark
+        return results, next_cursor_mark                      # NOTE: previous versions just returned results, not tuple
 
     @classmethod
     def fulltext(cls, pmcid):
@@ -155,4 +164,3 @@ class EPMCFullText(models.JATS):
     For backwards compatibility - don't add any methods here
     """
     pass
-
