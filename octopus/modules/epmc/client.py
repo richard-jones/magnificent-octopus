@@ -1,11 +1,11 @@
 from octopus.core import app
-from octopus.lib import http, dates
+from octopus.lib import http
 import urllib, string
-from lxml import etree
 from octopus.modules.epmc import models
 from octopus.modules.epmc.queries import QueryBuilder
 from datetime import datetime
 import time
+
 
 def quote(s, **kwargs):
     try:
@@ -19,9 +19,10 @@ def quote(s, **kwargs):
     except:
         return None
 
+
 def to_keywords(s):
     # FIXME: this method does not strip stop words - investigations into that indicate that as a natural language
-    # processing thing, the libraries required to do it are awkward and overblown for our purposes.
+    # processing thing, the libraries required to do it (e.g. NLTK) are awkward and overblown for our purposes.
 
     # translate out all of the punctuation
     exclude = set(string.punctuation)
@@ -29,6 +30,7 @@ def to_keywords(s):
 
     # normalise the spacing
     return " ".join([x for x in raw.split(" ") if x != ""])
+
 
 class EuropePMCException(Exception):
     def __init__(self, *args, **kwargs):
@@ -38,38 +40,40 @@ class EuropePMCException(Exception):
         super(EuropePMCException, self).__init__(*args)
         self.response = httpresponse
 
+
 class EPMCFullTextException(Exception):
     def __init__(self, message, rawstring, *args, **kwargs):
         super(EPMCFullTextException, self).__init__(message, *args)
         self.raw = rawstring
 
+
 class EuropePMC(object):
     @classmethod
-    def get_by_pmcid(cls, pmcid, page=1):
-        return cls.field_search("PMCID", pmcid, page=page)
+    def get_by_pmcid(cls, pmcid, cursor=""):
+        return cls.field_search("PMCID", pmcid, cursor=cursor)
 
     @classmethod
-    def get_by_pmid(cls, pmid, page=1):
-        return cls.field_search("EXT_ID", pmid, page=page)
+    def get_by_pmid(cls, pmid, cursor=""):
+        return cls.field_search("EXT_ID", pmid, cursor=cursor)
 
     @classmethod
-    def get_by_doi(cls, doi, page=1):
-        return cls.field_search("DOI", doi, page=page)
+    def get_by_doi(cls, doi, cursor=""):
+        return cls.field_search("DOI", doi, cursor=cursor)
 
     @classmethod
-    def title_exact(cls, title, page=1):
-        return cls.field_search("TITLE", title, page=page)
+    def title_exact(cls, title, cursor=""):
+        return cls.field_search("TITLE", title, cursor=cursor)
 
     @classmethod
-    def title_approximate(cls, title, page=1):
+    def title_approximate(cls, title, cursor=""):
         nt = to_keywords(title)
-        return cls.field_search("TITLE", nt, fuzzy=True, page=page)
+        return cls.field_search("TITLE", nt, fuzzy=True, cursor=cursor)
 
     @classmethod
-    def field_search(cls, field, value, fuzzy=False, page=1, page_size=25):
+    def field_search(cls, field, value, fuzzy=False, cursor="", page_size=25):
         qb = QueryBuilder()
         qb.add_string_field(field, value, fuzzy)
-        return cls.query(qb.to_url_query_param(), page=page, page_size=page_size)
+        return cls.query(qb.to_url_query_param(), cursor=cursor, page_size=page_size)
 
     @classmethod
     def field_search_iterator(cls, field, value, fuzzy=False, page_size=25, throttle=None):
@@ -78,8 +82,8 @@ class EuropePMC(object):
         return cls.iterate(qb.to_url_query_param(), page_size=page_size, throttle=throttle)
 
     @classmethod
-    def complex_search(cls, query_builder, page=1, page_size=25):
-        return cls.query(query_builder.to_url_query_param(), page=page, page_size=page_size)
+    def complex_search(cls, query_builder, cursor="", page_size=25):
+        return cls.query(query_builder.to_url_query_param(), cursor=cursor, page_size=page_size)
 
     @classmethod
     def complex_search_iterator(cls, query_builder, page_size=1000, throttle=None):
@@ -87,7 +91,7 @@ class EuropePMC(object):
 
     @classmethod
     def iterate(cls, query_string, page_size=1000, throttle=None):
-        page = 1
+        cursor = ""
         last = None
         while True:
             if last is not None and throttle is not None:
@@ -97,24 +101,26 @@ class EuropePMC(object):
                     waitfor = throttle - diff
                     app.logger.debug(u"Throttling EPMC requests for {x}s".format(x=waitfor))
                     time.sleep(waitfor)
-            results = cls.query(query_string, page=page, page_size=page_size)
+            results, cursor = cls.query(query_string, cursor=cursor, page_size=page_size)
             last = datetime.utcnow()
             if len(results) == 0:
                 break
             for r in results:
                 yield r
-            page += 1
 
     @classmethod
-    def query(cls, query_string, page=1, page_size=25):
+    def query(cls, query_string, cursor="", page_size=25):
         quoted = quote(query_string, safe="/")
-        qpage = quote(str(page))
+        qcursor = quote(str(cursor))
         qsize = quote(str(page_size))
-        if qsize is None or qpage is None or quoted is None:
+        if qsize is None or qcursor is None or quoted is None:
             raise EuropePMCException(None, "unable to url escape the string")
 
-        url = app.config.get("EPMC_REST_API") + "search/query=" + query_string
-        url += "&resulttype=core&format=json&page=" + qpage + "&pageSize=" + qsize
+        url = app.config.get("EPMC_REST_API") + "search?query=" + query_string
+        url += "&resulttype=core&format=json&pageSize=" + qsize
+
+        if cursor != "":
+            url += "&cursorMark=" + qcursor
         app.logger.debug("Requesting EPMC metadata from " + url)
 
         resp = http.get(url)
@@ -129,7 +135,8 @@ class EuropePMC(object):
             raise EuropePMCException(message="could not decode JSON from EPMC response")
 
         results = [models.EPMCMetadata(r) for r in j.get("resultList", {}).get("result", [])]
-        return results
+        next_cursor_mark = j.get("nextCursorMark", "")
+        return results, next_cursor_mark
 
     @classmethod
     def fulltext(cls, pmcid):
@@ -141,6 +148,7 @@ class EuropePMC(object):
         if resp.status_code != 200:
             raise EuropePMCException(resp)
         return EPMCFullText(resp.text)
+
 
 class EPMCFullText(models.JATS):
     """
