@@ -28,7 +28,6 @@ def check_epmc_version(resp_json):
             app.logger.warn("Mismatching EPMC API version; recommend checking for changes. Expected '{0}' Found '{1}'".format(configured_ver, received_ver))
     except KeyError:
         app.logger.warn("Couldn't check EPMC API version; did not find 'version' key in response. Proceed with caution as the EPMC API may have changed.")
-        pass
 
 
 def to_keywords(s):
