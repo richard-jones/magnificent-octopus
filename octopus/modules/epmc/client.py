@@ -27,7 +27,7 @@ def check_epmc_version(resp_json):
         if received_ver != configured_ver:
             app.logger.warn("Mismatching EPMC API version; recommend checking for changes. Expected '{0}' Found '{1}'".format(configured_ver, received_ver))
     except KeyError:
-        # The json doesn't have a version key, that's not the end of the world.
+        app.logger.warn("Couldn't check EPMC API version; did not find 'version' key in response. Proceed with caution as the EPMC API may have changed.")
         pass
 
 
