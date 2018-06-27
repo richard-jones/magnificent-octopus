@@ -5,6 +5,7 @@ from octopus.modules.doaj import models
 
 DOAJ_RETRY_CODES = [
     408,    # request timeout
+    429,    # rate limited
     502,    # bad gateway; retry to see if the gateway can re-establish connection
     503,    # service unavailable; retry to see if it comes back
     504     # gateway timeout; retry to see if it responds next time
