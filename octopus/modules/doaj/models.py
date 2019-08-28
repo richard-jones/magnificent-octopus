@@ -195,6 +195,7 @@ class Article(dataobj.DataObj):
         try:
             a = ArticleValidator(self.data)
         except Exception as e:
+            print(e.message)
             return False
         return True
 
