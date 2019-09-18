@@ -107,7 +107,6 @@ ARTICLE_REQUIRED = {
         "bibjson": {
             "required": [
                 "title",
-                "author",                   # One author required
                 "identifier"                # One type of identifier is required
             ],
             "structs": {
@@ -118,11 +117,7 @@ ARTICLE_REQUIRED = {
 
                 "link": {
                     "required": ["type", "url"]
-                },
-
-                "author": {
-                    "required": ["name"]
-                },
+                }
             }
         }
     }
