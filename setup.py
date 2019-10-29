@@ -5,7 +5,7 @@ setup(
     version = '1.0.0',
     packages = find_packages(),
     install_requires = [
-        "werkzeug==0.8.3",
+        "werkzeug==0.15.3",
         "Flask==0.9",
         "Flask-Login==0.1.3",
         "requests",
