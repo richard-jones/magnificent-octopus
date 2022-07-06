@@ -11,7 +11,7 @@ setup(
         "requests",
         "esprit",
         "simplejson",
-        "lxml==3.4.4",
+        "lxml==4.9.1",
         "Flask-WTF==0.8.3",
         "nose",
         "Flask-Mail==0.9.1",
